@@ -1,0 +1,17 @@
+{
+  "name": "Koiny",
+  "description": "L'argent de poche intelligent : apprenez à vos enfants la valeur de l'effort et de l'épargne. / Slim zakgeld: leer je kinderen de waarde van inspanning en sparen.",
+  "short_name": "Koiny",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "requestFramePermissions": []
+}

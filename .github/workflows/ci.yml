@@ -1,0 +1,40 @@
+name: CI/CD Koiny
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build_and_test:
+    name: Build & Security Check
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Security Audit (High+)
+      # Audit informatif (ne bloque pas le build pour les dépendances de dev comme capacitor/cli)
+      continue-on-error: true
+      run: npm audit --audit-level=high
+
+    - name: Build Application
+      run: npm run build
+      env:
+        # Les vraies clés doivent être configurées dans les GitHub Secrets
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://build-placeholder.supabase.co' }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'build-placeholder-key' }}

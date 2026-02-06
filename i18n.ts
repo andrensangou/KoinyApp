@@ -1,0 +1,924 @@
+
+export const translations = {
+  fr: {
+    common: {
+      next: "Suivant",
+      skip: "Passer",
+      start: "C'est parti !",
+      cancel: "Annuler",
+      confirm: "Confirmer",
+      back: "Retour",
+      quit: "Quitter",
+      loading: "Chargement...",
+      save: "Enregistrer",
+      delete: "Supprimer",
+      edit: "Modifier",
+      add: "Ajouter",
+      close: "Fermer",
+      userGuide: "Guide Utilisateur"
+    },
+    qr: {
+      title: "Inviter un Co-Parent",
+      instructions: "Faites scanner ce code à votre partenaire pour qu'il rejoigne votre famille.",
+      copied: "Lien copié !",
+      copyLink: "Copier le lien d'invitation"
+    },
+    colors: {
+      indigo: "Indigo",
+      pink: "Rose fuchsia",
+      emerald: "Émeraude",
+      amber: "Ambre",
+      blue: "Bleu ciel",
+      rose: "Rose tendre",
+      purple: "Violet",
+      cyan: "Cyan",
+      teal: "Sarcelle",
+      orange: "Orange"
+    },
+    auth: {
+      tagline: "L'argent de poche devient un jeu d'enfant.",
+      description: "Apprenez à vos enfants la valeur de l'effort et de l'épargne avec une app ludique et sécurisée.",
+      login: "Se connecter",
+      signup: "Créer un compte famille",
+      email: "Email",
+      password: "Mot de passe",
+      noAccount: "Créer un compte",
+      hasAccount: "J'ai déjà un compte",
+      newHere: "Nouveau ici ?",
+      alreadyAccount: "Déjà membre ?",
+      cloudSync: "Données synchronisées en temps réel",
+      logout: "Déconnexion",
+      signupSuccess: "Compte créé ! Vérifiez vos emails.",
+      resetSuccess: "Lien envoyé ! Vérifiez vos emails.",
+      sendLink: "Envoyer le lien",
+      forgotPassword: "Mot de passe oublié ?",
+      rememberMe: "Rester connecté",
+      backToLogin: "Retour",
+      googleLogin: "Continuer avec Google",
+      or: "OU",
+      checkEmailTitle: "Vérifiez vos emails",
+      checkEmailDesc: "Un lien de confirmation a été envoyé à",
+      checkEmailAction: "Cliquez sur le lien pour activer votre compte.",
+      backToHome: "Retour à l'accueil"
+    },
+    legal: {
+      link: "Confidentialité & Mentions",
+      title: "Confidentialité & Conditions",
+      intro: "Koiny est un outil pédagogique conçu pour les familles.",
+      trust: {
+        virtual: "100% Argent Virtuel",
+        privacy: "Données Privées & Sécurisées",
+        noBank: "Pas de compte bancaire requis",
+        noAds: "Sans publicité ni revente"
+      },
+      sections: {
+        virtual: {
+          title: "1. Nature de l'Argent",
+          content: "Koiny n'est PAS une banque. Tout l'argent affiché dans l'application est VIRTUEL. Aucune transaction bancaire réelle n'est effectuée. Les parents sont les seuls responsables de la gestion et du versement physique de l'argent de poche réel à leurs enfants."
+        },
+        privacy: {
+          title: "2. Protection des Données (RGPD)",
+          content: "Nous collectons uniquement les données nécessaires : email du parent, prénoms et dates de naissance des enfants (pour les bonus d'anniversaire). Vos données sont stockées de manière sécurisée et ne sont JAMAIS vendues à des tiers. En tant que parent, vous gardez un contrôle total sur la suppression de votre compte et de vos données."
+        },
+        responsibility: {
+          title: "3. Responsabilité Parentale",
+          content: "L'accès à l'Espace Parents est protégé par un code PIN. Il est de la responsabilité du parent de garder ce code confidentiel. Koiny décline toute responsabilité en cas de modification des soldes par un enfant ayant eu accès au code PIN parent."
+        },
+        usage: {
+          title: "4. Usage et Disponibilité",
+          content: "L'application est fournie 'en l'état'. Bien que nous fassions de notre mieux pour assurer la disponibilité du service et la sauvegarde des données via Supabase, nous ne pouvons garantir une disponibilité illimitée sans aucune interruption."
+        }
+      }
+    },
+    login: {
+      welcome: "Bonjour la famille ! 👋",
+      selectProfile: "Qui veut voir sa cagnotte aujourd'hui ?",
+      parentAccess: "Accès Parents (Code PIN)",
+      noProfileTitle: "C'est vide ici ! 🎈",
+      noProfileDesc: "Commencez par créer le premier profil de vos enfants.",
+      createFirstProfile: "Créer un profil enfant"
+    },
+    child: {
+      hello: "Salut",
+      myBalance: "Ma fortune",
+      myMissions: "Mes Missions",
+      noMissions: "Bravo ! Tu as tout fini pour l'instant ! 🌟",
+      askNewMission: "Demande une mission à tes parents !",
+      askButton: "M'envoyer un défi !",
+      balanceTrend: "cette semaine",
+      bravo: "Super !",
+      todo: "À faire",
+      done: "C'est fait !",
+      redo: "À corriger",
+      pending: "Validation en cours...",
+      goalObjective: "Mon rêve",
+      myGoals: "Mes Objectifs",
+      reached: "Gagné ! 🏆",
+      remaining: "Plus que",
+      askParentsGoal: "Demande à tes parents d'ajouter un cadeau à gagner !",
+      addGoalAction: "Choisir un cadeau",
+      primaryGoal: "Objectif n°1",
+      setPrimary: "Mettre en premier",
+      available: "PRÊT !",
+      congratsGoal: "Félicitations ! Tu as assez d'argent !",
+      happyBirthday: "Joyeux Anniversaire ! 🎂",
+      birthdayBonus: "Cadeau d'anniversaire",
+      historyHeader: "Mon Journal d'argent",
+      totalGains: "Total Gagné",
+      totalLosses: "Total Dépensé",
+      emptyHistory: "C'est le calme plat...",
+      penaltyAlertTitle: "On fait le point ?",
+      penaltyAlertDefaultNote: "Fais attention la prochaine fois !",
+      nudgeSent: "C'est envoyé ! 🚀",
+      tutorial: {
+        welcome_title: "Bienvenue ! 👋",
+        welcome_desc: "C'est ici que tu vas gérer tes économies et gagner des sous.",
+        balance_title: "Ta Tirelire",
+        balance_desc: "Regarde ! C'est tout l'argent que tu déjà gagné.",
+        goal_title: "Tes Rêves",
+        goal_desc: "Suis tes objectifs pour savoir quand tu pourras t'offrir tes jouets préférés.",
+        missions_title: "Petits Boulots",
+        missions_desc: "Fais tes missions, clique sur le bouton et attends que tes parents valident !"
+      }
+    },
+    parent: {
+      accessTitle: "Espace Parents",
+      enterPin: "Entrez votre code secret",
+      demoHint: "Mode démo : utilisez le code 0000",
+      createPinTitle: "Sécurisez l'accès",
+      createPinDesc: "Créez un code PIN pour que vos enfants ne puissent pas modifier leur solde.",
+      definePin: "Créer mon code PIN",
+      confirmPin: "Confirmer le code",
+      pinMismatch: "Les codes sont différents",
+      pinSaved: "Code enregistré !",
+      incorrectCode: "Code erroné",
+      forgotPinAction: "Code oublié ? Réinitialiser",
+      title: "Gestion de la Famille",
+      childBalance: "Cagnotte de",
+      childGoal: "Épargne",
+      pendingValidations: "À valider",
+      activeMissions: "Missions en cours",
+      deleteMissionConfirm: "Annuler cette mission ?",
+      allUpToDate: "Tout est à jour ! Félicitations !",
+      giveMissionAction: "Lancer un défi",
+      reward: "Prime",
+      reject: "À corriger",
+      approve: "Payer",
+      addMissionTitle: "Nouvelle mission pour",
+      templatesTitle: "Idées rapides :",
+      templates: {
+        room: "Ranger la chambre",
+        table: "Dresser la table",
+        trash: "Sortir les poubelles",
+        dishwasher: "Vider le lave-vaisselle",
+        language: "Apprendre 5 nouveaux mots",
+        garden: "Aider au jardin / Potager"
+      },
+      dashboard: {
+        weeklyBilling: "Bilan des 7 derniers jours",
+        multiPendingAlert: "D'autres enfants attendent votre validation",
+        emptyProfilesHint: "Commencez par ajouter un profil enfant →",
+        welcomeTitle: "Bienvenue sur votre Dashboard !",
+        welcomeDesc: "Koiny vous aide à enseigner la valeur de l'effort. Commencez par créer le premier profil de votre enfant.",
+        noPendingForChild: "Aucune validation en attente pour"
+      },
+      formTitleLabel: "Nom de la tâche",
+      formTitlePlaceholder: "Ex: Ranger les jouets",
+      formAmountLabel: "Récompense (€)",
+      formAmountPlaceholder: "Ex: 2",
+      addButton: "Confier la mission à",
+      historyTitle: "Journal de",
+      approveModalTitle: "Payer la mission",
+      rejectModalTitle: "Demander de corriger",
+      addNoteLabelApprove: "Un petit encouragement ? (Optionnel)",
+      addNoteLabelReject: "Expliquez ce qu'il faut améliorer :",
+      notePlaceholder: "Écrivez ici...",
+      settings: "Réglages",
+      manageFamily: "Ma Famille",
+      addChild: "Ajouter un enfant",
+      addGoalAction: "Ajouter un objectif",
+      editChild: "Modifier le profil",
+      deleteConfirm: "Supprimer ce profil ? Toutes les données seront perdues.",
+      childName: "Prénom",
+      childGoalsTitle: "Objectifs & Cadeaux",
+      childGoalName: "Nom de l'objet",
+      childGoalTarget: "Prix (€)",
+      childAvatar: "Avatar",
+      childColor: "Couleur favorite",
+      childBirthday: "Date de naissance",
+      errorPrefix: "Oups : ",
+      transactions: {
+        deposit: "Cadeau / Bonus",
+        withdraw: "Retrait",
+        purchase: "Achat / Dépense",
+        penalty: "Amende / Punition",
+        labels: {
+          deposit: "Cadeau",
+          purchase: "Achat",
+          penalty: "Amende"
+        },
+        reason: "Motif",
+        placeholders: {
+          deposit: "Ex: Argent de poche, Noël...",
+          purchase: "Ex: Jeu vidéo, Glace, Livre...",
+          penalty: "Ex: Bêtise, Oubli de devoirs..."
+        },
+        amount: "Montant (€)",
+        confirmDeposit: "Ajouter au solde",
+        confirmWithdraw: "Retirer du solde"
+      },
+      goalsFilter: {
+        all: "Tous",
+        reached: "Prêts à acheter",
+        progress: "En cours"
+      },
+      goalsEmpty: {
+        reached: "Pas encore d'objectif terminé.",
+        progress: "Aucun projet en cours.",
+        none: "Ajoutez un objectif pour motiver votre enfant !",
+        noneInForm: "Aucun objectif. Ajoutez-en un !"
+      },
+      premium: {
+        title: "Koiny Premium",
+        desc: "Débloquez toutes les fonctionnalités pour votre famille.",
+        upgrade: "Passer au Premium",
+        features: "Enfants illimités • Co-parents illimités • Statistiques détaillées",
+        price: "2,99€ / mois par famille"
+      },
+      tutorial: {
+        space_title: "Votre Tableau de Bord",
+        space_desc: "Gérez les budgets de vos enfants en toute sécurité avec votre code PIN.",
+        manage_title: "Suivi Multi-enfants",
+        manage_desc: "Basculez entre vos enfants pour voir leurs progrès respectifs.",
+        validation_title: "Validation & Paie",
+        validation_desc: "Dès qu'un enfant finit une tâche, vous recevez une alerte. Payez-le ou demandez-lui de recommencer.",
+        new_title: "Encourager l'effort",
+        new_desc: "Créez des missions stimulantes pour les aider à gagner en autonomie !"
+      },
+      notifications: {
+        newRequests: "Mission terminée !",
+        pendingCount: "tâches attendent votre validation.",
+        checkNow: "Voir",
+        goalReachedTitle: "Objectif atteint ! 🎉",
+        goalReachedDesc: "{child} a assez d'argent pour : {goal} !",
+        birthdayTitle: "C'est l'anniversaire de {child} ! 🎂",
+        birthdayDesc: "Un bonus de 10€ a été offert automatiquement."
+      },
+      tabs: {
+        family: "Enfants",
+        coparents: "Co-Parents",
+        account: "Mon Compte"
+      },
+      account: {
+        changePin: "Modifier le code PIN",
+        changePassword: "Modifier le mot de passe",
+        deleteAccount: "Supprimer mon compte",
+        deleteAccountConfirm: "Attention : Cela supprimera tout votre historique familial.",
+        newPassword: "Nouveau mot de passe",
+        passwordUpdated: "Mot de passe changé !",
+        soundEffects: "Effets Sonores",
+        enableNotifications: "Activer les Notifications Push",
+        notificationsEnabled: "Notifications Activées !",
+        notificationsDisabled: "Notifications Désactivées"
+      },
+      coparents: {
+        title: "Gestion des Co-Parents",
+        desc: "Autorisez un autre parent à gérer la famille avec son propre compte.",
+        emailPlaceholder: "email@partenaire.com",
+        invite: "Inviter",
+        list: "Accès partagés :",
+        noGuests: "Personne d'autre n'a accès.",
+        remove: "Retirer l'accès",
+        inviteSuccess: "Invitation réussie !",
+        removeConfirm: "Retirer cet accès ?",
+        sharedFamilyBadge: "Famille partagée"
+      },
+      history: {
+        clear: "Vider le journal",
+        clearConfirm: "Effacer tout l'historique ? Le solde actuel restera inchangé.",
+        thisMonth: "Ce mois",
+        all: "Tout",
+        noDataChart: "Pas assez de données pour le graphique.",
+        noDataMonth: "Rien ce mois-ci.",
+        noData: "Aucune opération.",
+        income: "Gains",
+        expense: "Dépenses",
+        limitReached: "Limite atteinte"
+      }
+    }
+  },
+  nl: {
+    common: {
+      next: "Volgende",
+      skip: "Overslaan",
+      start: "Starten!",
+      cancel: "Annuleren",
+      confirm: "Bevestigen",
+      back: "Terug",
+      quit: "Verlaten",
+      loading: "Laden...",
+      save: "Opslaan",
+      delete: "Verwijderen",
+      edit: "Bewerken",
+      add: "Toevoegen",
+      close: "Sluiten",
+      userGuide: "Handleiding"
+    },
+    qr: {
+      title: "Co-Ouder Uitnodigen",
+      instructions: "Laat je partner deze code scannen om lid te worden van je gezin.",
+      copied: "Link gekopieerd!",
+      copyLink: "Kopieer uitnodigingslink"
+    },
+    colors: {
+      indigo: "Indigo",
+      pink: "Fuchsia roze",
+      emerald: "Smaragd",
+      amber: "Amber",
+      blue: "Hemelsblauw",
+      rose: "Zachtroze",
+      purple: "Paars",
+      cyan: "Cyaan",
+      teal: "Taling",
+      orange: "Oranje"
+    },
+    auth: {
+      tagline: "Zakgeld wordt kinderspel.",
+      description: "Leer je kinderen de waarde van geld met een leuke app voor klusjes en spaardoelen.",
+      login: "Inloggen",
+      signup: "Account aanmaken",
+      email: "E-mail",
+      password: "Wachtwoord",
+      noAccount: "Account maken",
+      hasAccount: "Ik heb al een account",
+      newHere: "Nieuw hier?",
+      alreadyAccount: "Al lid?",
+      cloudSync: "Gegevens veilig gesynchroniseerd",
+      logout: "Uitloggen",
+      signupSuccess: "Account gemaakt! Check je e-mail.",
+      resetSuccess: "Link gestuurd! Check je e-mail.",
+      sendLink: "Link versturen",
+      forgotPassword: "Wachtwoord vergeten?",
+      rememberMe: "Ingelogd blijven",
+      backToLogin: "Terug",
+      googleLogin: "Doorgaan met Google",
+      or: "OF",
+      checkEmailTitle: "Check je e-mail",
+      checkEmailDesc: "Een link is gestuurd naar",
+      checkEmailAction: "Klik op de link om je account te activeren.",
+      backToHome: "Terug naar start"
+    },
+    legal: {
+      link: "Privacy & Voorwaarden",
+      title: "Privacy & Voorwaarden",
+      intro: "Koiny is een educatief hulpmiddel ontworpen voor gezinnen.",
+      trust: {
+        virtual: "100% Virtueel Geld",
+        privacy: "Privé & Veilige Data",
+        noBank: "Geen bankrekening nodig",
+        noAds: "Geen advertenties of verkoop"
+      },
+      sections: {
+        virtual: {
+          title: "1. Aard van het Geld",
+          content: "Koiny is GEEN bank. Al het geld in de app is VIRTUEEL. Er vinden geen echte banktransacties plaats. Ouders zijn als enige verantwoordelijk voor het beheer en de fysieke betaling van echt zakgeld aan hun kinderen."
+        },
+        privacy: {
+          title: "2. Gegevensbescherming (AVG)",
+          content: "Wij verzamelen alleen noodzakelijke gegevens: e-mail van de ouder, voornamen en geboortedata van de kinderen (voor verjaardagsbonussen). Uw gegevens worden veilig opgeslagen en NOOIT aan derden verkocht. Als ouder behoudt u de volledige controle over het verwijderen van uw account en gegevens."
+        },
+        responsibility: {
+          title: "3. Ouderlijke Verantwoordelijkheid",
+          content: "Toegang tot de Ouderomgeving is beveiligis met een pincode. Het is de verantwoordelijkheid van de ouder om deze code vertrouwelijk te houden. Koiny aanvaardt geen aansprakelijkheid voor wijzigingen in saldi door een kind dat toegang heeft gekregen tot de pincode van de ouder."
+        },
+        usage: {
+          title: "4. Gebruik en Beschikbaarheid",
+          content: "De app wordt geleverd 'zoals deze is'. Hoewel we ons best doen om de beschikbaarheid van de dienst en de back-up van gegevens via Supabase te garanderen, kunnen we geen onbeperkte beschikbaarheid zonder enige onderbreking garanderen."
+        }
+      }
+    },
+    login: {
+      welcome: "Hallo familie! 👋",
+      selectProfile: "Wie wil zijn spaarpot vandaag bekijken?",
+      parentAccess: "Ouderomgeving (PIN-code)",
+      noProfileTitle: "Het is hier leeg! 🎈",
+      noProfileDesc: "Begin met het maken van het eerste profiel voor je kinderen.",
+      createFirstProfile: "Kinderprofiel maken"
+    },
+    child: {
+      hello: "Hoi",
+      myBalance: "Mijn fortuin",
+      myMissions: "Mijn Missies",
+      noMissions: "Goed gedaan! Je bent klaar voor nu! 🌟",
+      askNewMission: "Vraag je ouders om een missie!",
+      askButton: "Stuur me een uitdaging!",
+      balanceTrend: "deze week",
+      bravo: "Super!",
+      todo: "Te doen",
+      done: "Klaar!",
+      redo: "Verbeteren",
+      pending: "Wachten op goedkeuring...",
+      goalObjective: "Mijn droom",
+      myGoals: "Mijn Doelen",
+      reached: "Gewonnen! 🏆",
+      remaining: "Nog",
+      askParentsGoal: "Vraag je ouders om een cadeau toe te voegen!",
+      addGoalAction: "Kies een cadeau",
+      primaryGoal: "Doel nr. 1",
+      setPrimary: "Zet bovenaan",
+      available: "KLAAR!",
+      congratsGoal: "Gefeliciteerd! Je hebt genoeg geld!",
+      happyBirthday: "Gefeliciteerd! 🎂",
+      birthdayBonus: "Verjaardagscadeau",
+      historyHeader: "Mijn gelddagboek",
+      totalGains: "Totaal verdiend",
+      totalLosses: "Totaal uitgegeven",
+      emptyHistory: "Het is hier erg rustig...",
+      penaltyAlertTitle: "Even bijpraten?",
+      penaltyAlertDefaultNote: "Let de volgende keer goed op!",
+      nudgeSent: "Verstuurd! 🚀",
+      tutorial: {
+        welcome_title: "Welkom! 👋",
+        welcome_desc: "Hier ga je je spaargeld beheren en centjes verdienen.",
+        balance_title: "Je Spaarpot",
+        balance_desc: "Kijk! Dat is al het geld dat je al hebt verdiend.",
+        goal_title: "Je Dromen",
+        goal_desc: "Volg je doelen om te weten wanneer je je favoriete speelgoed kunt kopen.",
+        missions_title: "Klusjes",
+        missions_desc: "Doe je klusjes, klik op de knop en wacht till je ouders het goedkeuren!"
+      }
+    },
+    parent: {
+      accessTitle: "Ouderomgeving",
+      enterPin: "Voer je geheime code in",
+      demoHint: "Demomodus: gebruik code 0000",
+      createPinTitle: "Beveilig de toegang",
+      createPinDesc: "Maak een pincode zodat je kinderen hun saldo niet kunnen aanpassen.",
+      definePin: "Pincode maken",
+      confirmPin: "Code bevestigen",
+      pinMismatch: "Codes zijn verschillend",
+      pinSaved: "Code opgeslagen!",
+      incorrectCode: "Foutieve code",
+      forgotPinAction: "Code vergeten? Resetten",
+      title: "Beheer van het Gezin",
+      childBalance: "Spaarpot van",
+      childGoal: "Sparen",
+      pendingValidations: "Te valideren",
+      activeMissions: "Lopende missies",
+      deleteMissionConfirm: "Deze missie annuleren?",
+      allUpToDate: "Alles is up-to-date! Gefeliciteerd!",
+      giveMissionAction: "Lancer een uitdaging",
+      reward: "Beloning",
+      reject: "Verbeteren",
+      approve: "Betalen",
+      addMissionTitle: "Nieuwe missie voor",
+      templatesTitle: "Snelle ideeën :",
+      templates: {
+        room: "Kamer opruimen",
+        table: "Tafel dekken",
+        trash: "Vuilnis buiten zetten",
+        dishwasher: "Vaatwasser uitruimen",
+        language: "5 nieuwe woorden leren",
+        garden: "Helpen in de tuin"
+      },
+      dashboard: {
+        weeklyBilling: "Overzicht van de afgelopen 7 dagen",
+        multiPendingAlert: "Andere kinderen wachten op uw goedkeuring",
+        emptyProfilesHint: "Begin met het maken van het eerste profiel →",
+        welcomeTitle: "Welkom op je Dashboard!",
+        welcomeDesc: "Koiny helpt je de waarde van inspanning te leren. Begin met het aanmaken van je eerste kinderprofiel.",
+        noPendingForChild: "Geen validaties in behandeling voor"
+      },
+      formTitleLabel: "Naam van de taak",
+      formTitlePlaceholder: "Bijv: Speelgoed opruimen",
+      formAmountLabel: "Beloning (€)",
+      formAmountPlaceholder: "Bijv: 2",
+      addButton: "Taak toewijzen aan",
+      historyTitle: "Dagboek van",
+      approveModalTitle: "Missie betalen",
+      rejectModalTitle: "Verbetering vragen",
+      addNoteLabelApprove: "Een complimentje? (Optioneel)",
+      addNoteLabelReject: "Leg uit wat er beter moet:",
+      notePlaceholder: "Typ hier...",
+      settings: "Instellingen",
+      manageFamily: "Mijn Gezin",
+      addChild: "Kind toevoegen",
+      addGoalAction: "Voeg een doel toe",
+      editChild: "Profiel bewerken",
+      deleteConfirm: "Profiel verwijderen? Alle data gaat verloren.",
+      childName: "Voornaam",
+      childGoalsTitle: "Doelen & Cadeaus",
+      childGoalName: "Naam van het object",
+      childGoalTarget: "Prijs (€)",
+      childAvatar: "Avatar",
+      childColor: "Lievelingskleur",
+      childBirthday: "Geboortedatum",
+      errorPrefix: "Oeps: ",
+      transactions: {
+        deposit: "Cadeau / Bonus",
+        withdraw: "Opname",
+        purchase: "Aankoop / Uitgave",
+        penalty: "Boete / Straf",
+        labels: {
+          deposit: "Cadeau",
+          purchase: "Aankoop",
+          penalty: "Boete"
+        },
+        reason: "Reden",
+        placeholders: {
+          deposit: "Bijv: Zakgeld, Kerstmis...",
+          purchase: "Bijv: Videospel, Ijsje, Boek...",
+          penalty: "Bijv: Stout zijn, Huiswerk vergeten..."
+        },
+        amount: "Bedrag (€)",
+        confirmDeposit: "Toevoegen aan saldo",
+        confirmWithdraw: "Aftrekken van saldo"
+      },
+      goalsFilter: {
+        all: "Alle",
+        reached: "Klaar om te kopen",
+        progress: "Bezig"
+      },
+      goalsEmpty: {
+        reached: "Nog geen doel voltooid.",
+        progress: "Geen lopende projecten.",
+        none: "Voeg een doel toe om je kind te motiveren!",
+        noneInForm: "Geen doelen. Voeg er een toe!"
+      },
+      premium: {
+        title: "Koiny Premium",
+        desc: "Ontgrendel alle functies voor je gezin.",
+        upgrade: "Upgrade naar Premium",
+        features: "Onbeperkt aantal kinderen • Onbeperkt aantal co-ouders • Geavanceerde statistieken",
+        price: "2,99€ / maand per gezin"
+      },
+      tutorial: {
+        space_title: "Je Dashboard",
+        space_desc: "Beheer de budgetten van je kinderen veilig met je pincode.",
+        manage_title: "Multi-kind opvolging",
+        manage_desc: "Wissel tussen je kinderen om hun voortgang te zien.",
+        validation_title: "Validatie & Betaling",
+        validation_desc: "Zodra een kind een taak af heeft, krijg je een melding. Betaal of vraag om het opnieuw te doen.",
+        new_title: "Inzet aanmoedigen",
+        new_desc: "Maak uitdagende missies om ze te helpen zelfstandiger te worden!"
+      },
+      notifications: {
+        newRequests: "Missie voltooid!",
+        pendingCount: "taken wachten op jouw goedkeuring.",
+        checkNow: "Bekijken",
+        goalReachedTitle: "Doel bereikt! 🎉",
+        goalReachedDesc: "{child} heeft genoeg geld for: {goal}!",
+        birthdayTitle: "{child} is jarig! 🎂",
+        birthdayDesc: "Een bonus van 10€ is automatisch toegevoegd."
+      },
+      tabs: {
+        family: "Kinderen",
+        coparents: "Co-Ouders",
+        account: "Mijn Account"
+      },
+      account: {
+        changePin: "Pincode wijzigen",
+        changePassword: "Wachtwoord wijzigen",
+        deleteAccount: "Account verwijderen",
+        deleteAccountConfirm: "Let on: Dit verwijdert al je gezinsgeschiedenis.",
+        newPassword: "Nieuw wachtwoord",
+        passwordUpdated: "Wachtwoord gewijzigd!",
+        soundEffects: "Geluidseffecten",
+        enableNotifications: "Meldingen Inschakelen",
+        notificationsEnabled: "Meldingen Ingeschakeld!",
+        notificationsDisabled: "Meldingen Uitgeschakeld"
+      },
+      coparents: {
+        title: "Beheer Co-Ouders",
+        desc: "Geef een andere ouder toegang om het gezin te beheren.",
+        emailPlaceholder: "email@partner.com",
+        invite: "Uitnodigen",
+        list: "Gedeelde toegang:",
+        noGuests: "Niemand anders heeft toegang.",
+        remove: "Toegang intrekken",
+        inviteSuccess: "Uitnodiging geslaagd!",
+        removeConfirm: "Toegang intrekken?",
+        sharedFamilyBadge: "Gedeeld gezin"
+      },
+      history: {
+        clear: "Dagboek wissen",
+        clearConfirm: "Hele geschiedenis wissen? Het huidige saldo blijft behouden.",
+        thisMonth: "Deze maand",
+        all: "Alles",
+        noDataChart: "Niet genoeg data for de grafiek.",
+        noDataMonth: "Niets deze maand.",
+        noData: "Geen operaties.",
+        income: "Winst",
+        expense: "Uitgaven",
+        limitReached: "Limiet bereikt"
+      }
+    }
+  },
+  en: {
+    common: {
+      next: "Next",
+      skip: "Skip",
+      start: "Let's go!",
+      cancel: "Cancel",
+      confirm: "Confirm",
+      back: "Back",
+      quit: "Quit",
+      loading: "Loading...",
+      save: "Save",
+      delete: "Delete",
+      edit: "Edit",
+      add: "Add",
+      close: "Close",
+      userGuide: "User Guide"
+    },
+    qr: {
+      title: "Invite a Co-Parent",
+      instructions: "Have your partner scan this code to join your family group.",
+      copied: "Link copied!",
+      copyLink: "Copy invitation link"
+    },
+    colors: {
+      indigo: "Indigo",
+      pink: "Fuchsia Pink",
+      emerald: "Emerald",
+      amber: "Amber",
+      blue: "Sky Blue",
+      rose: "Soft Rose",
+      purple: "Purple",
+      cyan: "Cyan",
+      teal: "Teal",
+      orange: "Orange"
+    },
+    auth: {
+      tagline: "Pocket money made easy.",
+      description: "Teach your kids the value of effort and saving with a fun and secure app.",
+      login: "Login",
+      signup: "Create family account",
+      email: "Email",
+      password: "Password",
+      noAccount: "Create account",
+      hasAccount: "I already have an account",
+      newHere: "New here?",
+      alreadyAccount: "Already a member?",
+      cloudSync: "Data synchronized in real-time",
+      logout: "Logout",
+      signupSuccess: "Account created! Check your emails.",
+      resetSuccess: "Link sent! Check your emails.",
+      sendLink: "Send link",
+      forgotPassword: "Forgot password?",
+      rememberMe: "Stay logged in",
+      backToLogin: "Back",
+      googleLogin: "Continue with Google",
+      or: "OR",
+      checkEmailTitle: "Check your emails",
+      checkEmailDesc: "A confirmation link was sent to",
+      checkEmailAction: "Click the link to activate your account.",
+      backToHome: "Back to home"
+    },
+    legal: {
+      link: "Privacy & Terms",
+      title: "Privacy & Terms",
+      intro: "Koiny is an educational tool designed for families.",
+      trust: {
+        virtual: "100% Virtual Money",
+        privacy: "Private & Secure Data",
+        noBank: "No bank account required",
+        noAds: "No ads or data selling"
+      },
+      sections: {
+        virtual: {
+          title: "1. Nature of Money",
+          content: "Koiny is NOT a bank. All money shown in the application is VIRTUAL. No real bank transactions are carried out. Parents are solely responsible for managing and physically paying real pocket money to their children."
+        },
+        privacy: {
+          title: "2. Data Protection (GDPR)",
+          content: "We only collect necessary data: parent's email, children's first names and dates of birth (for birthday bonuses). Your data is stored securely and is NEVER sold to third parties. As a parent, you maintain full control over the deletion of your account and data."
+        },
+        responsibility: {
+          title: "3. Parental Responsibility",
+          content: "Access to the Parents' Area is protected by a PIN code. It is the parent's responsibility to keep this code confidential. Koiny declines all responsibility in the event of balance modification by a child who has had access to the parent PIN code."
+        },
+        usage: {
+          title: "4. Usage and Availability",
+          content: "The application is provided 'as is'. While we do our best to ensure service availability and data backup via Supabase, we cannot guarantee unlimited availability without any interruption."
+        }
+      }
+    },
+    login: {
+      welcome: "Hello family! 👋",
+      selectProfile: "Who wants to check their balance today?",
+      parentAccess: "Parents Access (PIN Code)",
+      noProfileTitle: "It's empty here! 🎈",
+      noProfileDesc: "Start by creating your first child profile.",
+      createFirstProfile: "Create child profile"
+    },
+    child: {
+      hello: "Hi",
+      myBalance: "My Savings",
+      myMissions: "My Missions",
+      noMissions: "Great! You're all done for now! 🌟",
+      askNewMission: "Ask your parents for a mission!",
+      askButton: "Send me a challenge!",
+      balanceTrend: "this week",
+      bravo: "Awesome!",
+      todo: "To do",
+      done: "Done!",
+      redo: "Correct it",
+      pending: "Pending approval...",
+      goalObjective: "My Dream",
+      myGoals: "My Goals",
+      reached: "Won! 🏆",
+      remaining: "Only",
+      askParentsGoal: "Ask your parents to add a gift goal!",
+      addGoalAction: "Pick a gift",
+      primaryGoal: "Goal #1",
+      setPrimary: "Set as first",
+      available: "READY!",
+      congratsGoal: "Congratulations! You have enough money!",
+      happyBirthday: "Happy Birthday! 🎂",
+      birthdayBonus: "Birthday gift",
+      historyHeader: "My Money Diary",
+      totalGains: "Total Earned",
+      totalLosses: "Total Spent",
+      emptyHistory: "It's very quiet here...",
+      penaltyAlertTitle: "Let's catch up?",
+      penaltyAlertDefaultNote: "Be careful next time!",
+      nudgeSent: "Sent! 🚀",
+      tutorial: {
+        welcome_title: "Welcome! 👋",
+        welcome_desc: "This is where you'll manage your savings and earn money.",
+        balance_title: "Your Piggy Bank",
+        balance_desc: "Look! This is all the money you've already earned.",
+        goal_title: "Your Dreams",
+        goal_desc: "Track your goals to know when you can buy your favorite toys.",
+        missions_title: "Small Jobs",
+        missions_desc: "Do your missions, click the button and wait for your parents to pay you!"
+      }
+    },
+    parent: {
+      accessTitle: "Parents Section",
+      enterPin: "Enter your secret code",
+      demoHint: "Demo mode: use code 0000",
+      createPinTitle: "Secure Access",
+      createPinDesc: "Create a PIN code so your children cannot change their balance.",
+      definePin: "Create my PIN code",
+      confirmPin: "Confirm code",
+      pinMismatch: "Codes do not match",
+      pinSaved: "Code saved!",
+      incorrectCode: "Wrong code",
+      forgotPinAction: "Forgot code? Reset",
+      title: "Family Management",
+      childBalance: "Savings for",
+      childGoal: "Target",
+      pendingValidations: "To approve",
+      activeMissions: "Active missions",
+      deleteMissionConfirm: "Cancel this mission?",
+      allUpToDate: "All up to date! Well done!",
+      giveMissionAction: "Launch a challenge",
+      reward: "Reward",
+      reject: "To correct",
+      approve: "Pay",
+      addMissionTitle: "New mission for",
+      templatesTitle: "Quick ideas:",
+      templates: {
+        room: "Clean your room",
+        table: "Set the table",
+        trash: "Take out the trash",
+        dishwasher: "Empty dishwasher",
+        language: "Learn 5 new words",
+        garden: "Help in the garden"
+      },
+      dashboard: {
+        weeklyBilling: "Overview of the past 7 days",
+        multiPendingAlert: "Other children are waiting for your approval",
+        emptyProfilesHint: "Start by adding a child profile →",
+        welcomeTitle: "Welcome to your Dashboard!",
+        welcomeDesc: "Koiny helps you teach the value of effort. Start by creating your child's first profile.",
+        noPendingForChild: "No validations pending for"
+      },
+      formTitleLabel: "Task name",
+      formTitlePlaceholder: "Ex: Tidy up toys",
+      formAmountLabel: "Reward (€)",
+      formAmountPlaceholder: "Ex: 2",
+      addButton: "Assign mission to",
+      historyTitle: "Diary of",
+      approveModalTitle: "Pay for mission",
+      rejectModalTitle: "Ask to correct",
+      addNoteLabelApprove: "A word of encouragement? (Optional)",
+      addNoteLabelReject: "Explain what needs improvement:",
+      notePlaceholder: "Write here...",
+      settings: "Settings",
+      manageFamily: "My Family",
+      addChild: "Add child",
+      addGoalAction: "Add goal",
+      editChild: "Edit profile",
+      deleteConfirm: "Delete this profile? All data will be lost.",
+      childName: "First Name",
+      childGoalsTitle: "Goals & Gifts",
+      childGoalName: "Item name",
+      childGoalTarget: "Price (€)",
+      childAvatar: "Avatar",
+      childColor: "Favorite color",
+      childBirthday: "Date of birth",
+      errorPrefix: "Oops: ",
+      transactions: {
+        deposit: "Gift / Bonus",
+        withdraw: "Withdrawal",
+        purchase: "Purchase / Expense",
+        penalty: "Fine / Punishment",
+        labels: {
+          deposit: "Gift",
+          purchase: "Purchase",
+          penalty: "Fine"
+        },
+        reason: "Reason",
+        placeholders: {
+          deposit: "Ex: Allowance, Christmas...",
+          purchase: "Ex: Video game, Ice cream, Book...",
+          penalty: "Ex: Bad behavior, Forgot homework..."
+        },
+        amount: "Amount (€)",
+        confirmDeposit: "Add to balance",
+        confirmWithdraw: "Subtract from balance"
+      },
+      goalsFilter: {
+        all: "All",
+        reached: "Ready to buy",
+        progress: "Ongoing"
+      },
+      goalsEmpty: {
+        reached: "No goals completed yet.",
+        progress: "No projects ongoing.",
+        none: "Add a goal to motivate your child!",
+        noneInForm: "No goals. Add one!"
+      },
+      premium: {
+        title: "Koiny Premium",
+        desc: "Unlock all features for your family.",
+        upgrade: "Go Premium",
+        features: "Unlimited children • Unlimited co-parents • Advanced stats",
+        price: "2,99€ / month per family"
+      },
+      tutorial: {
+        space_title: "Your Dashboard",
+        space_desc: "Manage your children's budgets securely with your PIN code.",
+        manage_title: "Multi-child Tracking",
+        manage_desc: "Switch between your children to see their respective progress.",
+        validation_title: "Approval & Pay",
+        validation_desc: "When a child finishes a task, you receive an alert. Pay them or ask them to try again.",
+        new_title: "Encourage Effort",
+        new_desc: "Create stimulating missions to help them gain autonomy!"
+      },
+      notifications: {
+        newRequests: "Mission finished!",
+        pendingCount: "tasks are waiting for your approval.",
+        checkNow: "See",
+        goalReachedTitle: "Goal Reached! 🎉",
+        goalReachedDesc: "{child} has enough money for: {goal}!",
+        birthdayTitle: "It's {child}'s birthday! 🎂",
+        birthdayDesc: "A 10€ bonus was offered automatically."
+      },
+      tabs: {
+        family: "Children",
+        coparents: "Co-Parents",
+        account: "My Account"
+      },
+      account: {
+        changePin: "Change PIN code",
+        changePassword: "Change password",
+        deleteAccount: "Delete my account",
+        deleteAccountConfirm: "Warning: This will delete all your family history.",
+        newPassword: "New password",
+        passwordUpdated: "Password updated!",
+        soundEffects: "Sound Effects",
+        enableNotifications: "Enable Push Notifications",
+        notificationsEnabled: "Notifications Enabled!",
+        notificationsDisabled: "Notifications Disabled"
+      },
+      coparents: {
+        title: "Co-Parents Management",
+        desc: "Authorize another parent to manage the family with their own account.",
+        emailPlaceholder: "email@partner.com",
+        invite: "Invite",
+        list: "Shared access:",
+        noGuests: "No one else has access.",
+        remove: "Remove access",
+        inviteSuccess: "Invite successful!",
+        removeConfirm: "Remove this access?",
+        sharedFamilyBadge: "Shared family"
+      },
+      history: {
+        clear: "Clear diary",
+        clearConfirm: "Clear all history? Current balance will remain unchanged.",
+        thisMonth: "This month",
+        all: "All",
+        noDataChart: "Not enough data for the chart.",
+        noDataMonth: "Nothing this month.",
+        noData: "No operations.",
+        income: "Income",
+        expense: "Expenses",
+        limitReached: "Limit reached"
+      }
+    }
+  }
+};

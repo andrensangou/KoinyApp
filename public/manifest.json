@@ -1,0 +1,38 @@
+{
+  "name": "Koiny - L'argent de poche intelligent",
+  "short_name": "Koiny",
+  "description": "Apprenez à vos enfants la valeur de l'effort et de l'épargne avec une app ludique et sécurisée.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait",
+  "categories": [
+    "education",
+    "finance",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://bcphsmscnlphpvpwlddw.supabase.co/storage/v1/object/public/public_assets/og_image.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Koiny Dashboard"
+    }
+  ]
+}
