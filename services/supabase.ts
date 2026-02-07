@@ -1,69 +1,131 @@
-// Mock Supabase service for Local Version
-// This mock is designed to let the app run without an actual Supabase backend
+import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config';
 
-const mockAuth: any = {
-    onAuthStateChange: (callback: any) => {
-        console.log('Mock onAuthStateChange registered');
-        return { data: { subscription: { unsubscribe: () => { } } } };
-    },
-    getSession: async () => ({ data: { session: null } }),
-    getUser: async () => ({ data: { user: null } }),
-    signOut: async () => ({ error: null }),
-    signInWithPassword: async (creds: any) => ({ data: { user: { id: 'mock-user', email: creds.email } }, error: null }),
-    signUp: async (creds: any) => ({ data: { user: { id: 'mock-user', email: creds.email } }, error: null }),
-    resetPasswordForEmail: async (email: string, options?: any) => ({ error: null })
-};
+// Initialize the Supabase client
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+    }
+});
 
-const mockSupabase: any = {
-    auth: mockAuth,
-    from: (table: string) => {
-        const queryBuilder: any = {
-            upsert: async (data: any) => ({ error: null }),
-            insert: (data: any) => queryBuilder,
-            select: () => queryBuilder,
-            single: async () => ({ data: { id: 'mock-id' }, error: null }),
-            maybeSingle: async () => ({ data: { id: 'mock-id' }, error: null }),
-            eq: () => queryBuilder,
-            then: (resolve: any) => resolve({ data: [], error: null }) // Support for awaiting the builder itself
-        };
-        return queryBuilder;
+export const getSupabase = () => supabase;
+
+/**
+ * Sign in with Google OAuth
+ */
+export const signInWithGoogle = async () => {
+    try {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                },
+            },
+        });
+        if (error) throw error;
+        return { data, error: null };
+    } catch (error: any) {
+        console.error('Error signing in with Google:', error.message);
+        return { data: null, error };
     }
 };
 
-export const getSupabase = () => mockSupabase;
-
-export const signInWithGoogle = async () => {
-    console.log('Mock signInWithGoogle called');
-    return { error: null };
-};
-
+/**
+ * Update user password
+ */
 export const updatePassword = async (password: string) => {
-    console.log('Mock updatePassword called');
-    return { error: null };
+    const { data, error } = await supabase.auth.updateUser({
+        password: password
+    });
+    return { data, error };
 };
 
+/**
+ * Delete user account and cleanup
+ */
 export const deleteAccount = async () => {
-    console.log('Mock deleteAccount called');
-    return { error: null };
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('No user logged in');
+
+        // Logic for cleaning up user data in DB should be handled by DB functions/policies
+        // or a dedicated API call if RLS isn't enough to delete related data.
+
+        const { error } = await supabase.rpc('delete_user_data');
+        if (error) console.warn('Cleanup RPC failed:', error.message);
+
+        const { error: signOutError } = await supabase.auth.signOut();
+        return { error: signOutError };
+    } catch (error: any) {
+        return { error };
+    }
 };
 
+/**
+ * Ensure a profile exists for the user in the 'profiles' table
+ */
 export const ensureUserProfile = async (userId: string) => {
-    console.log('Mock ensureUserProfile called for:', userId);
-    return true;
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (!data) {
+            // Create profile if it doesn't exist
+            const { error: insertError } = await supabase
+                .from('profiles')
+                .insert([{ id: userId }]);
+            if (insertError) throw insertError;
+        }
+        return true;
+    } catch (error) {
+        console.error('Error ensuring user profile:', error);
+        return false;
+    }
 };
 
-// Co-parenting mocks
+/**
+ * Co-parenting: Add a co-parent by email
+ */
 export const addCoParent = async (email: string) => {
-    console.log('Mock addCoParent called for:', email);
-    return { error: null };
+    // This typically involves an invitation system or a direct DB link
+    const { data, error } = await supabase
+        .from('co_parents')
+        .insert([{ email }]);
+    return { data, error };
 };
 
+/**
+ * Co-parenting: Remove a co-parent relationship
+ */
 export const removeCoParent = async (email: string) => {
-    console.log('Mock removeCoParent called for:', email);
-    return { error: null };
+    const { error } = await supabase
+        .from('co_parents')
+        .delete()
+        .eq('email', email);
+    return { error };
 };
 
+/**
+ * Co-parenting: Get list of co-parents
+ */
 export const getCoParents = async () => {
-    console.log('Mock getCoParents called');
-    return []; // Returning array directly as expected by ParentView.tsx
+    const { data, error } = await supabase
+        .from('co_parents')
+        .select('*');
+
+    if (error) {
+        console.error('Error fetching co-parents:', error);
+        return [];
+    }
+    return data || [];
 };
