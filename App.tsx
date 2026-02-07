@@ -451,11 +451,11 @@ const App: React.FC = () => {
       <div className="relative z-10 flex flex-col items-center animate-scale-in">
         <div className="w-32 h-32 mb-8 relative p-4 group">
           <div className="absolute inset-0 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500"></div>
-          <div className="relative w-full h-full bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl flex items-center justify-center p-2 border border-slate-100 dark:border-slate-800 transition-transform group-hover:scale-110 duration-500">
+          <div className="relative w-full h-full flex items-center justify-center transition-transform group-hover:scale-110 duration-500">
             <img
               src="/mascot.png"
               alt="Koiny Logo"
-              className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal transform scale-125 translate-y-1"
+              className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal transform scale-125 translate-y-1 brightness-[1.05] contrast-[1.05]"
             />
           </div>
         </div>

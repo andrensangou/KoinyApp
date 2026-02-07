@@ -74,11 +74,15 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 font-sans text-slate-900 dark:text-white transition-colors duration-500 overflow-x-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl z-[100] border-b border-slate-100 dark:border-white/10 safe-pt transition-all">
+      <nav className="fixed top-0 left-0 right-0 bg-white dark:bg-slate-950 z-[100] border-b border-slate-100 dark:border-white/10 safe-pt transition-all">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="flex items-center gap-3 group cursor-pointer shrink-0">
-            <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center p-1.5 border border-indigo-100 dark:border-slate-700 shadow-sm group-hover:rotate-12 transition-transform duration-300 overflow-hidden">
-              <img src="/mascot.png" alt="Koiny" className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+            <div className="w-12 h-12 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+              <img
+                src="/mascot.png"
+                alt="Koiny Logo"
+                className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal transform scale-[1.35] translate-y-1 brightness-[1.05] contrast-[1.05]"
+              />
             </div>
             <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-800 dark:text-white hidden xs:block">Koiny</span>
           </div>
