@@ -6,21 +6,25 @@ const BACKUP_KEY = 'koiny_local_v1_backup';
 /**
  * VERSION LOCALE - Stockage 100% localStorage, sans Supabase
  */
-export const loadData = async (): Promise<{ data: GlobalState }> => {
+export const loadData = async (sharedFamilyId?: string): Promise<{ data: GlobalState, ownerId?: string, isSharedFamily?: boolean }> => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(BACKUP_KEY);
 
     if (stored) {
       const parsed = JSON.parse(stored);
       console.log('✅ [LOCAL] Données chargées depuis localStorage');
-      return { data: migrateData(parsed) };
+      return {
+        data: migrateData(parsed),
+        ownerId: 'local-owner',
+        isSharedFamily: false
+      };
     }
   } catch (e) {
     console.error('❌ [LOCAL] Erreur chargement localStorage:', e);
   }
 
   console.log('📦 [LOCAL] Aucune donnée trouvée, retour aux données initiales');
-  return { data: INITIAL_DATA };
+  return { data: INITIAL_DATA, ownerId: 'local-owner', isSharedFamily: false };
 };
 
 const migrateData = (data: any): GlobalState => {
@@ -43,7 +47,7 @@ const migrateData = (data: any): GlobalState => {
   };
 };
 
-export const saveData = (data: GlobalState): void => {
+export const saveData = (data: GlobalState, ownerId?: string, immediate?: boolean): void => {
   const dataToSave = {
     ...data,
     updatedAt: new Date().toISOString()
@@ -65,6 +69,7 @@ export const saveData = (data: GlobalState): void => {
     console.error('❌ [LOCAL] Erreur sauvegarde localStorage:', e);
   }
 };
+
 
 /**
  * Fonction d'exportation RGPD (Portabilité)

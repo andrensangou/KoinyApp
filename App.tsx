@@ -174,7 +174,7 @@ const App: React.FC = () => {
     }
 
     // 1. Écouter les changements (OAuth Google)
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       console.log('🔐 [AUTH EVENT]', event, session?.user?.email);
 
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
@@ -225,7 +225,7 @@ const App: React.FC = () => {
 
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          console.log('✅ [INIT] Session OAuth récupérée:', session.user.email);
+          console.log('✅ [INIT] Session OAuth récupérée:', (session as any).user.email);
           if (!isInitialized) {
             await initialize(session, sharedFamilyId);
           }
@@ -239,7 +239,7 @@ const App: React.FC = () => {
 
       // Cas normal: pas de OAuth callback
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('🔍 [INIT] Session existante:', session?.user?.email || 'Aucune');
+      console.log('🔍 [INIT] Session existante:', (session as any)?.user?.email || 'Aucune');
       await initialize(session, sharedFamilyId);
 
       // Nettoyage URL
@@ -493,7 +493,7 @@ const App: React.FC = () => {
           data={data} ownerId={ownerId} language={data.language} onApprove={handleApprove} onReject={handleReject} onAddMission={handleAddMission}
           onDeleteActiveMission={handleDeleteActiveMission} onManualTransaction={handleManualTransaction} onAddChild={handleAddChild}
           onEditChild={handleEditChild} onDeleteChild={handleDeleteChild} onSetPin={handleSetPin} onClearHistory={handleClearHistory}
-          onUpdatePassword={async (p) => await updatePassword(p)} onDeleteAccount={async () => { await deleteAccount(); setView('LANDING'); }}
+          onUpdatePassword={async (p) => { await updatePassword(p); }} onDeleteAccount={async () => { await deleteAccount(); setView('LANDING'); }}
           onExit={handleLogout} onTutorialComplete={handleParentTutorialComplete} onToggleSound={handleToggleSound} onSetLanguage={setLanguage}
           onShowQrInvite={() => setShowQrModal(true)} onUpdateMaxBalance={handleUpdateMaxBalance} isSharedFamily={isSharedFamily}
         />
