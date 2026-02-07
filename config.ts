@@ -8,4 +8,5 @@ export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://vumowl
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1m93bHJmaXp6cm9oamhwdnJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzOTQxMzMsImV4cCI6MjA4NTk3MDEzM30.7YyxRw7hDcnWnDGo0Y2YzKZmenB7ElMYDVU_IUYG8fo";
 
 // Salt pour le chiffrement local
+// Triggering new Vercel deployment after disabling fork protection
 export const KIDBANK_SALT = import.meta.env.VITE_KIDBANK_SALT || "koiny-local-salt-2024";
