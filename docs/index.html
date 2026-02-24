@@ -14,6 +14,7 @@
     <meta property="og:image"
         content="https://raw.githubusercontent.com/YOUR_USERNAME/KoinyApp/main/docs/og-image.png" />
     <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="apple-touch-icon" href="favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap"
@@ -27,7 +28,7 @@
     <nav class="nav" id="nav">
         <div class="nav-container">
             <a href="#" class="nav-logo">
-                <span class="nav-logo-icon">🐷</span>
+                <img src="logo.png" alt="Koiny" class="nav-logo-img" />
                 <span class="nav-logo-text">Koiny</span>
             </a>
             <div class="nav-links">
@@ -49,7 +50,7 @@
         </div>
         <div class="hero-container">
             <div class="hero-content">
-                <div class="hero-badge" data-i18n="hero.badge">✨ 100% Gratuit • 100% Virtuel</div>
+                <div class="hero-badge" data-i18n="hero.badge">✨ Gratuit • 100% Virtuel</div>
                 <h1 class="hero-title" data-i18n-html="hero.title">
                     L'argent de poche
                     <span class="hero-gradient">réinventé</span>
@@ -249,7 +250,7 @@
         <div class="section-container">
             <div class="download-card">
                 <div class="download-content">
-                    <span class="download-emoji">🐷</span>
+                    <img src="mascot.png" alt="Koiny" class="download-mascot" />
                     <h2 data-i18n="download.title">Prêt à commencer l'aventure ?</h2>
                     <p data-i18n="download.desc">Téléchargez Koiny gratuitement et transformez les tâches en jeu
                         éducatif.</p>
@@ -265,8 +266,8 @@
                 </div>
                 <div class="download-visual">
                     <div class="download-features">
-                        <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f1">100%
-                                Gratuit</span></div>
+                        <div class="dl-feature"><i class="fa-solid fa-check"></i> <span
+                                data-i18n="download.f1">Gratuit</span></div>
                         <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f2">Aucune
                                 pub</span></div>
                         <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f3">Pas
@@ -288,7 +289,7 @@
         <div class="section-container">
             <div class="footer-grid">
                 <div class="footer-brand">
-                    <div class="footer-logo">🐷 Koiny</div>
+                    <div class="footer-logo"><img src="logo.png" alt="Koiny" class="footer-logo-img" /> Koiny</div>
                     <p data-i18n="footer.desc">L'argent de poche virtuel qui motive vos enfants. Un simulateur éducatif
                         sûr et amusant.</p>
                     <p class="footer-disclaimer" data-i18n="footer.disclaimer">⚠️ Koiny est un simulateur. Aucune
@@ -322,7 +323,7 @@
         const translations = {
             fr: {
                 'nav.features': 'Fonctionnalités', 'nav.howItWorks': 'Comment ça marche', 'nav.download': 'Télécharger',
-                'hero.badge': '✨ 100% Gratuit • 100% Virtuel',
+                'hero.badge': '✨ Gratuit • 100% Virtuel',
                 'hero.title': 'L\'argent de poche <span class="hero-gradient">réinventé</span>',
                 'hero.subtitle': 'Koiny transforme les tâches du quotidien en aventures. Vos enfants accomplissent des missions, gagnent de l\'argent virtuel et épargnent pour leurs rêves.',
                 'hero.cta': 'Télécharger sur l\'App Store', 'hero.discover': 'Découvrir',
@@ -353,7 +354,7 @@
                 'download.title': 'Prêt à commencer l\'aventure ?',
                 'download.desc': 'Téléchargez Koiny gratuitement et transformez les tâches en jeu éducatif.',
                 'download.note': 'Requiert iOS 15.0 ou ultérieur. iPhone & iPad.',
-                'download.f1': '100% Gratuit', 'download.f2': 'Aucune pub', 'download.f3': 'Pas d\'achat in-app',
+                'download.f1': 'Gratuit', 'download.f2': 'Aucune pub', 'download.f3': 'Pas d\'achat in-app',
                 'download.f4': '100% argent virtuel', 'download.f5': 'Données privées', 'download.f6': 'Multi-langues',
                 'footer.desc': 'L\'argent de poche virtuel qui motive vos enfants. Un simulateur éducatif sûr et amusant.',
                 'footer.disclaimer': '⚠️ Koiny est un simulateur. Aucune transaction financière réelle n\'est effectuée.',
@@ -364,7 +365,7 @@
             },
             en: {
                 'nav.features': 'Features', 'nav.howItWorks': 'How it works', 'nav.download': 'Download',
-                'hero.badge': '✨ 100% Free • 100% Virtual',
+                'hero.badge': '✨ Free • 100% Virtual',
                 'hero.title': 'Pocket money <span class="hero-gradient">reimagined</span>',
                 'hero.subtitle': 'Koiny turns everyday chores into adventures. Your kids complete missions, earn virtual money and save toward their dreams.',
                 'hero.cta': 'Download on the App Store', 'hero.discover': 'Discover',
@@ -395,7 +396,7 @@
                 'download.title': 'Ready to start the adventure?',
                 'download.desc': 'Download Koiny for free and turn chores into an educational game.',
                 'download.note': 'Requires iOS 15.0 or later. iPhone & iPad.',
-                'download.f1': '100% Free', 'download.f2': 'No ads', 'download.f3': 'No in-app purchases',
+                'download.f1': 'Free', 'download.f2': 'No ads', 'download.f3': 'No in-app purchases',
                 'download.f4': '100% virtual money', 'download.f5': 'Private data', 'download.f6': 'Multi-language',
                 'footer.desc': 'Virtual pocket money that motivates your kids. A safe and fun educational simulator.',
                 'footer.disclaimer': '⚠️ Koiny is a simulator. No real financial transactions are made.',
@@ -406,7 +407,7 @@
             },
             nl: {
                 'nav.features': 'Functies', 'nav.howItWorks': 'Hoe het werkt', 'nav.download': 'Downloaden',
-                'hero.badge': '✨ 100% Gratis • 100% Virtueel',
+                'hero.badge': '✨ Gratis • 100% Virtueel',
                 'hero.title': 'Zakgeld <span class="hero-gradient">opnieuw uitgevonden</span>',
                 'hero.subtitle': 'Koiny verandert dagelijkse taken in avonturen. Je kinderen voltooien missies, verdienen virtueel geld en sparen voor hun dromen.',
                 'hero.cta': 'Download in de App Store', 'hero.discover': 'Ontdekken',
@@ -437,7 +438,7 @@
                 'download.title': 'Klaar voor het avontuur?',
                 'download.desc': 'Download Koiny gratis en verander taken in een educatief spel.',
                 'download.note': 'Vereist iOS 15.0 of hoger. iPhone & iPad.',
-                'download.f1': '100% Gratis', 'download.f2': 'Geen advertenties', 'download.f3': 'Geen in-app aankopen',
+                'download.f1': 'Gratis', 'download.f2': 'Geen advertenties', 'download.f3': 'Geen in-app aankopen',
                 'download.f4': '100% virtueel geld', 'download.f5': 'Privé gegevens', 'download.f6': 'Meertalig',
                 'footer.desc': 'Virtueel zakgeld dat je kinderen motiveert. Een veilige en leuke educatieve simulator.',
                 'footer.disclaimer': '⚠️ Koiny is een simulator. Er worden geen echte financiële transacties uitgevoerd.',
