@@ -108,6 +108,7 @@ body {
   height: 80px;
   object-fit: contain;
   margin-bottom: 1rem;
+  mix-blend-mode: multiply;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
   animation: float 4s ease-in-out infinite;
 }
