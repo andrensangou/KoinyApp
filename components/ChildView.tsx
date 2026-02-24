@@ -4,6 +4,7 @@ import { ChildProfile, Language, HistoryEntry, Goal } from '../types';
 import TutorialOverlay, { TutorialStep } from './TutorialOverlay';
 import { translations } from '../i18n';
 import confetti from 'canvas-confetti';
+import { getIcon } from '../constants/icons';
 
 interface ChildViewProps {
   data: ChildProfile;
@@ -53,10 +54,10 @@ const getTranslatedTitle = (title: string, language: Language) => {
 };
 
 const getEntryIcon = (title: string) => {
-  if (isPenalty(title)) return 'fa-gavel text-amber-500';
-  if (isPurchase(title)) return 'fa-cart-shopping text-red-500';
-  if (isGift(title)) return 'fa-gift text-purple-500';
-  return 'fa-star text-emerald-500';
+  if (isPenalty(title)) return `${getIcon('gavel')} text-amber-500`;
+  if (isPurchase(title)) return `${getIcon('cart')} text-red-500`;
+  if (isGift(title)) return `${getIcon('gift')} text-purple-500`;
+  return `${getIcon('star')} text-emerald-500`;
 };
 
 const playSound = (enabled: boolean, url: string, volume: number = 0.5) => {
@@ -74,6 +75,8 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
   const [isGoalNudging, setIsGoalNudging] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [acknowledgedPenaltyId, setAcknowledgedPenaltyId] = useState<string | null>(null);
+  const [activeGoalIndex, setActiveGoalIndex] = useState(0);
+  const goalsScrollRef = useRef<HTMLDivElement>(null);
 
   const t = translations[language];
   const prevBalance = useRef(data.balance);
@@ -158,8 +161,8 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
       <div className="w-full max-w-lg md:max-w-7xl bg-slate-50 dark:bg-slate-900 min-h-screen relative shadow-2xl sm:my-4 sm:rounded-[40px] sm:min-h-[calc(100vh-2rem)] sm:h-fit overflow-hidden pb-20 border border-slate-200 dark:border-slate-800 transition-colors duration-500">
 
         {balanceDiff && (
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] pointer-events-none animate-pop-in">
-            <div className={`px-8 py-5 rounded-[2rem] shadow-2xl border-4 flex flex-col items-center gap-1 ${balanceDiff.type === 'GAIN' ? 'bg-emerald-500 border-emerald-300 text-white' :
+          <div className="fixed inset-0 flex items-center justify-center z-[70] pointer-events-none p-6">
+            <div className={`px-8 py-5 rounded-[2rem] shadow-2xl border-4 flex flex-col items-center gap-1 animate-pop-in ${balanceDiff.type === 'GAIN' ? 'bg-emerald-500 border-emerald-300 text-white' :
               balanceDiff.type === 'PENALTY' ? 'bg-amber-500 border-amber-300 text-white' :
                 'bg-red-500 border-red-300 text-white'
               }`}>
@@ -207,13 +210,14 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
             <div className="flex items-center gap-2">
               <button
                 onClick={() => { setShowHistory(!showHistory); if ("vibrate" in navigator) navigator.vibrate(10); }}
+                aria-label={showHistory ? t.child.historyHeader : t.child.historyHeader}
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all backdrop-blur-xl border ${showHistory ? 'bg-white dark:bg-slate-100 text-slate-800 border-white dark:border-slate-100' : 'bg-white/10 text-white border-white/10 hover:bg-white/20 hover:border-white/20'}`}
               >
-                <i className="fa-solid fa-clock-rotate-left text-lg"></i>
+                <i className="fa-solid fa-clock-rotate-left text-lg" aria-hidden="true"></i>
               </button>
 
-              <button onClick={onLogout} className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 flex items-center justify-center hover:bg-white/20 hover:border-white/20 transition-all">
-                <i className="fa-solid fa-power-off text-lg"></i>
+              <button onClick={onLogout} aria-label={language === 'fr' ? 'Déconnexion' : language === 'nl' ? 'Uitloggen' : 'Logout'} className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 flex items-center justify-center hover:bg-white/20 hover:border-white/20 transition-all">
+                <i className="fa-solid fa-power-off text-lg" aria-hidden="true"></i>
               </button>
             </div>
           </div>
@@ -246,8 +250,8 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
             <div className="mb-6 animate-pop-in max-w-2xl mx-auto">
               <div className="bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-900/50 rounded-[2.5rem] p-5 shadow-xl relative overflow-hidden transition-colors duration-500">
                 <div className="absolute top-0 right-0 p-3">
-                  <button onClick={() => setAcknowledgedPenaltyId(latestPenalty.id)} className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">
-                    <i className="fa-solid fa-check"></i>
+                  <button onClick={() => setAcknowledgedPenaltyId(latestPenalty.id)} aria-label={language === 'fr' ? 'Fermer l\'alerte' : 'Dismiss alert'} className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">
+                    <i className="fa-solid fa-check" aria-hidden="true"></i>
                   </button>
                 </div>
                 <div className="flex items-center gap-4">
@@ -268,7 +272,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
 
           {showHistory && (
             <div className="mb-6 animate-fade-in-up max-w-2xl mx-auto">
-              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-6 border border-white/50 dark:border-white/10 transition-colors duration-500">
+              <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl p-6 border border-slate-100 dark:border-slate-800 transition-colors duration-500">
                 <div className="flex justify-between items-center mb-6 px-1">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500 dark:text-indigo-400 flex items-center justify-center">
@@ -276,7 +280,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                     </div>
                     <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-800 dark:text-white">{t.child.historyHeader}</h4>
                   </div>
-                  <button onClick={() => setShowHistory(false)} className="w-8 h-8 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"><i className="fa-solid fa-xmark"></i></button>
+                  <button onClick={() => setShowHistory(false)} aria-label={language === 'fr' ? 'Fermer l\'historique' : 'Close history'} className="w-8 h-8 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"><i className="fa-solid fa-xmark" aria-hidden="true"></i></button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
@@ -294,7 +298,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                   {data.history && data.history.length > 0 ? data.history.map(entry => {
                     const neg = entry.amount < 0 || isPenalty(entry.title) || isPurchase(entry.title);
                     return (
-                      <div key={entry.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 hover:border-indigo-100 dark:hover:border-indigo-900/50 hover:bg-white dark:hover:bg-slate-800 transition-all group shadow-sm">
+                      <div key={entry.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all group">
                         <div className="flex items-center gap-4">
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm shadow-sm transition-transform group-hover:scale-110 ${neg ? 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
                             <i className={`fa-solid ${getEntryIcon(entry.title)}`}></i>
@@ -321,69 +325,89 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
           )}
 
           <div className="mb-10">
-            {data.goals && data.goals.length > 0 ? (
-              <div className={`flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 no-scrollbar px-1 ${data.goals.length === 1 ? 'justify-center' : ''} md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible md:snap-none md:justify-items-center`}>
-                {data.goals.map((goal, index) => {
-                  const percentage = Math.min(100, Math.round((data.balance / goal.target) * 100));
-                  const isReached = data.balance >= goal.target;
-                  return (
-                    <div key={goal.id} className={`snap-center shrink-0 w-[92%] sm:w-full max-w-[400px] rounded-[3rem] p-7 shadow-2xl border flex flex-col justify-between min-h-[220px] relative transition-all animate-scale-in overflow-hidden transition-colors duration-500 md:w-full ${isReached ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700/50 ring-8 ring-yellow-500/10' : 'bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/40 dark:border-white/10'}`}>
-                      {/* Suble background glow */}
-                      <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-30 ${isReached ? 'bg-yellow-400' : `bg-${data.colorClass}-400`}`}></div>
+            {data.goals && data.goals.filter(g => g.status !== 'ARCHIVED').length > 0 ? (
+              <>
+                <div
+                  ref={goalsScrollRef}
+                  onScroll={() => {
+                    if (!goalsScrollRef.current) return;
+                    const el = goalsScrollRef.current;
+                    const firstCard = el.children[0] as HTMLElement;
+                    if (!firstCard) return;
+                    const cardWidth = firstCard.offsetWidth + 16;
+                    setActiveGoalIndex(Math.round(el.scrollLeft / cardWidth));
+                  }}
+                  className={`flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 no-scrollbar md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible md:snap-none md:justify-items-center md:gap-6`}
+                >
+                  {data.goals.filter(g => g.status !== 'ARCHIVED').map((goal, index) => {
+                    const percentage = Math.min(100, Math.round((data.balance / goal.target) * 100));
+                    const isReached = data.balance >= goal.target && goal.status !== 'COMPLETED';
+                    const isCompleted = goal.status === 'COMPLETED';
+                    return (
+                      <div key={goal.id} className={`snap-start shrink-0 w-full rounded-3xl p-5 shadow-lg flex flex-col justify-between relative transition-all animate-scale-in overflow-hidden ${isCompleted ? 'bg-emerald-50 dark:bg-emerald-900/30' : isReached ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-white dark:bg-slate-800'}`}>
+                        <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full blur-3xl opacity-20 ${isReached ? 'bg-yellow-400' : `bg-${data.colorClass}-400`}`}></div>
 
-                      <div className="flex items-start justify-between relative z-10">
-                        <div className="flex items-center gap-5">
-                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-lg transition-transform hover:rotate-3 ${isReached ? 'bg-yellow-400 text-white animate-bounce-short' : `bg-white dark:bg-slate-800 border border-slate-50 dark:border-slate-700 text-slate-700 dark:text-slate-300`}`}>
-                            <i className={goal.icon}></i>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className={`font-black text-xl leading-none tracking-tight ${isReached ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-800 dark:text-white'}`}>{goal.name}</h3>
-                              {index === 0 && <i className="fa-solid fa-star text-yellow-400 text-xs animate-pulse"></i>}
+                        <div className="flex items-center justify-between relative z-10">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-md ${isCompleted ? 'bg-emerald-500 text-white' : isReached ? 'bg-yellow-400 text-white animate-bounce-short' : 'bg-indigo-100 dark:bg-slate-800 text-indigo-500 dark:text-indigo-400'}`}>
+                              <i className={isCompleted ? 'fa-solid fa-trophy' : isReached ? 'fa-solid fa-star' : getIcon(goal.icon, 'fa-solid fa-bullseye')}></i>
                             </div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{t.child.goalObjective}</p>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <h3 className={`font-black text-base leading-none tracking-tight ${isCompleted ? 'text-emerald-800 dark:text-emerald-100' : isReached ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-800 dark:text-white'}`}>{goal.name}</h3>
+                                {index === 0 && <i className="fa-solid fa-star text-yellow-400 text-[10px] animate-pulse"></i>}
+                              </div>
+                              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-0.5">{t.child.goalObjective}</p>
+                            </div>
                           </div>
+                          <span className={`text-xl font-black tabular-nums leading-none ${isCompleted ? 'text-emerald-600' : isReached ? 'text-yellow-600' : `text-${data.colorClass}-600`}`}>{goal.target}€</span>
                         </div>
-                        <div className="text-right">
-                          <span className={`text-2xl font-black tabular-nums leading-none ${isReached ? 'text-yellow-600' : `text-${data.colorClass}-600`}`}>{goal.target}€</span>
-                        </div>
-                      </div>
 
-                      <div className="relative z-10 mt-8">
-                        {isReached ? (
-                          <div className="flex flex-col gap-3">
+                        <div className="relative z-10 mt-4">
+                          {isCompleted ? (
+                            <div className="w-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2 border border-emerald-500/20">
+                              <i className="fa-solid fa-circle-check"></i>
+                              {language === 'fr' ? 'Obtenu !' : language === 'nl' ? 'Behaald!' : 'Purchased!'}
+                            </div>
+                          ) : isReached ? (
                             <button
                               onClick={() => handlePurchase(goal)}
-                              className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-200 dark:shadow-none hover:bg-slate-800 dark:hover:bg-slate-100 transition-all active:scale-95 animate-bounce-short flex items-center justify-center gap-3"
+                              aria-label={`${t.child.reached} ${goal.name}`}
+                              className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all animate-bounce-short flex items-center justify-center gap-2"
                             >
-                              <i className="fa-solid fa-gift text-yellow-400"></i>
+                              <i className={`${getIcon('gift')} text-yellow-400`} aria-hidden="true"></i>
                               {t.child.reached}
                             </button>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            <div className="flex justify-between items-end">
-                              <div className="flex flex-col">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-1">{t.child.remaining}</span>
-                                <span className="text-sm font-black text-slate-500 tabular-nums">{(goal.target - data.balance).toFixed(2)}€</span>
+                          ) : (
+                            <div className="space-y-2.5">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-black text-slate-400 tabular-nums">{t.child.remaining} {(goal.target - data.balance).toFixed(2)}€</span>
+                                <span className={`text-xs font-black text-${data.colorClass}-500 tabular-nums`}>{percentage}%</span>
                               </div>
-                              <span className={`text-sm font-black text-${data.colorClass}-500 tabular-nums`}>{percentage}%</span>
-                            </div>
-                            <div className="w-full h-4 bg-black/5 rounded-full overflow-hidden border border-white/40 shadow-inner p-0.5">
-                              <div
-                                className={`h-full bg-gradient-to-r from-${data.colorClass}-500 to-${data.colorClass}-400 rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(var(--tw-gradient-from),0.5)] flex items-center justify-end pr-1`}
-                                style={{ width: `${percentage}%` }}
-                              >
-                                {percentage > 20 && <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>}
+                              <div className="w-full h-3 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden p-0.5">
+                                <div
+                                  className={`h-full bg-gradient-to-r from-${data.colorClass}-500 to-${data.colorClass}-400 rounded-full transition-all duration-1000 ease-out flex items-center justify-end pr-1`}
+                                  style={{ width: `${Math.max(percentage, 2)}%` }}
+                                >
+                                  {percentage > 15 && <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+                {/* Dot pagination */}
+                {data.goals.filter(g => g.status !== 'ARCHIVED').length > 1 && (
+                  <div className="flex justify-center gap-1.5 mt-1 md:hidden">
+                    {data.goals.filter(g => g.status !== 'ARCHIVED').map((_, i) => (
+                      <div key={i} className={`rounded-full transition-all duration-300 ${i === activeGoalIndex ? `w-4 h-1.5 bg-${data.colorClass}-500` : 'w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600'}`} />
+                    ))}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 text-center shadow-lg group hover:scale-[1.02] transition-transform mx-1 max-w-lg mx-auto">
                 <i className={`fa-solid fa-bullseye text-4xl mb-3 transition-transform ${isGoalNudging ? 'text-emerald-500 animate-bounce' : 'text-slate-200'}`}></i>
@@ -406,8 +430,8 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
             </div>
 
             <div className="space-y-4 px-1 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:space-y-0">
-              {data.missions && data.missions.length > 0 ? (
-                data.missions.map(mission => (
+              {data.missions && data.missions.filter(m => m.status !== 'COMPLETED').length > 0 ? (
+                data.missions.filter(m => m.status !== 'COMPLETED').map(mission => (
                   <button
                     key={mission.id}
                     disabled={mission.status === 'PENDING'}
@@ -419,7 +443,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                   >
                     <div className="flex items-center gap-5 relative z-10">
                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-transform group-hover:scale-110 shadow-sm ${mission.status === 'PENDING' ? 'bg-white dark:bg-slate-800 text-indigo-400 dark:text-indigo-500 ring-4 ring-indigo-50 dark:ring-indigo-900/20' : `bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-500 dark:text-${data.colorClass}-400 border border-${data.colorClass}-100 dark:border-${data.colorClass}-900/30`}`}>
-                        <i className={mission.status === 'PENDING' ? 'fa-solid fa-hourglass-half animate-spin-slow' : mission.icon}></i>
+                        <i className={mission.status === 'PENDING' ? 'fa-solid fa-hourglass-half animate-spin-slow' : getIcon(mission.icon)}></i>
                       </div>
                       <div className="text-left">
                         <div className={`font-black text-base sm:text-lg tracking-tight ${mission.status === 'PENDING' ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-800 dark:text-white'}`}>{getTranslatedTitle(mission.title, language)}</div>
@@ -460,7 +484,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
             steps={[
               { title: t.child.tutorial.welcome_title, description: t.child.tutorial.welcome_desc, icon: 'fa-solid fa-hand-wave' },
               { title: t.child.tutorial.balance_title, description: t.child.tutorial.balance_desc, icon: 'fa-solid fa-piggy-bank' },
-              { title: t.child.tutorial.goal_title, description: t.child.tutorial.goal_desc, icon: 'fa-solid fa-gift' },
+              { title: t.child.tutorial.goal_title, description: t.child.tutorial.goal_desc, icon: getIcon('gift') },
               { title: t.child.tutorial.missions_title, description: t.child.tutorial.missions_desc, icon: 'fa-solid fa-list-check' }
             ]}
             onComplete={onTutorialComplete}

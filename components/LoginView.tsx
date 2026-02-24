@@ -35,11 +35,11 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
 
       <div className="relative z-10 w-full max-w-md flex flex-col min-h-[85vh] justify-between py-8">
         <div className="text-center mb-8">
-          <div className="mx-auto w-40 h-40 flex items-center justify-center animate-scale-in transition-all hover:scale-110 duration-300 mb-10">
+          <div className="mx-auto w-40 h-40 mb-10 flex items-center justify-center animate-scale-in transition-all hover:scale-110 duration-300 rounded-[3rem] overflow-hidden shadow-2xl shadow-indigo-500/20 border-4 border-white/50 dark:border-white/10 relative">
             <img
               src="/mascot.png"
               alt="Koiny Logo"
-              className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal transform scale-125 translate-y-1 brightness-[1.05] contrast-[1.05]"
+              className="w-full h-full object-cover"
             />
           </div>
           <h1 className="text-4xl font-black text-slate-800 dark:text-white tracking-tight mb-2">{t.login.welcome}</h1>
@@ -66,6 +66,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
               <button
                 key={child.id}
                 onClick={() => onSelectChild(child.id)}
+                aria-label={`${child.name} — ${child.balance.toFixed(2)}€`}
                 className="bg-white dark:bg-slate-900 p-4 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border-4 border-transparent hover:border-indigo-400 active:scale-95 transition-all group flex flex-col items-center gap-3 relative overflow-hidden"
               >
                 <div className={`w-20 h-20 rounded-full flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden shadow-inner`}>
@@ -88,7 +89,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
               onClick={onParentAccess}
               className="group inline-flex items-center gap-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-10 py-5 rounded-[2rem] hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-xl hover:shadow-2xl active:scale-95 w-full justify-center"
             >
-              <i className="fa-solid fa-lock text-emerald-400 dark:text-emerald-500 group-hover:rotate-12 transition-transform"></i>
+              <i className="fa-solid fa-lock text-emerald-400 dark:text-emerald-500 group-hover:rotate-12 transition-transform" aria-hidden="true"></i>
               <span className="font-black uppercase tracking-widest text-sm">{t.login.parentAccess}</span>
             </button>
           </div>

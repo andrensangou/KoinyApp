@@ -1,15 +1,17 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { GlobalState, Language, ChildProfile, Goal, ParentBadge } from '../types';
 import TutorialOverlay, { TutorialStep } from './TutorialOverlay';
 import { BottomNavigation } from './BottomNavigation';
 import { translations } from '../i18n';
-import { addCoParent, removeCoParent, getCoParents, getSupabase } from '../services/supabase';
+import { getSupabase } from '../services/supabase';
+import { loadParentPinLocally } from '../services/pinStorage';
 import HelpModal from './HelpModal';
 import ConfirmDialog from './ConfirmDialog';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, Cell } from 'recharts';
 import confetti from 'canvas-confetti';
 import { notifications } from '../services/notifications';
+import { getIcon } from '../constants/icons';
 
 interface ParentViewProps {
   data: GlobalState;
@@ -33,14 +35,17 @@ interface ParentViewProps {
   clearNotification?: () => void;
   onToggleSound: (enabled: boolean) => void;
   onSetLanguage: (lang: Language) => void;
-  onShowQrInvite?: () => void;
   onUpdateMaxBalance?: (limit: number) => void;
-  isSharedFamily?: boolean;
+  notificationAction?: { type: string; childId: string } | null;
+  onClearNotificationAction?: () => void;
+  onSignOut: () => Promise<void>;
+  onDeleteGoal?: (childId: string, goalId: string) => void;
+  onArchiveGoal?: (childId: string, goalId: string) => void;
 }
 
 type ActionType = 'APPROVE' | 'REJECT' | null;
 type WithdrawSubtype = 'PURCHASE' | 'PENALTY';
-type SettingsTab = 'FAMILY' | 'COPARENTS' | 'ACCOUNT';
+type SettingsTab = 'FAMILY' | 'ACCOUNT';
 type GoalsFilter = 'ALL' | 'READY' | 'ONGOING';
 type HistoryFilter = 'THIS_MONTH' | 'ALL';
 
@@ -113,7 +118,8 @@ const ParentView: React.FC<ParentViewProps> = ({
   data, ownerId, language, onApprove, onReject, onAddMission, onDeleteActiveMission,
   onManualTransaction, onAddChild, onEditChild, onDeleteChild, onSetPin,
   onClearHistory, onUpdatePassword, onDeleteAccount,
-  onExit, onTutorialComplete, onToggleSound, onSetLanguage, onShowQrInvite, onUpdateMaxBalance, isSharedFamily
+  onExit, onTutorialComplete, onToggleSound, onSetLanguage, onUpdateMaxBalance,
+  notificationAction, onClearNotificationAction, onSignOut, onDeleteGoal, onArchiveGoal
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState('');
@@ -154,6 +160,29 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [formGoals, setFormGoals] = useState<Goal[]>([]);
   const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
+  const [localPin, setLocalPin] = useState<string | null>(null);
+
+  // Charger le PIN local au démarrage
+  useEffect(() => {
+    const loadLocalPin = async () => {
+      const supabase = getSupabase();
+      if (supabase) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const pin = await loadParentPinLocally(user.id);
+            if (pin) {
+              setLocalPin(pin);
+              console.log('✅ [PARENT VIEW] PIN local chargé pour:', user.id);
+            }
+          }
+        } catch (error) {
+          console.error('❌ [PARENT VIEW] Erreur chargement PIN local:', error);
+        }
+      }
+    };
+    loadLocalPin();
+  }, []);
 
   useEffect(() => {
     // Vérifier les permissions au chargement
@@ -171,9 +200,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [showHelp, setShowHelp] = useState(false);
   const [goalsFilter, setGoalsFilter] = useState<GoalsFilter>('ALL');
 
-  const [coParentEmail, setCoParentEmail] = useState('');
-  const [coParentsList, setCoParentsList] = useState<any[]>([]);
-  const [coParentLoading, setCoParentLoading] = useState(false);
+  const [triggerAddGoal, setTriggerAddGoal] = useState(false);
 
   // Dialog State
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -266,38 +293,6 @@ const ParentView: React.FC<ParentViewProps> = ({
     }
   }, [data.children, selectedChildId]);
 
-  useEffect(() => {
-    if (isSettingsOpen && activeTab === 'COPARENTS') {
-      refreshCoParents();
-    }
-  }, [isSettingsOpen, activeTab]);
-
-  const refreshCoParents = async () => {
-    setCoParentLoading(true);
-    const list = await getCoParents();
-    setCoParentsList(list);
-    setCoParentLoading(false);
-  };
-
-  const handleAddCoParent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!coParentEmail) return;
-    try {
-      await addCoParent(coParentEmail);
-      setCoParentEmail('');
-      refreshCoParents();
-    } catch (e) {
-      openPrompt({ title: t.parent.errorPrefix, message: "Erreur lors de l'invitation.", type: 'warning', onConfirm: () => { } });
-    }
-  };
-
-  const handleRemoveCoParent = async (id: string) => {
-    openConfirm(t.parent.coparents.removeConfirm, "Cette action retirera l'accès de ce co-parent.", async () => {
-      await removeCoParent(id);
-      refreshCoParents();
-    }, 'danger');
-  };
-
   const weeklySummary = useMemo(() => {
     if (!activeChild || !activeChild.history) return { income: 0, expense: 0, penalty: 0 };
     const sevenDaysAgo = new Date();
@@ -324,17 +319,20 @@ const ParentView: React.FC<ParentViewProps> = ({
   const filteredGoals = useMemo(() => {
     if (!activeChild || !activeChild.goals) return [];
     const balance = activeChild.balance;
+    const goals = activeChild.goals.filter(g => g.status !== 'ARCHIVED');
     switch (goalsFilter) {
-      case 'READY': return activeChild.goals.filter(g => balance >= g.target);
-      case 'ONGOING': return activeChild.goals.filter(g => balance < g.target);
-      default: return activeChild.goals;
+      case 'READY': return goals.filter(g => (balance >= g.target && g.status !== 'COMPLETED') || g.status === 'COMPLETED');
+      case 'ONGOING': return goals.filter(g => balance < g.target && g.status !== 'COMPLETED');
+      default: return goals;
     }
   }, [activeChild, goalsFilter]);
 
   const handlePinInput = (val: string) => {
     const cleanVal = val.replace(/[^0-9]/g, '').slice(0, 4);
     setPin(cleanVal);
-    const storedPin = data.parentPin ? String(data.parentPin).trim() : null;
+    // Vérifier le PIN local en priorité, sinon le PIN de Supabase
+    const effectivePin = localPin || data.parentPin;
+    const storedPin = effectivePin ? String(effectivePin).trim() : null;
     if (storedPin && cleanVal === storedPin) {
       setTimeout(() => {
         setIsAuthenticated(true);
@@ -349,7 +347,7 @@ const ParentView: React.FC<ParentViewProps> = ({
     const cleanNew = newPin.replace(/[^0-9]/g, '');
     const cleanConf = confirmPin.replace(/[^0-9]/g, '');
     if (cleanNew.length !== 4) {
-      setPinError("Le code doit faire 4 chiffres");
+      setPinError(t.parent.pinLengthError);
       return;
     }
     if (cleanNew !== cleanConf) {
@@ -369,21 +367,27 @@ const ParentView: React.FC<ParentViewProps> = ({
     setIsSettingsOpen(false);
     setTimeout(() => {
       openPrompt({
-        title: "Succès",
-        message: "Code PIN réinitialisé. Vous pouvez en créer un nouveau.",
+        title: t.parent.messages.pinResetSuccessTitle,
+        message: t.parent.messages.pinResetSuccessMessage,
         type: 'success',
         onConfirm: () => { }
       });
     }, 500);
   };
-
+  // Déclencheur automatique pour l'ajout d'objectif
+  useEffect(() => {
+    if (triggerAddGoal && settingsView === 'FORM') {
+      handleAddGoalToForm();
+      setTriggerAddGoal(false);
+    }
+  }, [triggerAddGoal, settingsView]);
   const handleResetPin = () => {
     // Security Check: Require password to reset PIN
     openPrompt({
-      title: "Sécurité Requise",
-      message: "Pour réinitialiser le PIN, confirmez votre mot de passe parent.",
+      title: t.parent.messages.securityRequiredTitle,
+      message: t.parent.messages.securityRequiredMessage,
       type: 'input',
-      placeholder: "Mot de passe compte",
+      placeholder: t.auth.password,
       onConfirm: async (password) => {
         if (!password) return;
 
@@ -411,8 +415,8 @@ const ParentView: React.FC<ParentViewProps> = ({
             if (error) {
               setTimeout(() => {
                 openPrompt({
-                  title: "Accès Refusé",
-                  message: "Mot de passe incorrect. Impossible de réinitialiser le PIN.",
+                  title: t.parent.messages.accessDeniedTitle,
+                  message: t.parent.messages.accessDeniedMessage,
                   type: 'danger',
                   onConfirm: () => { }
                 });
@@ -486,9 +490,7 @@ const ParentView: React.FC<ParentViewProps> = ({
     // Check limit for deposits
     if (transactionType === 'DEPOSIT' && activeChild) {
       if (activeChild.balance + amount > currentMax) {
-        const msg = language === 'fr'
-          ? `Le solde ne peut pas dépasser ${currentMax}€ pour ce profil.`
-          : `Balance cannot exceed ${currentMax}€ for this profile.`;
+        const msg = t.parent.history.limitReachedMessage.replace('{limit}', currentMax.toString());
         openConfirm(t.parent.history.limitReached, msg, () => { }, 'warning');
         return;
       }
@@ -526,7 +528,7 @@ const ParentView: React.FC<ParentViewProps> = ({
     }
   }, [settingsView, scrollToGoalsOnOpen]);
 
-  const startEditChild = (child: ChildProfile, jumpToGoals: boolean = false) => {
+  const startEditChild = useCallback((child: ChildProfile, jumpToGoals: boolean = false) => {
     setEditingChildId(child.id);
     setFormName(child.name);
     setFormAvatar(child.avatar);
@@ -535,15 +537,16 @@ const ParentView: React.FC<ParentViewProps> = ({
     setFormGoals(child.goals || []);
     setSettingsView('FORM');
     setIsSettingsOpen(true);
+    setMainView('profile');
     setActiveTab('FAMILY');
     setScrollToGoalsOnOpen(jumpToGoals);
 
     if (child.giftRequested) {
       onEditChild(child.id, { giftRequested: false });
     }
-  };
+  }, [onEditChild]);
 
-  const startAddChild = () => {
+  const startAddChild = useCallback(() => {
     setEditingChildId(null);
     setFormName('');
     setFormAvatar(AVAILABLE_SEEDS[0]);
@@ -552,9 +555,41 @@ const ParentView: React.FC<ParentViewProps> = ({
     setFormGoals([]);
     setSettingsView('FORM');
     setIsSettingsOpen(true);
+    setMainView('profile');
     setActiveTab('FAMILY');
     setScrollToGoalsOnOpen(false);
-  };
+  }, []);
+
+  // Handle notification actions (e.g., open mission creation from notification click)
+  useEffect(() => {
+    if (!notificationAction?.childId || !data.children) return;
+
+    const child = data.children.find(c => c.id === notificationAction.childId);
+    if (!child) return;
+
+    if (notificationAction.type === 'GIFT') {
+      console.log('🔔 [PARENT VIEW] Opening gift configuration');
+      setTimeout(() => {
+        setSelectedChildId(child.id);
+        startEditChild(child);
+        setTimeout(() => {
+          setTriggerAddGoal(true);
+          setTimeout(() => {
+            formGoalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+        }, 300);
+      }, 200);
+      onClearNotificationAction?.();
+    }
+    else if (notificationAction.type === 'MISSION' || notificationAction.type === 'MISSION_COMPLETE') {
+      console.log('🔔 [PARENT VIEW] Opening requests tab');
+      setTimeout(() => {
+        setSelectedChildId(child.id);
+        setMainView('requests');
+      }, 200);
+      onClearNotificationAction?.();
+    }
+  }, [notificationAction, data.children, onEditChild, onClearNotificationAction, startEditChild]);
 
   const startAddGoal = () => {
     if (activeChild) {
@@ -587,6 +622,10 @@ const ParentView: React.FC<ParentViewProps> = ({
   };
 
   const handleRemoveGoal = (id: string) => {
+    // Si on est en mode édition et que l'ID est un UUID, on demande la suppression directe
+    if (editingChildId && id.includes('-')) {
+      onDeleteGoal?.(editingChildId, id);
+    }
     setFormGoals(prev => prev.filter(g => g.id !== id));
   };
 
@@ -595,7 +634,7 @@ const ParentView: React.FC<ParentViewProps> = ({
       id: Date.now().toString(),
       name: '',
       target: 0,
-      icon: 'fa-solid fa-gift'
+      icon: getIcon('gift')
     };
     setFormGoals(prev => [...prev, newGoal]);
   };
@@ -665,7 +704,9 @@ const ParentView: React.FC<ParentViewProps> = ({
   }, [activeChild]);
 
   if (!isAuthenticated) {
-    const isPinSetup = !data.parentPin || String(data.parentPin).trim().length === 0;
+    // Utiliser le PIN local si disponible, sinon le PIN de Supabase
+    const effectivePin = localPin || data.parentPin;
+    const isPinSetup = !effectivePin || String(effectivePin).trim().length === 0;
     return (
       <div className="min-h-screen bg-[#0f172a] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 via-[#0f172a] to-black flex flex-col items-center justify-center p-6 text-white font-sans overflow-hidden relative">
         {/* Background Atmosphere */}
@@ -786,8 +827,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                 </button>
               ))}
               <div className="flex items-center justify-center">
-                <button onClick={onExit} className="w-12 h-12 flex items-center justify-center text-slate-500 hover:text-white transition-colors">
-                  <i className="fa-solid fa-chevron-left text-xl"></i>
+                <button onClick={onExit} aria-label={language === 'fr' ? 'Retour' : 'Back'} className="w-12 h-12 flex items-center justify-center text-slate-500 hover:text-white transition-colors">
+                  <i className="fa-solid fa-chevron-left text-xl" aria-hidden="true"></i>
                 </button>
               </div>
               <button
@@ -884,7 +925,7 @@ const ParentView: React.FC<ParentViewProps> = ({
         <div className={`max-w-7xl mx-auto px-4 ${mainView !== 'dashboard' ? 'py-2 safe-pt pb-2' : 'py-4'} flex justify-between items-center gap-4`}>
           {/* Left: Premium Button */}
           <button
-            onClick={() => openPrompt({ title: 'Koiny Premium', message: "Débloquez des fonctionnalités illimitées pour toute la famille. Bientôt disponible !", type: 'info', onConfirm: () => { } })}
+            onClick={() => openPrompt({ title: t.parent.messages.premiumSoonTitle, message: t.parent.messages.premiumSoonMessage, type: 'info', onConfirm: () => { } })}
             className={`flex items-center justify-center bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl w-12 h-12 rounded-2xl shadow-lg border border-white/20 dark:border-white/10 pointer-events-auto active:scale-95 transition-transform group shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl shadow-sm' : ''}`}
           >
             <div className={`w-full h-full rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-orange-200 dark:shadow-none shadow-lg group-hover:scale-110 transition-transform ${mainView !== 'dashboard' ? 'text-sm' : 'text-xl'}`}>
@@ -921,8 +962,8 @@ const ParentView: React.FC<ParentViewProps> = ({
 
           {/* Right: Power Button */}
           <div className="flex items-center gap-2 pointer-events-auto shrink-0">
-            <button onClick={onExit} className={`bg-rose-500 text-white flex items-center justify-center rounded-2xl shadow-lg shadow-rose-200 transition-all active:scale-90 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl shadow-sm' : 'w-12 h-12'}`}>
-              <i className={`fa-solid fa-power-off ${mainView !== 'dashboard' ? 'text-sm' : 'text-lg'}`}></i>
+            <button onClick={onExit} aria-label={language === 'fr' ? 'Déconnexion' : 'Logout'} className={`bg-rose-500 text-white flex items-center justify-center rounded-2xl shadow-lg shadow-rose-200 transition-all active:scale-90 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl shadow-sm' : 'w-12 h-12'}`}>
+              <i className={`fa-solid fa-power-off ${mainView !== 'dashboard' ? 'text-sm' : 'text-lg'}`} aria-hidden="true"></i>
             </button>
           </div>
         </div>
@@ -1021,11 +1062,11 @@ const ParentView: React.FC<ParentViewProps> = ({
                     </div>
                   </div>
                   <div className="flex flex-col gap-3">
-                    <button onClick={() => setTransactionType('DEPOSIT')} className="w-12 h-12 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90 border border-white/10">
-                      <i className="fa-solid fa-plus text-xl"></i>
+                    <button onClick={() => setTransactionType('DEPOSIT')} aria-label={language === 'fr' ? 'Ajouter de l\'argent' : 'Add money'} className="w-12 h-12 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90 border border-white/10">
+                      <i className="fa-solid fa-plus text-xl" aria-hidden="true"></i>
                     </button>
-                    <button onClick={() => { setTransactionType('WITHDRAW'); setWithdrawSubtype('PURCHASE'); }} className="w-12 h-12 rounded-2xl bg-black/20 hover:bg-black/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90 border border-white/5">
-                      <i className="fa-solid fa-minus text-xl"></i>
+                    <button onClick={() => { setTransactionType('WITHDRAW'); setWithdrawSubtype('PURCHASE'); }} aria-label={language === 'fr' ? 'Retirer de l\'argent' : 'Withdraw money'} className="w-12 h-12 rounded-2xl bg-black/20 hover:bg-black/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90 border border-white/5">
+                      <i className="fa-solid fa-minus text-xl" aria-hidden="true"></i>
                     </button>
                   </div>
                 </div>
@@ -1087,7 +1128,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                   {filteredGoals.length === 0 ? (
                     <>
                       <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-200 dark:text-slate-700 text-3xl">
-                        <i className="fa-solid fa-gift"></i>
+                        <i className={getIcon('gift')}></i>
                       </div>
                       <p className="text-slate-400 dark:text-slate-500 font-medium text-sm leading-relaxed max-w-[200px]">
                         {goalsFilter === 'ALL' ? t.parent.goalsEmpty.none : (goalsFilter === 'READY' ? t.parent.goalsEmpty.reached : t.parent.goalsEmpty.progress)}
@@ -1105,17 +1146,31 @@ const ParentView: React.FC<ParentViewProps> = ({
                         const percent = Math.min(100, Math.round((activeChild.balance / goal.target) * 100));
                         const isReady = activeChild.balance >= goal.target;
                         return (
-                          <div key={goal.id} className={`w-full p-4 rounded-2xl border flex items-center justify-between text-left transition-colors duration-300 ${isReady ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700/50 text-slate-800 dark:text-yellow-100' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800'}`}>
+                          <div key={goal.id} className={`w-full p-4 rounded-2xl border flex items-center justify-between text-left transition-colors duration-300 ${goal.status === 'COMPLETED' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50' : (isReady ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700/50 text-slate-800 dark:text-yellow-100' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800')}`}>
                             <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm ${isReady ? 'bg-yellow-400 text-white' : 'bg-white dark:bg-slate-700 text-slate-400 dark:text-slate-500'}`}>
-                                <i className={goal.icon}></i>
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm ${goal.status === 'COMPLETED' ? 'bg-emerald-500 text-white' : (isReady ? 'bg-yellow-400 text-white' : 'bg-white dark:bg-slate-700 text-slate-400 dark:text-slate-500')}`}>
+                                <i className={getIcon(goal.icon)}></i>
                               </div>
                               <div>
                                 <p className="font-bold text-sm">{goal.name}</p>
-                                <p className="text-[10px] font-black uppercase tracking-wider opacity-50">{percent}% • {goal.target}€</p>
+                                <p className="text-[10px] font-black uppercase tracking-wider opacity-50">
+                                  {goal.status === 'COMPLETED' ? (language === 'fr' ? 'Obtenu' : 'Purchased') : `${percent}% • ${goal.target}€`}
+                                </p>
                               </div>
                             </div>
-                            {isReady && <span className="bg-yellow-400 text-white text-[10px] font-black px-2 py-1 rounded-full animate-pulse shadow-sm">{t.child.available}</span>}
+                            <div className="flex items-center gap-2">
+                              {goal.status === 'COMPLETED' ? (
+                                <button
+                                  onClick={() => onArchiveGoal?.(activeChild.id, goal.id)}
+                                  className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
+                                  title={language === 'fr' ? 'Archiver' : 'Archive'}
+                                >
+                                  <i className="fa-solid fa-box-archive"></i>
+                                </button>
+                              ) : isReady && (
+                                <span className="bg-yellow-400 text-white text-[10px] font-black px-2 py-1 rounded-full animate-pulse shadow-sm">{t.child.available}</span>
+                              )}
+                            </div>
                           </div>
                         )
                       })}
@@ -1175,16 +1230,6 @@ const ParentView: React.FC<ParentViewProps> = ({
                   <div className="h-px bg-slate-200 flex-1"></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <button onClick={onShowQrInvite} className="bg-white dark:bg-slate-900 p-3 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:border-emerald-200 dark:hover:border-emerald-900/50 transition-all group text-center py-6">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform mb-1 shadow-sm">
-                      <i className="fa-solid fa-qrcode text-xl"></i>
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-700 dark:text-slate-200 text-xs leading-tight mb-1">{t.qr.title}</p>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{language === 'fr' ? 'Inviter Co-Parent' : 'Invite Co-Parent'}</p>
-                    </div>
-                  </button>
-
                   <button onClick={() => { setActiveTab('ACCOUNT'); setMainView('profile'); }} className="bg-gradient-to-br from-violet-600 to-fuchsia-600 p-3 rounded-2xl shadow-lg shadow-violet-200 flex flex-col items-center justify-center gap-2 hover:translate-y-[-2px] transition-all text-white text-center py-6 relative overflow-hidden group border border-white/20">
                     <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/20 rounded-full blur-xl group-hover:bg-white/30 transition-colors"></div>
                     <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm shadow-inner mb-1 ring-2 ring-white/30">
@@ -1212,13 +1257,24 @@ const ParentView: React.FC<ParentViewProps> = ({
                 {activeChild.giftRequested && (
                   <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-orange-100 text-orange-500 rounded-2xl flex items-center justify-center text-xl"><i className="fa-solid fa-gift"></i></div>
+                      <div className="w-12 h-12 bg-violet-100 text-violet-500 rounded-2xl flex items-center justify-center text-xl">
+                        <i className="fa-solid fa-wand-magic-sparkles"></i>
+                      </div>
                       <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white text-lg leading-tight">{t.child.askParentsGoal}</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Nouvel objectif d'épargne</p>
+                        <h4 className="font-black text-slate-800 dark:text-white uppercase tracking-tighter">
+                          {language === 'fr' ? 'Cadeau demandé' : 'Gift requested'}
+                        </h4>
                       </div>
                     </div>
-                    <button onClick={() => startEditChild(activeChild)} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm">Configurer</button>
+                    <button onClick={() => {
+                      startEditChild(activeChild);
+                      setTimeout(() => {
+                        setTriggerAddGoal(true);
+                        setTimeout(() => {
+                          formGoalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 150);
+                      }, 200);
+                    }} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm">Configurer</button>
                   </div>
                 )}
 
@@ -1268,8 +1324,8 @@ const ParentView: React.FC<ParentViewProps> = ({
               <div className="px-4">
                 <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 items-center">
                   <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shrink-0">
-                    <button onClick={() => setHistoryView('LIST')} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'LIST' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-list"></i></button>
-                    <button onClick={() => setHistoryView('CHART')} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'CHART' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-chart-simple"></i></button>
+                    <button onClick={() => setHistoryView('LIST')} aria-label={language === 'fr' ? 'Vue liste' : 'List view'} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'LIST' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-list" aria-hidden="true"></i></button>
+                    <button onClick={() => setHistoryView('CHART')} aria-label={language === 'fr' ? 'Vue graphique' : 'Chart view'} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'CHART' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-chart-simple" aria-hidden="true"></i></button>
                   </div>
 
                   <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 flex-1 h-11">
@@ -1278,8 +1334,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                   </div>
 
                   {hasAnyHistory &&
-                    <button onClick={() => openConfirm(t.parent.history.clearConfirm, "Effacer ?", () => onClearHistory(activeChild.id), 'warning')} className="w-11 h-11 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl transition-colors shrink-0 border border-rose-100 dark:border-rose-900/50 shadow-sm">
-                      <i className="fa-solid fa-trash-can"></i>
+                    <button onClick={() => openConfirm(t.parent.history.clearTitle, t.parent.history.clearMessage, () => onClearHistory(activeChild.id), 'warning')} aria-label={t.parent.history.clearTitle} className="w-11 h-11 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl transition-colors shrink-0 border border-rose-100 dark:border-rose-900/50 shadow-sm">
+                      <i className="fa-solid fa-trash-can" aria-hidden="true"></i>
                     </button>
                   }
                 </div>
@@ -1397,14 +1453,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                     className={`flex-1 py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'FAMILY' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                   >
                     {t.parent.tabs.family}
-                  </button>
-                  <button
-                    onClick={() => { setActiveTab('COPARENTS'); setSettingsView('LIST'); }}
-                    className={`flex-1 py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'COPARENTS' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
-                    {t.parent.tabs.coparents}
-                  </button>
-                  <button
+                  </button>                  <button
                     onClick={() => { setActiveTab('ACCOUNT'); setSettingsView('LIST'); }}
                     className={`flex-1 py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'ACCOUNT' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                   >
@@ -1413,7 +1462,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                 </div>
               </div>
 
-              <div className="p-6 overflow-y-auto bg-slate-50 flex-1 no-scrollbar text-slate-900">
+              <div className="flex-1 overflow-y-auto overscroll-contain pb-24 px-4 pt-4 bg-slate-50 dark:bg-slate-900/50 no-scrollbar text-slate-900">
                 {activeTab === 'FAMILY' && (
                   settingsView === 'LIST' ? (
                     <div className="space-y-4">
@@ -1432,11 +1481,11 @@ const ParentView: React.FC<ParentViewProps> = ({
                               </div>
                             </div>
                             <div className="flex gap-2">
-                              <button onClick={() => startEditChild(child)} className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center hover:bg-indigo-100 transition-colors shadow-sm active:scale-90">
-                                <i className="fa-solid fa-pen text-xs"></i>
+                              <button onClick={() => startEditChild(child)} aria-label={`${language === 'fr' ? 'Modifier' : 'Edit'} ${child.name}`} className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center hover:bg-indigo-100 transition-colors shadow-sm active:scale-90">
+                                <i className="fa-solid fa-pen text-xs" aria-hidden="true"></i>
                               </button>
-                              <button onClick={() => openConfirm(t.parent.deleteConfirm, "Cette action est irréversible.", () => onDeleteChild(child.id), 'danger')} className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-100 transition-colors shadow-sm active:scale-90">
-                                <i className="fa-solid fa-trash text-xs"></i>
+                              <button onClick={() => openConfirm(t.parent.deleteTitle, t.parent.deleteMessage, () => onDeleteChild(child.id), 'danger')} aria-label={`${language === 'fr' ? 'Supprimer' : 'Delete'} ${child.name}`} className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-100 transition-colors shadow-sm active:scale-90">
+                                <i className="fa-solid fa-trash text-xs" aria-hidden="true"></i>
                               </button>
                             </div>
                           </div>
@@ -1594,13 +1643,13 @@ const ParentView: React.FC<ParentViewProps> = ({
                         <div className="p-5 space-y-3 min-h-[100px]">
                           {formGoals.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-6 text-slate-300 gap-2">
-                              <i className="fa-solid fa-gift text-2xl opacity-20"></i>
+                              <i className="fa-solid fa-bullseye text-2xl opacity-20"></i>
                               <p className="text-xs font-bold italic">{t.parent.goalsEmpty.noneInForm}</p>
                             </div>
                           ) : formGoals.map((goal) => (
                             <div key={goal.id} className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-3 bg-slate-50/50 rounded-2xl border border-slate-100/50 animate-scale-in group">
                               <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-focus-within:text-indigo-500 transition-colors">
-                                <i className="fa-solid fa-gift"></i>
+                                <i className={getIcon(goal.icon, 'fa-solid fa-bullseye')}></i>
                               </div>
                               <input
                                 type="text"
@@ -1619,8 +1668,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 font-black text-slate-300 text-xs pointer-events-none">€</span>
                               </div>
-                              <button type="button" onClick={() => handleRemoveGoal(goal.id)} className="w-10 h-10 rounded-xl bg-white text-rose-300 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition-all border border-slate-100 active:scale-90">
-                                <i className="fa-solid fa-trash-can text-sm"></i>
+                              <button type="button" onClick={() => handleRemoveGoal(goal.id)} aria-label={language === 'fr' ? 'Supprimer l\'objectif' : 'Remove goal'} className="w-10 h-10 rounded-xl bg-white text-rose-300 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition-all border border-slate-100 active:scale-90">
+                                <i className="fa-solid fa-trash-can text-sm" aria-hidden="true"></i>
                               </button>
                             </div>
                           ))}
@@ -1630,7 +1679,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                       <div className="flex flex-col sm:flex-row gap-3 pt-6">
                         <button
                           type="submit"
-                          className="w-full sm:flex-[2] py-5 bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-[1.5rem] shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-3 order-1 sm:order-2"
+                          disabled={formGoals.some(g => !g.name || !g.target || g.target <= 0)}
+                          className="w-full sm:flex-[2] py-5 bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-[1.5rem] shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 order-1 sm:order-2"
                         >
                           <i className="fa-solid fa-cloud-arrow-up text-indigo-300"></i>
                           {t.common.save}
@@ -1647,76 +1697,6 @@ const ParentView: React.FC<ParentViewProps> = ({
                   )
                 )}
 
-                {activeTab === 'COPARENTS' && (
-                  <div className="space-y-6 text-slate-900">
-                    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 space-y-6">
-                      <div className="bg-indigo-50/50 p-5 rounded-2xl text-[11px] font-bold text-indigo-700 border border-indigo-100/50 flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                          <i className="fa-solid fa-person-circle-plus text-[10px]"></i>
-                        </div>
-                        <p className="leading-relaxed opacity-80">{t.parent.coparents.desc}</p>
-                      </div>
-
-                      <form onSubmit={handleAddCoParent} className="flex flex-col gap-3">
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'fr' ? 'Inviter par email' : 'Invite via email'}</label>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                          <input type="email" value={coParentEmail} onChange={e => setCoParentEmail(e.target.value)} className="flex-1 p-4 border-2 border-slate-50 rounded-2xl bg-slate-50/50 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 outline-none text-slate-800 font-black transition-all text-sm" placeholder={t.parent.coparents.emailPlaceholder} required />
-                          <button type="submit" className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all text-center">
-                            {t.parent.coparents.invite}
-                          </button>
-                        </div>
-                      </form>
-
-                      <div className="flex items-center gap-4 py-2">
-                        <div className="h-px bg-slate-100 flex-1"></div>
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{t.auth.or}</span>
-                        <div className="h-px bg-slate-100 flex-1"></div>
-                      </div>
-
-                      <button
-                        onClick={onShowQrInvite}
-                        className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-[0.98]"
-                      >
-                        <i className="fa-solid fa-qrcode text-lg text-emerald-400"></i>
-                        {t.qr.title}
-                      </button>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm transition-colors duration-500">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center">
-                          <i className="fa-solid fa-shield-halved text-sm"></i>
-                        </div>
-                        <h4 className="font-black text-[10px] uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">{language === 'fr' ? 'ACCÈS AUTORISÉS' : language === 'nl' ? 'GEDEELDE TOEGANG' : 'AUTHORIZED ACCESS'}</h4>
-                      </div>
-                      {coParentsList.length === 0 ? (
-                        <div className="text-center py-6">
-                          <p className="text-xs text-slate-400 dark:text-slate-500 font-bold italic">{t.parent.coparents.noGuests}</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {coParentsList.map(cp => (
-                            <div key={cp.id} className="flex justify-between items-center p-4 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-100/50 dark:border-slate-800 rounded-2xl group hover:bg-white dark:hover:bg-slate-800 hover:shadow-md transition-all">
-                              <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 border border-slate-100 dark:border-slate-600 flex items-center justify-center text-slate-300">
-                                  <i className="fa-solid fa-user-check text-sm text-indigo-400 dark:text-indigo-500"></i>
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-black text-slate-800 dark:text-white tracking-tight">{cp.allowed_email}</span>
-                                  <span className="text-[9px] font-black text-emerald-500 uppercase tracking-wider">{language === 'fr' ? 'Accès parent' : 'Parent access'}</span>
-                                </div>
-                              </div>
-                              <button onClick={() => handleRemoveCoParent(cp.id)} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 text-rose-300 dark:text-rose-500 flex items-center justify-center hover:text-rose-600 dark:hover:text-rose-400 border border-slate-100 dark:border-slate-600 transition-all active:scale-90 shadow-sm">
-                                <i className="fa-solid fa-trash-can text-sm"></i>
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
                 {activeTab === 'ACCOUNT' && (
                   <div className="space-y-4 max-w-lg mx-auto pb-8 text-slate-900 dark:text-white transition-colors duration-500">
                     <div className="bg-slate-900 dark:bg-slate-950 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden mb-8 border border-white/5 dark:border-white/10">
@@ -1726,7 +1706,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                       <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-6">
                           <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                            <i className="fa-solid fa-crown text-xl"></i>
+                            <i className="fa-solid fa-crown text-xl text-white"></i>
                           </div>
                           <div>
                             <h4 className="text-lg font-black tracking-tight">{t.parent.premium.title} ✨</h4>
@@ -1745,7 +1725,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                           ))}
                         </div>
 
-                        <button onClick={() => openPrompt({ title: 'Koiny Premium', message: "Bientôt disponible !", type: 'info', onConfirm: () => { } })} className="w-full bg-white dark:bg-indigo-500 text-slate-900 dark:text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all hover:bg-slate-50 dark:hover:bg-indigo-600 transition-colors">
+                        <button onClick={() => openPrompt({ title: t.parent.messages.premiumSoonTitle, message: t.parent.messages.premiumSoonMessage, type: 'info', onConfirm: () => { } })} className="w-full bg-white dark:bg-indigo-500 text-slate-900 dark:text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all hover:bg-slate-50 dark:hover:bg-indigo-600 transition-colors">
                           {t.parent.premium.upgrade}
                         </button>
                       </div>
@@ -1826,7 +1806,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                           type: 'input',
                           placeholder: '••••••••',
                           onConfirm: (val) => {
-                            if (val) onUpdatePassword(val).then(() => openPrompt({ title: 'Success', message: t.parent.account.passwordUpdated, type: 'success', onConfirm: () => { } }));
+                            if (val) onUpdatePassword(val).then(() => openPrompt({ title: t.parent.messages.pinResetSuccessTitle, message: t.parent.account.passwordUpdated, type: 'success', onConfirm: () => { } }));
                           }
                         });
                       }} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 group transition-all hover:shadow-md text-left">
@@ -1883,11 +1863,11 @@ const ParentView: React.FC<ParentViewProps> = ({
                             );
                           } else {
                             // Permission denied by system/user
-                            openPrompt({ title: 'Notifications', message: 'Les notifications sont désactivées dans les réglages système. Veuillez les activer pour Koiny.', type: 'warning', onConfirm: () => { } });
+                            openPrompt({ title: 'Notifications', message: t.parent.messages.notificationsDisabledMessage, type: 'warning', onConfirm: () => { } });
                           }
                         } catch (error) {
                           console.error('[ParentView] Erreur activation notifications:', error);
-                          openPrompt({ title: 'Notifications', message: 'Erreur lors de l\'activation des notifications.', type: 'warning', onConfirm: () => { } });
+                          openPrompt({ title: 'Notifications', message: t.parent.messages.notificationsErrorMessage, type: 'warning', onConfirm: () => { } });
                         }
                       }} className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-sm border group transition-all hover:shadow-md text-left ${notificationsAllowed ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/30' : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800'}`}>
                         <div className="flex items-center gap-4">
@@ -1904,7 +1884,19 @@ const ParentView: React.FC<ParentViewProps> = ({
                         </div>
                       </button>
 
-                      <button onClick={() => openConfirm(t.parent.account.deleteAccountConfirm, "Attention : Toutes les données de la famille seront perdues définitivement.", () => onDeleteAccount(), 'danger')} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 group transition-all hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-100 dark:hover:border-red-900/30 text-left transition-colors">
+                      <button onClick={async () => {
+                        await onSignOut();
+                      }} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 group transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 text-left mb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center group-hover:bg-slate-100 dark:group-hover:bg-slate-700 transition-colors">
+                            <i className="fa-solid fa-right-from-bracket"></i>
+                          </div>
+                          <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">{language === 'fr' ? 'Se déconnecter' : language === 'nl' ? 'Afmelden' : 'Sign Out'}</span>
+                        </div>
+                        <i className="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 group-hover:translate-x-1 transition-transform"></i>
+                      </button>
+
+                      <button onClick={() => openConfirm(t.parent.account.deleteAccountTitle, t.parent.account.deleteAccountMessage, () => onDeleteAccount(), 'danger')} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 group transition-all hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-100 dark:hover:border-red-900/30 text-left transition-colors">
                         <div className="flex items-center gap-4 text-red-500 dark:text-red-400">
                           <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/30 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                             <i className="fa-solid fa-trash-can"></i>
@@ -1940,7 +1932,12 @@ const ParentView: React.FC<ParentViewProps> = ({
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
                 <div className="relative z-10 flex flex-col items-center text-center">
                   <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-3 ring-1 ring-white/30">
-                    <i className={`fa-solid ${transactionType === 'DEPOSIT' ? 'fa-gift' : (withdrawSubtype === 'PURCHASE' ? 'fa-cart-shopping' : 'fa-gavel')} text-2xl`}></i>
+                    <i className={`fa-solid ${transactionType === 'DEPOSIT'
+                      ? 'fa-coins'
+                      : withdrawSubtype === 'PURCHASE'
+                        ? 'fa-cart-shopping'
+                        : 'fa-gavel'
+                      } text-2xl`}></i>
                   </div>
                   <h3 className="text-lg font-black uppercase tracking-widest">{transactionType === 'DEPOSIT' ? t.parent.transactions.labels.deposit : (withdrawSubtype === 'PURCHASE' ? t.parent.transactions.labels.purchase : t.parent.transactions.labels.penalty)}</h3>
                   <p className="text-white/70 text-xs font-bold mt-1 uppercase tracking-tighter">{activeChild?.name}</p>

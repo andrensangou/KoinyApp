@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from '../i18n';
 import { Language, GlobalState, getDemoData } from '../types';
-import { getSupabase, signInWithGoogle } from '../services/supabase';
+import { getSupabase, signInWithGoogle, signInWithApple } from '../services/supabase';
 import { SUPABASE_URL } from '../config';
 import HelpModal from './HelpModal';
 
@@ -79,26 +79,35 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
   };
 
   const handleGoogleLogin = async () => {
-    console.log('🔵 Google login clicked');
-
     if (!supabase) {
-      console.error('❌ Supabase not initialized');
       setError('Configuration error: Supabase not available');
       return;
     }
-
-    console.log('✅ Supabase OK, calling signInWithGoogle...');
     setLoading(true);
-
     try {
       await signInWithGoogle();
-      console.log('✅ signInWithGoogle completed');
     } catch (err: any) {
-      console.error('❌ Google login error:', err);
       const msg = err.message || 'Erreur lors de la connexion Google';
       setError(msg);
-      // Fallback alert pour être sûr que l'utilisateur voit le message
-      alert('Erreur Google Login: ' + msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    if (!supabase) {
+      setError('Configuration error: Supabase not available');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await signInWithApple();
+      if (error) throw error;
+      onLoginSuccess();
+    } catch (err: any) {
+      const msg = err.message || (language === 'fr' ? 'Erreur lors de la connexion Apple' : 'Apple sign-in error');
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -147,9 +156,10 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
           </div>
           <button
             onClick={() => setShowHelp(true)}
+            aria-label={language === 'fr' ? 'Aide' : language === 'nl' ? 'Help' : 'Help'}
             className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-sm flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-slate-100 dark:border-slate-800 active:scale-90 transition-transform"
           >
-            <i className="fa-solid fa-book-bookmark"></i>
+            <i className="fa-solid fa-book-bookmark" aria-hidden="true"></i>
           </button>
         </div>
       </nav>
@@ -196,12 +206,36 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
           ) : (
             <>
               {authMode === 'LOGIN' && (
-                <div className="mb-6">
-                  <button onClick={handleGoogleLogin} className="w-full bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 font-bold py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all flex items-center justify-center gap-3 shadow-sm">
+                <div className="mb-6 space-y-3">
+                  {/* Sign in with Apple — MUST be first per Apple Guideline 4.8 */}
+                  <button
+                    onClick={handleAppleLogin}
+                    disabled={loading}
+                    aria-label={language === 'fr' ? 'Continuer avec Apple' : 'Continue with Apple'}
+                    className="w-full bg-black text-white font-semibold py-3.5 rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-sm text-[15px]"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                    </svg>
+                    {language === 'fr' ? 'Continuer avec Apple' : language === 'nl' ? 'Doorgaan met Apple' : 'Continue with Apple'}
+                  </button>
+
+                  {/* Google Sign-In */}
+                  <button
+                    onClick={handleGoogleLogin}
+                    disabled={loading}
+                    aria-label={t.auth.googleLogin}
+                    className="w-full bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 font-bold py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all flex items-center justify-center gap-3 shadow-sm"
+                  >
                     <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
                     {t.auth.googleLogin}
                   </button>
-                  <div className="flex items-center gap-3 my-4"><div className="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div><span className="text-xs font-bold text-slate-500 uppercase">{t.auth.or}</span><div className="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div></div>
+
+                  <div className="flex items-center gap-3 my-1">
+                    <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
+                    <span className="text-xs font-bold text-slate-500 uppercase">{t.auth.or}</span>
+                    <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
+                  </div>
                 </div>
               )}
 
