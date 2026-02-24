@@ -39,7 +39,7 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
       { q: "Est-ce une vraie banque ?", a: "Non, Koiny est un simulateur pédagogique. Tout l'argent affiché est virtuel. Vous restez le gestionnaire physique de l'argent réel de vos enfants." },
       { q: "Le widget est-il disponible sur Web ?", a: "Non, le widget 'Tirelire' est une exclusivité de la version iOS Native (iPhone). Il n'est pas disponible en version Web ou PWA." },
       { q: "Mes données sont-elles sécurisées ?", a: "Oui, nous utilisons Supabase pour un stockage crypté. Nous ne vendons aucune donnée et respectons scrupuleusement le RGPD." },
-      { q: "Comment fonctionne le co-parentage ?", a: "Invitez votre partenaire via QR Code. Une fois accepté, vous gérez la famille ensemble en temps réel." }
+      { q: "Puis-je avoir plusieurs enfants ?", a: "Oui, vous pouvez ajouter autant d'enfants que vous voulez, chacun avec son propre solde, ses missions et ses objectifs." }
     ],
     nl: [
       { q: "Is dit een echte bank?", a: "Nee, Koiny is een educatieve simulator. Al het getoonde geld is virtueel." },
@@ -77,11 +77,11 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
       <nav className="fixed top-0 left-0 right-0 bg-white dark:bg-slate-950 z-[100] border-b border-slate-100 dark:border-white/10 safe-pt transition-all">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="flex items-center gap-3 group cursor-pointer shrink-0">
-            <div className="w-12 h-12 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+            <div className="w-14 h-14 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-white/10">
               <img
                 src="/mascot.png"
                 alt="Koiny Logo"
-                className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal transform scale-[1.35] translate-y-1 brightness-[1.05] contrast-[1.05]"
+                className="w-full h-full object-cover"
               />
             </div>
             <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-800 dark:text-white hidden xs:block">Koiny</span>
@@ -319,7 +319,9 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
         <div className="max-w-7xl mx-auto flex flex-col items-center gap-12">
           <div className="flex flex-col items-center">
             <div className="flex items-center gap-3 mb-6">
-              <img src="/mascot.png" alt="Logo" className="w-12 h-12 object-contain drop-shadow-md" />
+              <div className="w-16 h-16 flex items-center justify-center rounded-2xl overflow-hidden shadow-lg">
+                <img src="/mascot.png" alt="Logo" className="w-full h-full object-cover" />
+              </div>
               <span className="text-xl font-black tracking-tight dark:text-white">Koiny</span>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-sm max-w-xs leading-relaxed font-medium text-center">

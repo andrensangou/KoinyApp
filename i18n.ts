@@ -17,12 +17,6 @@ export const translations = {
       close: "Fermer",
       userGuide: "Guide Utilisateur"
     },
-    qr: {
-      title: "Inviter un Co-Parent",
-      instructions: "Faites scanner ce code à votre partenaire pour qu'il rejoigne votre famille.",
-      copied: "Lien copié !",
-      copyLink: "Copier le lien d'invitation"
-    },
     colors: {
       indigo: "Indigo",
       pink: "Rose fuchsia",
@@ -152,6 +146,7 @@ export const translations = {
       pinMismatch: "Les codes sont différents",
       pinSaved: "Code enregistré !",
       incorrectCode: "Code erroné",
+      pinLengthError: "Le code doit faire 4 chiffres",
       forgotPinAction: "Code oublié ? Réinitialiser",
       title: "Gestion de la Famille",
       childBalance: "Cagnotte de",
@@ -198,7 +193,8 @@ export const translations = {
       addChild: "Ajouter un enfant",
       addGoalAction: "Ajouter un objectif",
       editChild: "Modifier le profil",
-      deleteConfirm: "Supprimer ce profil ? Toutes les données seront perdues.",
+      deleteTitle: "Supprimer le profil ?",
+      deleteMessage: "Toutes les données seront perdues. Cette action est irréversible.",
       childName: "Prénom",
       childGoalsTitle: "Objectifs & Cadeaux",
       childGoalName: "Nom de l'objet",
@@ -266,14 +262,14 @@ export const translations = {
       },
       tabs: {
         family: "Enfants",
-        coparents: "Co-Parents",
         account: "Mon Compte"
       },
       account: {
         changePin: "Modifier le code PIN",
         changePassword: "Modifier le mot de passe",
         deleteAccount: "Supprimer mon compte",
-        deleteAccountConfirm: "Attention : Cela supprimera tout votre historique familial.",
+        deleteAccountTitle: "Supprimer le compte ?",
+        deleteAccountMessage: "Attention : Cela supprimera tout votre historique familial et vos données définitivement.",
         newPassword: "Nouveau mot de passe",
         passwordUpdated: "Mot de passe changé !",
         soundEffects: "Effets Sonores",
@@ -281,21 +277,10 @@ export const translations = {
         notificationsEnabled: "Notifications Activées !",
         notificationsDisabled: "Notifications Désactivées"
       },
-      coparents: {
-        title: "Gestion des Co-Parents",
-        desc: "Autorisez un autre parent à gérer la famille avec son propre compte.",
-        emailPlaceholder: "email@partenaire.com",
-        invite: "Inviter",
-        list: "Accès partagés :",
-        noGuests: "Personne d'autre n'a accès.",
-        remove: "Retirer l'accès",
-        inviteSuccess: "Invitation réussie !",
-        removeConfirm: "Retirer cet accès ?",
-        sharedFamilyBadge: "Famille partagée"
-      },
       history: {
         clear: "Vider le journal",
-        clearConfirm: "Effacer tout l'historique ? Le solde actuel restera inchangé.",
+        clearTitle: "Vider le journal ?",
+        clearMessage: "Le solde actuel restera inchangé, mais tout l'historique sera effacé.",
         thisMonth: "Ce mois",
         all: "Tout",
         noDataChart: "Pas assez de données pour le graphique.",
@@ -303,7 +288,26 @@ export const translations = {
         noData: "Aucune opération.",
         income: "Gains",
         expense: "Dépenses",
-        limitReached: "Limite atteinte"
+        limitReached: "Limite atteinte",
+        limitReachedMessage: "Le solde ne peut pas dépasser {limit}€ pour ce profil."
+      },
+      messages: {
+        pinResetSuccessTitle: "Succès",
+        pinResetSuccessMessage: "Code PIN réinitialisé. Vous pouvez en créer un nouveau.",
+        securityRequiredTitle: "Sécurité Requise",
+        securityRequiredMessage: "Pour réinitialiser le PIN, confirmez votre mot de passe parent.",
+        chooseMethodTitle: "Vérification d'identité",
+        chooseMethodMessage: "Comment souhaitez-vous vérifier votre identité ?",
+        useBiometric: "Utiliser {biometric}",
+        usePassword: "Mot de passe",
+        biometricReason: "Vérifiez votre identité pour réinitialiser le code PIN",
+        biometricFailed: "La vérification biométrique a échoué. Réessayez ou utilisez votre mot de passe.",
+        accessDeniedTitle: "Accès Refusé",
+        accessDeniedMessage: "Mot de passe incorrect. Impossible de réinitialiser le PIN.",
+        premiumSoonTitle: "Bientôt disponible",
+        premiumSoonMessage: "Débloquez des fonctionnalités illimitées pour toute la famille. Bientôt disponible !",
+        notificationsDisabledMessage: "Les notifications sont désactivées dans les réglages système. Veuillez les activer pour Koiny.",
+        notificationsErrorMessage: "Erreur lors de l'activation des notifications."
       }
     }
   },
@@ -323,12 +327,6 @@ export const translations = {
       add: "Toevoegen",
       close: "Sluiten",
       userGuide: "Handleiding"
-    },
-    qr: {
-      title: "Co-Ouder Uitnodigen",
-      instructions: "Laat je partner deze code scannen om lid te worden van je gezin.",
-      copied: "Link gekopieerd!",
-      copyLink: "Kopieer uitnodigingslink"
     },
     colors: {
       indigo: "Indigo",
@@ -459,6 +457,7 @@ export const translations = {
       pinMismatch: "Codes zijn verschillend",
       pinSaved: "Code opgeslagen!",
       incorrectCode: "Foutieve code",
+      pinLengthError: "De code moet 4 cijfers bevatten",
       forgotPinAction: "Code vergeten? Resetten",
       title: "Beheer van het Gezin",
       childBalance: "Spaarpot van",
@@ -505,7 +504,8 @@ export const translations = {
       addChild: "Kind toevoegen",
       addGoalAction: "Voeg een doel toe",
       editChild: "Profiel bewerken",
-      deleteConfirm: "Profiel verwijderen? Alle data gaat verloren.",
+      deleteTitle: "Profiel verwijderen?",
+      deleteMessage: "Alle gegevens gaan verloren. Deze actie is onomkeerbaar.",
       childName: "Voornaam",
       childGoalsTitle: "Doelen & Cadeaus",
       childGoalName: "Naam van het object",
@@ -573,14 +573,14 @@ export const translations = {
       },
       tabs: {
         family: "Kinderen",
-        coparents: "Co-Ouders",
         account: "Mijn Account"
       },
       account: {
         changePin: "Pincode wijzigen",
         changePassword: "Wachtwoord wijzigen",
         deleteAccount: "Account verwijderen",
-        deleteAccountConfirm: "Let on: Dit verwijdert al je gezinsgeschiedenis.",
+        deleteAccountTitle: "Account verwijderen?",
+        deleteAccountMessage: "Let op: Dit verwijdert definitief je hele gezinsgeschiedenis.",
         newPassword: "Nieuw wachtwoord",
         passwordUpdated: "Wachtwoord gewijzigd!",
         soundEffects: "Geluidseffecten",
@@ -588,21 +588,10 @@ export const translations = {
         notificationsEnabled: "Meldingen Ingeschakeld!",
         notificationsDisabled: "Meldingen Uitgeschakeld"
       },
-      coparents: {
-        title: "Beheer Co-Ouders",
-        desc: "Geef een andere ouder toegang om het gezin te beheren.",
-        emailPlaceholder: "email@partner.com",
-        invite: "Uitnodigen",
-        list: "Gedeelde toegang:",
-        noGuests: "Niemand anders heeft toegang.",
-        remove: "Toegang intrekken",
-        inviteSuccess: "Uitnodiging geslaagd!",
-        removeConfirm: "Toegang intrekken?",
-        sharedFamilyBadge: "Gedeeld gezin"
-      },
       history: {
         clear: "Dagboek wissen",
-        clearConfirm: "Hele geschiedenis wissen? Het huidige saldo blijft behouden.",
+        clearTitle: "Dagboek wissen?",
+        clearMessage: "Het huidige saldo blijft behouden, maar de hele geschiedenis wordt gewist.",
         thisMonth: "Deze maand",
         all: "Alles",
         noDataChart: "Niet genoeg data for de grafiek.",
@@ -610,7 +599,26 @@ export const translations = {
         noData: "Geen operaties.",
         income: "Winst",
         expense: "Uitgaven",
-        limitReached: "Limiet bereikt"
+        limitReached: "Limiet bereikt",
+        limitReachedMessage: "Het saldo mag niet hoger zijn dan {limit}€ voor dit profiel."
+      },
+      messages: {
+        pinResetSuccessTitle: "Succes",
+        pinResetSuccessMessage: "Pincode gereset. Je kunt een nieuwe aanmaken.",
+        securityRequiredTitle: "Beveiliging Vereist",
+        securityRequiredMessage: "Bevestig je ouderwachtwoord om de pincode te resetten.",
+        chooseMethodTitle: "Identiteitsverificatie",
+        chooseMethodMessage: "Hoe wil je je identiteit verifiëren?",
+        useBiometric: "{biometric} gebruiken",
+        usePassword: "Wachtwoord",
+        biometricReason: "Verifieer je identiteit om de pincode te resetten",
+        biometricFailed: "Biometrische verificatie mislukt. Probeer opnieuw of gebruik je wachtwoord.",
+        accessDeniedTitle: "Toegang Geweigerd",
+        accessDeniedMessage: "Onjuist wachtwoord. Pincode kan niet worden gereset.",
+        premiumSoonTitle: "Binnenkort beschikbaar",
+        premiumSoonMessage: "Ontgrendel onbeperkte functies voor het hele gezin. Binnenkort beschikbaar!",
+        notificationsDisabledMessage: "Meldingen zijn uitgeschakeld in de systeeminstellingen. Schakel ze in voor Koiny.",
+        notificationsErrorMessage: "Fout bij het inschakelen van meldingen."
       }
     }
   },
@@ -630,12 +638,6 @@ export const translations = {
       add: "Add",
       close: "Close",
       userGuide: "User Guide"
-    },
-    qr: {
-      title: "Invite a Co-Parent",
-      instructions: "Have your partner scan this code to join your family group.",
-      copied: "Link copied!",
-      copyLink: "Copy invitation link"
     },
     colors: {
       indigo: "Indigo",
@@ -766,6 +768,7 @@ export const translations = {
       pinMismatch: "Codes do not match",
       pinSaved: "Code saved!",
       incorrectCode: "Wrong code",
+      pinLengthError: "The code must be 4 digits",
       forgotPinAction: "Forgot code? Reset",
       title: "Family Management",
       childBalance: "Savings for",
@@ -812,7 +815,8 @@ export const translations = {
       addChild: "Add child",
       addGoalAction: "Add goal",
       editChild: "Edit profile",
-      deleteConfirm: "Delete this profile? All data will be lost.",
+      deleteTitle: "Delete this profile?",
+      deleteMessage: "All data will be lost. This action is irreversible.",
       childName: "First Name",
       childGoalsTitle: "Goals & Gifts",
       childGoalName: "Item name",
@@ -880,14 +884,14 @@ export const translations = {
       },
       tabs: {
         family: "Children",
-        coparents: "Co-Parents",
         account: "My Account"
       },
       account: {
         changePin: "Change PIN code",
         changePassword: "Change password",
         deleteAccount: "Delete my account",
-        deleteAccountConfirm: "Warning: This will delete all your family history.",
+        deleteAccountTitle: "Delete Account?",
+        deleteAccountMessage: "Warning: This will delete all your family history and data definitively.",
         newPassword: "New password",
         passwordUpdated: "Password updated!",
         soundEffects: "Sound Effects",
@@ -895,21 +899,10 @@ export const translations = {
         notificationsEnabled: "Notifications Enabled!",
         notificationsDisabled: "Notifications Disabled"
       },
-      coparents: {
-        title: "Co-Parents Management",
-        desc: "Authorize another parent to manage the family with their own account.",
-        emailPlaceholder: "email@partner.com",
-        invite: "Invite",
-        list: "Shared access:",
-        noGuests: "No one else has access.",
-        remove: "Remove access",
-        inviteSuccess: "Invite successful!",
-        removeConfirm: "Remove this access?",
-        sharedFamilyBadge: "Shared family"
-      },
       history: {
         clear: "Clear diary",
-        clearConfirm: "Clear all history? Current balance will remain unchanged.",
+        clearTitle: "Clear history?",
+        clearMessage: "Current balance will remain unchanged, but all history will be cleared.",
         thisMonth: "This month",
         all: "All",
         noDataChart: "Not enough data for the chart.",
@@ -917,7 +910,26 @@ export const translations = {
         noData: "No operations.",
         income: "Income",
         expense: "Expenses",
-        limitReached: "Limit reached"
+        limitReached: "Limit reached",
+        limitReachedMessage: "Balance cannot exceed {limit}€ for this profile."
+      },
+      messages: {
+        pinResetSuccessTitle: "Success",
+        pinResetSuccessMessage: "PIN code reset. You can create a new one.",
+        securityRequiredTitle: "Security Required",
+        securityRequiredMessage: "Confirm your parent password to reset the PIN.",
+        chooseMethodTitle: "Identity Verification",
+        chooseMethodMessage: "How would you like to verify your identity?",
+        useBiometric: "Use {biometric}",
+        usePassword: "Password",
+        biometricReason: "Verify your identity to reset the PIN code",
+        biometricFailed: "Biometric verification failed. Try again or use your password.",
+        accessDeniedTitle: "Access Denied",
+        accessDeniedMessage: "Incorrect password. Cannot reset PIN.",
+        premiumSoonTitle: "Coming Soon",
+        premiumSoonMessage: "Unlock unlimited features for the whole family. Coming soon!",
+        notificationsDisabledMessage: "Notifications are disabled in system settings. Please enable them for Koiny.",
+        notificationsErrorMessage: "Error while enabling notifications."
       }
     }
   }

@@ -4,9 +4,29 @@ export const APP_NAME = "Koiny";
 export const VERSION = "2.0.0";
 export const IS_LOCAL = import.meta.env.VITE_IS_LOCAL === "true" || false;
 
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://vumowlrfizzrohjhpvre.supabase.co";
-export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1m93bHJmaXp6cm9oamhwdnJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzOTQxMzMsImV4cCI6MjA4NTk3MDEzM30.7YyxRw7hDcnWnDGo0Y2YzKZmenB7ElMYDVU_IUYG8fo";
+// ✅ SÉCURISÉ: Pas de fallbacks pour les clés API
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Salt pour le chiffrement local
-// Triggering new Vercel deployment after disabling fork protection
+// Validation au démarrage
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error(
+        '❌ FATAL: Supabase credentials missing.\n' +
+        'Please create a .env file with:\n' +
+        '  VITE_SUPABASE_URL=your_supabase_url\n' +
+        '  VITE_SUPABASE_ANON_KEY=your_anon_key\n' +
+        'See .env.example for reference.'
+    );
+}
+
+// Validation du format
+if (!SUPABASE_URL.startsWith('https://') || !SUPABASE_URL.includes('.supabase.co')) {
+    throw new Error('❌ FATAL: Invalid Supabase URL format');
+}
+
+if (!SUPABASE_ANON_KEY.startsWith('eyJ')) {
+    throw new Error('❌ FATAL: Invalid Supabase ANON_KEY format (should be a JWT)');
+}
+
+// Salt pour le chiffrement local (peut avoir un fallback car non critique)
 export const KIDBANK_SALT = import.meta.env.VITE_KIDBANK_SALT || "koiny-local-salt-2024";

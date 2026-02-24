@@ -1,5 +1,6 @@
 
 export type MissionStatus = 'ACTIVE' | 'PENDING' | 'COMPLETED';
+export type GoalStatus = 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
 export type Language = 'fr' | 'nl' | 'en';
 
 export type ParentBadge = 'NOVICE' | 'MENTOR' | 'EXPERT' | 'FINTECH_GURU';
@@ -36,6 +37,7 @@ export interface Goal {
   name: string;
   target: number;
   icon: string;
+  status?: GoalStatus;
 }
 
 export interface ChildProfile {
@@ -119,7 +121,7 @@ export const getDemoData = (language: Language = 'fr'): GlobalState => {
         giftRequested: false,
         missionRequested: false,
         goals: [
-          { id: 'dg1', name: 'Lego Star Wars', target: 30, icon: 'fa-solid fa-rocket' }
+          { id: 'dg1', name: 'Lego Star Wars', target: 30, icon: 'fa-solid fa-rocket', status: 'ACTIVE' }
         ],
         missions: [
           { id: 'dm1', title: language === 'fr' ? 'Ranger la chambre' : (language === 'nl' ? 'Kamer opruimen' : 'Clean room'), reward: 2, icon: 'fa-solid fa-broom', status: 'PENDING', createdAt: yesterday.toISOString() },
@@ -140,7 +142,7 @@ export const getDemoData = (language: Language = 'fr'): GlobalState => {
         giftRequested: true,
         missionRequested: false,
         goals: [
-          { id: 'dg2', name: language === 'fr' ? 'Vélo' : (language === 'nl' ? 'Fiets' : 'Bike'), target: 120, icon: 'fa-solid fa-bicycle' }
+          { id: 'dg2', name: language === 'fr' ? 'Vélo' : (language === 'nl' ? 'Fiets' : 'Bike'), target: 120, icon: 'fa-solid fa-bicycle', status: 'ACTIVE' }
         ],
         missions: [],
         history: [

@@ -12,6 +12,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import confetti from 'canvas-confetti';
 import { notifications } from '../services/notifications';
 import { getIcon } from '../constants/icons';
+import { checkBiometricAvailability, authenticateWithBiometric, getBiometricLabel, getBiometricIcon } from '../services/biometric';
 
 interface ParentViewProps {
   data: GlobalState;
@@ -381,8 +382,7 @@ const ParentView: React.FC<ParentViewProps> = ({
       setTriggerAddGoal(false);
     }
   }, [triggerAddGoal, settingsView]);
-  const handleResetPin = () => {
-    // Security Check: Require password to reset PIN
+  const handleResetPinWithPassword = () => {
     openPrompt({
       title: t.parent.messages.securityRequiredTitle,
       message: t.parent.messages.securityRequiredMessage,
@@ -434,6 +434,49 @@ const ParentView: React.FC<ParentViewProps> = ({
         }
       }
     });
+  };
+
+  const handleResetPinWithBiometric = async () => {
+    const success = await authenticateWithBiometric(t.parent.messages.biometricReason);
+    if (success) {
+      performPinReset();
+    } else {
+      setTimeout(() => {
+        openPrompt({
+          title: t.parent.messages.accessDeniedTitle,
+          message: t.parent.messages.biometricFailed,
+          type: 'warning',
+          onConfirm: () => { }
+        });
+      }, 300);
+    }
+  };
+
+  const [biometricChoice, setBiometricChoice] = useState<{
+    isOpen: boolean;
+    label: string;
+    icon: string;
+  } | null>(null);
+
+  const handleResetPin = async () => {
+    // Demo Mode — skip security
+    if (ownerId === 'demo') {
+      performPinReset();
+      return;
+    }
+
+    // Check if biometrics are available
+    const biometric = await checkBiometricAvailability();
+
+    if (biometric.isAvailable) {
+      // Show choice dialog
+      const label = getBiometricLabel(biometric.biometryType, language);
+      const icon = getBiometricIcon(biometric.biometryType);
+      setBiometricChoice({ isOpen: true, label, icon });
+    } else {
+      // No biometrics available — use password only
+      handleResetPinWithPassword();
+    }
   };
 
   const handleAddSubmit = (e: React.FormEvent) => {
@@ -2104,6 +2147,76 @@ const ParentView: React.FC<ParentViewProps> = ({
           </div>
         )
       }
+
+      {/* Biometric Choice Dialog */}
+      {biometricChoice?.isOpen && (
+        <div className="fixed inset-0 z-[260] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/40 dark:bg-black/70 backdrop-blur-xl animate-fade-in"
+            onClick={() => setBiometricChoice(null)}
+          ></div>
+          <div className="bg-white/90 dark:bg-slate-900/90 w-full max-w-sm rounded-[2.5rem] shadow-[0_30px_100px_-20px_rgba(0,0,0,0.5)] p-8 relative z-10 animate-scale-in border border-white dark:border-white/10 overflow-hidden">
+            {/* Accent bar */}
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-400 to-purple-500 opacity-50"></div>
+
+            <div className="flex flex-col items-center text-center">
+              {/* Icon */}
+              <div className="w-20 h-20 bg-indigo-100/80 dark:bg-indigo-900/40 text-indigo-500 dark:text-indigo-400 rounded-[2rem] flex items-center justify-center text-3xl mb-6 shadow-inner border border-white/50 dark:border-white/5 transform -rotate-6">
+                <i className="fa-solid fa-shield-halved"></i>
+              </div>
+
+              <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
+                {t.parent.messages.chooseMethodTitle}
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mb-8 leading-relaxed">
+                {t.parent.messages.chooseMethodMessage}
+              </p>
+
+              {/* Biometric Button */}
+              <button
+                onClick={() => {
+                  setBiometricChoice(null);
+                  setTimeout(() => handleResetPinWithBiometric(), 300);
+                }}
+                className="w-full flex items-center gap-4 p-5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-2xl mb-3 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 active:scale-95 transition-all group"
+              >
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                  <i className={biometricChoice.icon}></i>
+                </div>
+                <div className="text-left">
+                  <span className="font-black text-sm block">
+                    {t.parent.messages.useBiometric.replace('{biometric}', biometricChoice.label)}
+                  </span>
+                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">
+                    {language === 'fr' ? 'Rapide & sécurisé' : language === 'nl' ? 'Snel & veilig' : 'Fast & secure'}
+                  </span>
+                </div>
+              </button>
+
+              {/* Password Button */}
+              <button
+                onClick={() => {
+                  setBiometricChoice(null);
+                  setTimeout(() => handleResetPinWithPassword(), 300);
+                }}
+                className="w-full flex items-center gap-4 p-5 bg-slate-100 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 rounded-2xl active:scale-95 transition-all group border border-slate-200 dark:border-slate-700"
+              >
+                <div className="w-12 h-12 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center text-xl text-slate-400 dark:text-slate-500 shadow-sm group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
+                  <i className="fa-solid fa-key"></i>
+                </div>
+                <div className="text-left">
+                  <span className="font-black text-sm block">
+                    {t.parent.messages.usePassword}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    {language === 'fr' ? 'Méthode classique' : language === 'nl' ? 'Klassieke methode' : 'Classic method'}
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNavigation
         activeTab={mainView}

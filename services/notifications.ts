@@ -30,7 +30,7 @@ export const NOTIFICATION_TYPES = {
 class NotificationService {
     private hasPermission: boolean = false;
     private isNative: boolean = false;
-    private notificationId: number = 1;
+    private notificationId: number = Date.now() % 100000; // ID unique au démarrage
 
     constructor() {
         this.isNative = Capacitor.isNativePlatform();
@@ -128,7 +128,7 @@ class NotificationService {
     /**
      * Envoie une notification locale
      */
-    async send(title: string, body: string) {
+    async send(title: string, body: string, data?: { childId?: string; type?: string; missionId?: string }) {
         if (!this.hasPermission) {
             console.warn('Permission notifications non accordée');
             return;
@@ -148,10 +148,11 @@ class NotificationService {
                             id: this.notificationId++,
                             title: title,
                             body: body,
-                            schedule: { at: new Date(Date.now() + 1000) }, // Dans 1 seconde
+                            schedule: { at: new Date(Date.now() + 1000), allowWhileIdle: true }, // Dans 1 seconde
                             sound: 'default',
                             smallIcon: 'ic_stat_icon_config_sample',
-                            iconColor: '#667eea'
+                            iconColor: '#667eea',
+                            extra: data || {} // Add extra data for deep linking
                         }
                     ]
                 });
@@ -166,13 +167,15 @@ class NotificationService {
                         body: body,
                         icon: '/favicon.svg',
                         badge: '/favicon.svg',
-                        tag: `koiny-${Date.now()}`
+                        tag: `koiny-${Date.now()}`,
+                        data: data || {} // Add data for web notifications
                     });
                 });
             } else {
                 new Notification(title, {
                     body: body,
-                    icon: '/favicon.svg'
+                    icon: '/favicon.svg',
+                    data: data || {}
                 });
             }
         }
@@ -180,17 +183,18 @@ class NotificationService {
     /**
      * Notify for child request
      */
-    notifyChildRequest(name: string, type: 'GIFT' | 'MISSION') {
+    notifyChildRequest(childId: string, name: string, type: 'GIFT' | 'MISSION') {
         const config = type === 'GIFT' ? NOTIFICATION_TYPES.CHILD_REQUEST_GIFT : NOTIFICATION_TYPES.CHILD_REQUEST_MISSION;
-        this.send(config.title, config.body(name));
+        const bodyText = type === 'GIFT' ? `${name} a fait une demande de cadeau.` : config.body(name);
+        this.send(config.title, bodyText, { childId, type });
     }
 
     /**
      * Notify for mission completion
      */
-    notifyMissionComplete(name: string) {
+    notifyMissionComplete(childId: string, name: string, missionId?: string) {
         const config = NOTIFICATION_TYPES.MISSION_COMPLETED;
-        this.send(config.title, config.body(name));
+        this.send(config.title, `${name} a terminé une mission. À valider !`, { childId, type: 'MISSION_COMPLETE', missionId });
     }
 
     /**
@@ -198,7 +202,7 @@ class NotificationService {
      */
     notifyParentReminder() {
         const config = NOTIFICATION_TYPES.PARENT_REMINDER;
-        this.send(config.title, config.body);
+        this.send(config.title, config.body, { type: 'PARENT_REMINDER' });
     }
 }
 

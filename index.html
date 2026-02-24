@@ -10,6 +10,20 @@
   <meta http-equiv="X-Frame-Options" content="DENY">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
+  <!-- ✅ Content Security Policy - Protection XSS -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com;
+    font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
+    img-src 'self' data: https: blob:;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co;
+    frame-ancestors 'none';
+    base-uri 'self';
+    form-action 'self';
+    upgrade-insecure-requests;
+  ">
+
   <!-- Meta tags pour le mode Application (iOS & Android) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -115,6 +129,27 @@
             slideUp: {
               '0%': { transform: 'translateY(100%)' },
               '100%': { transform: 'translateY(0)' },
+            },
+            slideDown: {
+              '0%': { opacity: '0', transform: 'translateY(-20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            onboardingIcon: {
+              '0%': { opacity: '0', transform: 'scale(0.5) rotate(-10deg)' },
+              '60%': { transform: 'scale(1.08) rotate(2deg)' },
+              '100%': { opacity: '1', transform: 'scale(1) rotate(0)' },
+            },
+            onboardingTitle: {
+              '0%': { opacity: '0', transform: 'translateY(24px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            onboardingDesc: {
+              '0%': { opacity: '0', transform: 'translateY(16px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            onboardingFeatures: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
             }
           },
           animation: {
@@ -126,6 +161,11 @@
             'overflow-pulse': 'overflowPulse 1s ease-in-out infinite',
             'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'slide-down': 'slideDown 0.4s ease-out forwards',
+            'onboarding-icon': 'onboardingIcon 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+            'onboarding-title': 'onboardingTitle 0.5s ease-out 0.15s both',
+            'onboarding-desc': 'onboardingDesc 0.5s ease-out 0.3s both',
+            'onboarding-features': 'onboardingFeatures 0.5s ease-out 0.45s both',
           }
         }
       }

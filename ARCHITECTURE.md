@@ -1,80 +1,67 @@
-
-# 🏦 Koiny - Documentation d'Architecture BMAD
+# 🏦 Koiny - Documentation d'Architecture (BMAD)
 
 **Application d'éducation financière gamifiée pour familles**  
-**Version :** 1.2 (UI Refactor & Security)  
-**Rôle du document :** Source de vérité produit et technique pour les intervenants (PM, Dev, QA).
+**Version :** 2.0 (Relational Schema & Realtime Sync)  
+**Rôle du document :** Source de vérité technique pour le cycle de vie du produit.
 
 ---
 
 ## 📊 B - BUSINESS (Métier)
 
 ### 1. Problème Résolu
-Les parents manquent d'outils structurés pour enseigner la gestion budgétaire. Les méthodes physiques (tirelire) manquent de suivi historique, et les outils bancaires adultes sont trop complexes. Koiny comble ce fossé par la gamification.
+Koiny répond au besoin des parents de structurer l'éducation budgétaire de leurs enfants. En transformant les tâches quotidiennes en "missions" rémunérées en argent virtuel, l'application enseigne la corrélation entre effort et gain, tout en introduisant les concepts d'épargne (objectifs) et de gestion de solde.
 
-### 2. Piliers Stratégiques (Nouveau v1.1)
-- **100% Argent Virtuel** : Suppression de toute friction ou peur liée à une liaison bancaire réelle. Koiny est un simulateur éducatif.
-- **Confiance Totale** : Transparence sur la vie privée. Aucune revente de données, stockage sécurisé en Europe (RGPD).
-- **Gamification Positive** : L'effort est récompensé par des visuels (confettis, badges) et non seulement par un chiffre.
-
-### 3. Utilisateurs Cibles
-- **Parents (Admins)** : Gèrent les budgets, créent les missions, valident les preuves d'exécution.
-- **Enfants (Users)** : Utilisent l'interface pour suivre leur solde, marquer leurs tâches et visualiser leur progression.
-- **Co-parents (Guests)** : Partagent l'autorité parentale via une synchronisation temps réel.
+### 2. Piliers Stratégiques
+- **Zero Real Money** : Aucun lien bancaire réel. L'application est un simulateur pur, éliminant tout risque financier.
+- **Transparence & Confiance** : Pas de revente de données. Stockage sécurisé sur Supabase avec isolation stricte des données par famille (RLS).
+- **Gamification Cognitive** : Utilisation de feedbacks visuels (confettis, animations de solde) et sonores pour renforcer les comportements positifs.
 
 ---
 
 ## 🗄️ M - MODEL (Données)
 
-### 1. Stratégie de Stockage (Architectural Decision)
-Koiny utilise une architecture **Single-Blob JSON**. Tout l'état de la famille est regroupé dans un objet JSON unique stocké dans Supabase.
-- **Cohérence** : Les mutations sont atomiques.
-- **Local-First** : Persistance immédiate dans `LocalStorage`, synchronisation cloud asynchrone (Debounce 2000ms).
+### 1. Stratégie de Stockage (V2)
+L'architecture a évolué d'un Single-Blob JSON vers un **Schéma Relationnel Normalisé** sur Supabase (PostgreSQL) pour permettre une synchronisation granulaire et des performances accrues.
 
-### 2. Système i18n & Légal
-La couche `i18n.ts` ne sert pas qu'à la traduction, elle centralise désormais la **politique de confidentialité** et les **conditions d'utilisation**. Cela garantit que les mentions légales sont toujours à jour dans la langue de l'utilisateur sans duplication de code.
+| Table | Rôle |
+|---|---|
+| `families` | Unité structurelle regroupant parents et enfants. |
+| `profiles` | Utilisateurs authentifiés (Parents/Co-parents). |
+| `children` | Profils des enfants avec thèmes et balances. |
+| `missions` | Défis créés avec états de cycle de vie (available, pending, validated, rejected). |
+| `goals` | Objectifs d'épargne avec progression. |
+| `transactions` | Registre immuable de tous les flux financiers. |
 
----
-
-## 🔌 A - API (Endpoints & Sync)
-
-### 1. Contrats Supabase
-- **Table `user_data`** : Stocke le `GlobalState`.
-- **Table `family_links`** : Gère les accès partagés via email (Co-parenting).
-
-### 2. Global Event Bus (Nouveau v1.1)
-Pour éviter de passer des fonctions de callback à travers 10 niveaux de composants (Prop Drilling), Koiny utilise un bus d'événements natif :
-- **Déclencheur** : `window.dispatchEvent(new CustomEvent('openLegalModal'))`
-- **Récepteur** : Le composant `LegalModal` écoute cet événement globalement.
-- **Avantage** : N'importe quel bouton (Landing, Auth, Settings) peut ouvrir les mentions légales sans lien direct.
+### 2. Local-First & Optimistic UI
+- **Cache local** : Utilisation du `LocalStorage` pour un affichage instantané au démarrage.
+- **Updates optimistes** : L'UI se met à jour immédiatement, les synchronisations cloud (`saveToSupabase`) sont effectuées en arrière-plan avec un système de débounce pour économiser la bande passante.
 
 ---
 
-## 🎨 D - DESIGN (UI/UX)
+## 🔌 A - API & SYNCHRONISATION
 
-### 1. Store-Readiness (PWA)
-L'application est configurée pour être transformée en application native :
-- **Manifeste Web** (`manifest.json`) : Icônes maskables, couleurs de thème, orientation portrait forcée.
-- **Meta Tags iOS** : Support du mode `standalone` pour masquer la barre d'adresse Safari.
+### 1. Synchronisation Temps Réel (Supabase Realtime)
+L'application écoute les changements sur la table `profiles` (via le `family_id`) pour déclencher des rechargements automatiques sur tous les appareils de la famille lors d'une modification effectuée par un autre membre.
+
+### 2. Gestion des Conflits
+- **IsSaving Flag** : Empêche les sauvegardes concurrentes.
+- **ID Mapping** : Lors de la création d'objets (enfants, missions, goals) hors-ligne ou avant sync, des IDs temporaires sont utilisés puis remplacés par des UUIDs réels lors de la première synchronisation réussie, évitant ainsi les doublons.
+
+---
+
+## 🎨 D - DESIGN & MOBILE (UI/UX)
+
+### 1. Intégration Native iOS (Capacitor)
+- **Foreground Notifications** : Implémentation personnalisée dans `AppDelegate.swift` pour permettre l'affichage des bannières même quand l'app est active.
+- **Deep Linking** : Support des schémas `com.koiny.app://` pour la gestion des callbacks OAuth et des invitations de famille.
 
 ### 2. Design System
-- **Framework** : Tailwind CSS avec configuration de couleurs dynamiques.
-- **Psychologie des couleurs** : Indigo (Sérieux/Confiance), Emerald (Gains/Succès), Rose/Amber (Attention/Mise en garde).
-- **Animations** : Utilisation de `keyframes` Tailwind pour les montées de solde et les apparitions de modales.
+- **Tailwind CSS** : Utilisation de tokens de couleurs dynamiques permettant à chaque enfant d'avoir son propre environnement visuel.
+- **Mobile-First** : Navigation par onglets (Bottom Tabs) optimisée pour l'usage à une main sur smartphone.
 
-### 3. Audio & Feedback
-Le système audio est piloté par un flag `soundEnabled` dans l'état global, permettant une expérience immersive (bruit de pièces) ou silencieuse selon le choix des parents.
-
-### 4. Navigation & Layout (Mise à jour v1.2)
-- **Tab-Based Navigation** : Remplacement du scroll unique par une `BottomNavigation` (Dashboard, Historique, Demandes, Profil) pour une meilleure ergonomie mobile.
-- **En-têtes Contextuels** : 
-    - *Dashboard* : En-tête immersif avec résumé hebdomadaire (Icône Graphique).
-    - *Vues Détails* : En-tête compact et sticky pour maximiser l'espace de contenu.
-- **Cartes "Flattened"** : Design épuré pour l'historique et les demandes, maximisant la lisibilité et la zone de clic ("thumb-friendly").
-
-### 5. Sécurité (Mise à jour v1.2)
-- **PIN Reset Sécurisé** : La réinitialisation du code PIN parent nécessite désormais impérativement la saisie du mot de passe du compte principal.
-- **Validation** : Protection contre les modifications non autorisées par un enfant ayant accès au téléphone déverrouillé.
+### 3. Accessibilité & i18n
+- Centralisation des textes dans `i18n.ts` supportant le Français et l'Anglais.
+- Détection automatique de la langue locale de l'appareil.
 
 ---
-*Dernière mise à jour : Mars 2024 - Focus : Confiance & Store Publication.*
+*Dernière mise à jour : Février 2026 - Focus : Schéma Relationnel & Performance Native.*
