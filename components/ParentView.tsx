@@ -13,6 +13,7 @@ import confetti from 'canvas-confetti';
 import { notifications } from '../services/notifications';
 import { getIcon } from '../constants/icons';
 import { checkBiometricAvailability, authenticateWithBiometric, getBiometricLabel, getBiometricIcon } from '../services/biometric';
+import { Capacitor } from '@capacitor/core';
 
 interface ParentViewProps {
   data: GlobalState;
@@ -162,6 +163,20 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
   const [localPin, setLocalPin] = useState<string | null>(null);
+  const [biometricStatus, setBiometricStatus] = useState<{ isAvailable: boolean; biometryType: 'face' | 'fingerprint' | 'none' } | null>(null);
+
+  // Vérifier la biométrie disponible sur cet appareil
+  useEffect(() => {
+    checkBiometricAvailability().then(setBiometricStatus);
+  }, []);
+
+  // Déverrouiller l'Espace Parents avec Face ID / Touch ID
+  const handleBiometricUnlock = async () => {
+    const success = await authenticateWithBiometric(t.parent.messages.biometricUnlockReason);
+    if (success) {
+      setIsAuthenticated(true);
+    }
+  };
 
   // Charger le PIN local au démarrage
   useEffect(() => {
@@ -464,19 +479,8 @@ const ParentView: React.FC<ParentViewProps> = ({
       performPinReset();
       return;
     }
-
-    // Check if biometrics are available
-    const biometric = await checkBiometricAvailability();
-
-    if (biometric.isAvailable) {
-      // Show choice dialog
-      const label = getBiometricLabel(biometric.biometryType, language);
-      const icon = getBiometricIcon(biometric.biometryType);
-      setBiometricChoice({ isOpen: true, label, icon });
-    } else {
-      // No biometrics available — use password only
-      handleResetPinWithPassword();
-    }
+    // "Forgot PIN" always goes to master password — Face ID is for unlocking, not resetting
+    handleResetPinWithPassword();
   };
 
   const handleAddSubmit = (e: React.FormEvent) => {
@@ -912,6 +916,21 @@ const ParentView: React.FC<ParentViewProps> = ({
                   </button>
                 </div>
               )}
+
+              {/* Bouton biométrique — visible sur iOS natif, que le plugin soit prêt ou non */}
+              {Capacitor.isNativePlatform() && (
+                <button
+                  onClick={handleBiometricUnlock}
+                  className="flex flex-col items-center gap-2 group active:scale-95 transition-all"
+                >
+                  <div className="w-16 h-16 rounded-3xl bg-white/[0.05] border border-white/10 hover:bg-white/[0.1] hover:border-indigo-500/40 transition-all flex items-center justify-center shadow-xl">
+                    <i className={`${getBiometricIcon(biometricStatus?.biometryType ?? 'face')} text-2xl text-slate-300 group-hover:text-indigo-400 transition-colors`}></i>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-indigo-400 transition-colors">
+                    {getBiometricLabel(biometricStatus?.biometryType ?? 'face', language)}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -1085,7 +1104,7 @@ const ParentView: React.FC<ParentViewProps> = ({
         {activeChild ? (
           <div className="animate-fade-in-up">
             {mainView === 'dashboard' && <div className="space-y-8">
-              <section className={`relative bg-gradient-to-br from-${activeChild.colorClass}-600 to-${activeChild.colorClass}-700 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-${activeChild.colorClass}-200 overflow-hidden transform transition-all hover:scale-[1.01]`}>
+              <section className={`relative bg-gradient-to-br from-${activeChild.colorClass}-400 to-${activeChild.colorClass}-700 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-${activeChild.colorClass}-200 overflow-hidden transform transition-all hover:scale-[1.01]`}>
                 {/* SVG Background Pattern */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none">
                   <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="none">
@@ -1114,7 +1133,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                   </div>
                 </div>
 
-                {/* Liquid Progress Bar iOS Style - CONDITIONAL RENDERING */}
+                {/* Liquid Progress Bar — color changes with progress */}
                 {activeChild.goals && activeChild.goals.length > 0 ? (
                   <div className="relative z-10 pt-4 mt-auto">
                     <div className="flex justify-between items-end mb-3">
@@ -1122,14 +1141,24 @@ const ParentView: React.FC<ParentViewProps> = ({
                         <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-0.5">{t.parent.childGoal}</span>
                         <span className="text-sm font-black tracking-tight">{activeChild.goals[0].name}</span>
                       </div>
-                      <span className="text-[10px] font-black opacity-60">
+                      <span className="text-[10px] font-black opacity-80">
                         {Math.min(100, Math.round((activeChild.balance / activeChild.goals[0].target) * 100))}%
                       </span>
                     </div>
-                    <div className="w-full h-3 bg-black/10 rounded-full overflow-hidden border border-white/5 shadow-inner">
+                    <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-white rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(255,255,255,0.5)]"
-                        style={{ width: `${Math.min(100, (activeChild.balance / activeChild.goals[0].target) * 100)}%` }}
+                        className="h-full rounded-full transition-all duration-1000 ease-out"
+                        style={{
+                          width: `${Math.min(100, (activeChild.balance / activeChild.goals[0].target) * 100)}%`,
+                          background: (() => {
+                            const p = Math.min(100, Math.round((activeChild.balance / activeChild.goals[0].target) * 100));
+                            if (p >= 100) return 'linear-gradient(to right, #fbbf24, #f59e0b)'; // gold
+                            if (p >= 75)  return 'linear-gradient(to right, #34d399, #10b981)'; // green
+                            if (p >= 50)  return 'linear-gradient(to right, #a3e635, #fde047)'; // lime-yellow
+                            if (p >= 25)  return 'linear-gradient(to right, #fb923c, #f97316)'; // orange
+                            return 'linear-gradient(to right, #f87171, #fb7185)';               // red
+                          })()
+                        }}
                       ></div>
                     </div>
                   </div>
@@ -1167,7 +1196,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm p-8 flex flex-col items-center text-center min-h-[240px] justify-center space-y-4 transition-colors duration-500">
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm p-8 flex flex-col items-center text-center min-h-[240px] justify-center space-y-4 transition-colors duration-500">
                   {filteredGoals.length === 0 ? (
                     <>
                       <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-200 dark:text-slate-700 text-3xl">
@@ -1189,7 +1218,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         const percent = Math.min(100, Math.round((activeChild.balance / goal.target) * 100));
                         const isReady = activeChild.balance >= goal.target;
                         return (
-                          <div key={goal.id} className={`w-full p-4 rounded-2xl border flex items-center justify-between text-left transition-colors duration-300 ${goal.status === 'COMPLETED' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50' : (isReady ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700/50 text-slate-800 dark:text-yellow-100' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800')}`}>
+                          <div key={goal.id} className={`w-full p-4 rounded-2xl border flex items-center justify-between text-left transition-colors duration-300 ${goal.status === 'COMPLETED' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50' : (isReady ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700/50 text-slate-800 dark:text-yellow-100' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm')}`}>
                             <div className="flex items-center gap-3">
                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm ${goal.status === 'COMPLETED' ? 'bg-emerald-500 text-white' : (isReady ? 'bg-yellow-400 text-white' : 'bg-white dark:bg-slate-700 text-slate-400 dark:text-slate-500')}`}>
                                 <i className={getIcon(goal.icon)}></i>

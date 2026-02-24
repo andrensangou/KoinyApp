@@ -58,7 +58,7 @@ export const signInWithGoogle = async () => {
         if (isNative && data?.url) {
             await Browser.open({
                 url: data.url,
-                windowName: '_self',
+                presentationStyle: 'popover',
             });
         }
 

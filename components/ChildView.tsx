@@ -386,8 +386,17 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                               </div>
                               <div className="w-full h-3 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden p-0.5">
                                 <div
-                                  className={`h-full bg-gradient-to-r from-${data.colorClass}-500 to-${data.colorClass}-400 rounded-full transition-all duration-1000 ease-out flex items-center justify-end pr-1`}
-                                  style={{ width: `${Math.max(percentage, 2)}%` }}
+                                  className="h-full rounded-full transition-all duration-1000 ease-out flex items-center justify-end pr-1"
+                                  style={{
+                                    width: `${Math.max(percentage, 2)}%`,
+                                    background: (() => {
+                                      if (percentage >= 100) return 'linear-gradient(to right, #fbbf24, #f59e0b)';
+                                      if (percentage >= 75)  return 'linear-gradient(to right, #34d399, #10b981)';
+                                      if (percentage >= 50)  return 'linear-gradient(to right, #a3e635, #fde047)';
+                                      if (percentage >= 25)  return 'linear-gradient(to right, #fb923c, #f97316)';
+                                      return 'linear-gradient(to right, #f87171, #fb7185)';
+                                    })()
+                                  }}
                                 >
                                   {percentage > 15 && <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>}
                                 </div>

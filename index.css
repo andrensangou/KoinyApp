@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ───────────────────────────────────────────
+   Global Styles
+   ─────────────────────────────────────────── */
+:root {
+    --safe-area-top: env(safe-area-inset-top);
+    --safe-area-bottom: env(safe-area-inset-bottom);
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #fcfcfc;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    overscroll-behavior-y: none;
+}
+
+.dark body {
+    background-color: #020617;
+    /* slate-950 */
+}
+
+.safe-pt {
+    padding-top: 60px !important;
+    padding-top: max(60px, env(safe-area-inset-top)) !important;
+}
+
+.safe-pb {
+    padding-bottom: env(safe-area-inset-bottom) !important;
+}
+
+.safe-mt {
+    margin-top: 60px !important;
+    margin-top: max(60px, env(safe-area-inset-top)) !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+input,
+textarea,
+button,
+select,
+a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.overflow-active {
+    animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both, overflowPulse 1.5s ease-in-out infinite;
+}

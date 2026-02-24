@@ -14,78 +14,81 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
   const t = {
     fr: {
       title: 'Guide Utilisateur',
-      welcomeTitle: 'Bienvenue sur Koiny ! 🐷',
-      welcomeText: "Cette application transforme l'éducation financière en un jeu amusant. Voici comment l'utiliser en famille.",
+      welcomeTitle: 'Bienvenue sur Koiny !',
+      welcomeText: "Koiny transforme l'éducation financière en jeu. Voici tout ce qu'il faut savoir pour bien démarrer en famille.",
       steps: [
         {
           id: 1,
-          icon: 'fa-star',
-          color: 'from-amber-400 to-orange-600',
-          title: 'Nouveau : Widget iPhone',
-          text: "Suivez sa tirelire sans ouvrir l'app :",
+          icon: 'fa-table-columns',
+          color: 'from-indigo-400 to-purple-600',
+          title: 'Navigation',
+          text: '4 onglets en bas de l\'écran :',
           items: [
-            "Installez la version iOS (TestFlight).",
-            "Appuyez longuement sur votre écran d'accueil.",
-            "Ajoutez le widget Koiny pour voir le solde en direct."
+            'Maison : Vue d\'ensemble et ajout rapide de missions.',
+            'Horloge : Historique des transactions et graphiques.',
+            'Bulles : Valider les missions et les demandes de cadeaux.',
+            'Profil : Gérer les enfants, objectifs et réglages.'
           ]
         },
         {
           id: 2,
-          icon: 'fa-download',
-          color: 'from-blue-400 to-indigo-600',
-          title: 'Installation (App Web)',
-          text: "Pour une meilleure expérience :",
+          icon: 'fa-lock',
+          color: 'from-rose-400 to-pink-600',
+          title: 'Espace Parents — Sécurité',
+          text: 'Accès protégé de deux façons :',
           items: [
-            'Ouvrez ce site dans Safari (iPhone) ou Chrome (Android).',
-            'Appuyez sur "Partager" ou "Menu".',
-            'Sélectionnez "Sur l\'écran d\'accueil".'
+            'Code PIN à 4 chiffres défini à la première utilisation.',
+            'Face ID / Touch ID si activé sur votre appareil.',
+            'Oubli du PIN : saisissez votre mot de passe Koiny pour le réinitialiser.'
           ]
         },
         {
           id: 3,
-          icon: 'fa-rocket',
-          color: 'from-indigo-400 to-purple-600',
-          title: 'Démarrage',
-          text: 'Les bases pour bien commencer :',
+          icon: 'fa-child',
+          color: 'from-emerald-400 to-teal-600',
+          title: 'Gérer les Enfants',
+          text: 'Dans l\'onglet Profil :',
           items: [
-            'Compte : Créez un compte parent avec votre email.',
-            'Code PIN : Sécurisez l\'accès parent avec un code à 4 chiffres.',
-            'Profils : Créez un profil pour chaque enfant.'
+            'Ajoutez un enfant : prénom, couleur, photo (optionnel).',
+            'Modifiez le solde manuellement via les boutons + / −.',
+            'Ajoutez des objectifs (ex : vélo à 150€) pour motiver l\'épargne.'
           ]
         },
         {
           id: 4,
           icon: 'fa-check-double',
-          color: 'from-emerald-400 to-teal-600',
-          title: 'Le Cycle des Missions',
-          text: 'Comment ça marche ?',
+          color: 'from-blue-400 to-indigo-600',
+          title: 'Les Missions',
+          text: 'Cycle complet d\'une mission :',
           items: [
-            '1. Création : Le parent ajoute une mission.',
-            '2. Action : L\'enfant clique sur "C\'est fait !" sur son profil.',
-            '3. Validation : Le parent valide la mission.'
+            'Création : Le parent crée une mission avec titre et récompense.',
+            'Action : L\'enfant clique sur "C\'est fait !" dans son espace.',
+            'Validation : Le parent approuve ou demande une correction.',
+            'Paiement : La récompense est automatiquement ajoutée au solde.'
           ]
         },
         {
           id: 5,
-          icon: 'fa-comments',
-          color: 'from-orange-400 to-rose-600',
-          title: 'Communication 💬',
-          text: 'L\'enfant peut attirer votre attention :',
+          icon: 'fa-gift',
+          color: 'from-amber-400 to-orange-600',
+          title: 'Objectifs & Cadeaux',
+          text: 'Système d\'épargne intégré :',
           items: [
-            '"Choisir un cadeau" : Demande un nouvel objectif.',
-            '"Défi !" : Demande de nouvelles missions.'
+            'L\'enfant suit sa progression via la jauge colorée.',
+            'Quand le solde atteint l\'objectif, un bouton "Réclamer" apparaît.',
+            'Le parent confirme dans l\'onglet Bulles — le solde est déduit.'
           ]
         },
         {
           id: 6,
           icon: 'fa-piggy-bank',
-          color: 'from-amber-400 to-orange-600',
-          title: "Gérer l'Argent (Virtuel)",
-          text: 'Koiny est un livre de comptes numérique.',
+          color: 'from-amber-400 to-yellow-500',
+          title: 'Limites de Solde',
+          text: 'Pour rester réaliste et pédagogique :',
           items: [
-            'Dépôt (+) : Argent de poche ou cadeau.',
-            'Retrait (-) : Achat effectué pour l\'enfant.',
-            'Achat : Déduisez le montant manuellement.'
+            'Le solde est plafonné à 100€ par enfant.',
+            'Si une récompense dépasse ce plafond, le paiement est bloqué.',
+            'C\'est l\'occasion d\'expliquer l\'épargne et la dépense réelle !'
           ]
         }
       ],
@@ -93,84 +96,171 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
     },
     en: {
       title: 'User Guide',
-      welcomeTitle: 'Welcome to Koiny! 🐷',
-      welcomeText: "Turn financial education into a fun game. Here's your family roadmap.",
+      welcomeTitle: 'Welcome to Koiny!',
+      welcomeText: "Koiny turns financial education into a game. Here's everything you need to get started as a family.",
       steps: [
         {
           id: 1,
-          icon: 'fa-star',
-          color: 'from-amber-400 to-orange-600',
-          title: 'New: iPhone Widget',
-          text: "Track their savings without opening the app:",
+          icon: 'fa-table-columns',
+          color: 'from-indigo-400 to-purple-600',
+          title: 'Navigation',
+          text: '4 tabs at the bottom of the screen:',
           items: [
-            "Install the iOS version (TestFlight).",
-            "Long press on your home screen.",
-            "Add the Koiny widget for live balance updates."
+            'Home: Overview and quick mission adding.',
+            'Clock: Transaction history and charts.',
+            'Bubbles: Approve missions and gift requests.',
+            'Profile: Manage children, goals and settings.'
           ]
         },
         {
           id: 2,
-          icon: 'fa-download',
-          color: 'from-blue-400 to-indigo-600',
-          title: 'Installation (Web App)',
-          text: "For the best experience:",
+          icon: 'fa-lock',
+          color: 'from-rose-400 to-pink-600',
+          title: 'Parent Space — Security',
+          text: 'Protected in two ways:',
           items: [
-            'Open in Safari (iPhone) or Chrome (Android).',
-            'Press "Share" or "Menu".',
-            'Select "Add to Home Screen".'
+            '4-digit PIN code set on first use.',
+            'Face ID / Touch ID if enabled on your device.',
+            'Forgot PIN: enter your Koiny password to reset it.'
           ]
         },
         {
           id: 3,
-          icon: 'fa-rocket',
-          color: 'from-indigo-400 to-purple-600',
-          title: 'Getting Started',
-          text: 'The basics to start right:',
+          icon: 'fa-child',
+          color: 'from-emerald-400 to-teal-600',
+          title: 'Managing Children',
+          text: 'In the Profile tab:',
           items: [
-            'Account: Create a parent account with your email.',
-            'PIN Code: Secure access with a 4-digit code.',
-            'Profiles: Create a profile for each child.'
+            'Add a child: name, color, optional photo.',
+            'Manually adjust balance with + / − buttons.',
+            'Add goals (e.g. bike at €150) to motivate saving.'
           ]
         },
         {
           id: 4,
           icon: 'fa-check-double',
-          color: 'from-emerald-400 to-teal-600',
-          title: 'Mission Cycle',
-          text: 'How it works:',
+          color: 'from-blue-400 to-indigo-600',
+          title: 'Missions',
+          text: 'Full mission cycle:',
           items: [
-            '1. Creation: Parent adds a mission.',
-            '2. Action: Child clicks "Done!" on their profile.',
-            '3. Validation: Parent approves the task.'
+            'Create: Parent adds a mission with a title and reward.',
+            'Action: Child taps "Done!" in their space.',
+            'Validation: Parent approves or requests a correction.',
+            'Payment: Reward is automatically added to the balance.'
           ]
         },
         {
           id: 5,
-          icon: 'fa-comments',
-          color: 'from-orange-400 to-rose-600',
-          title: 'Communication 💬',
-          text: 'The child can get your attention:',
+          icon: 'fa-gift',
+          color: 'from-amber-400 to-orange-600',
+          title: 'Goals & Gifts',
+          text: 'Built-in savings system:',
           items: [
-            '"Pick a gift": Request a new goal.',
-            '"Challenge!": Request new missions.'
+            'Child tracks progress via the coloured gauge.',
+            'When balance reaches the goal, a "Claim" button appears.',
+            'Parent confirms in the Bubbles tab — balance is deducted.'
           ]
         },
         {
           id: 6,
           icon: 'fa-piggy-bank',
-          color: 'from-amber-400 to-orange-600',
-          title: 'Virtual Bank',
-          text: 'Koiny is a digital ledger.',
+          color: 'from-amber-400 to-yellow-500',
+          title: 'Balance Limits',
+          text: 'To stay realistic and educational:',
           items: [
-            'Deposit (+): Pocket money or gifts.',
-            'Withdrawal (-): Purchases made for the child.',
-            'Buy: Deduct amounts manually.'
+            'Balance is capped at €100 per child.',
+            'If a reward exceeds this limit, payment is blocked.',
+            'A great opportunity to talk about real saving and spending!'
           ]
         }
       ],
       close: "Let's go!"
+    },
+    nl: {
+      title: 'Gebruikershandleiding',
+      welcomeTitle: 'Welkom bij Koiny!',
+      welcomeText: "Koiny maakt financiële educatie tot een spel. Alles wat je nodig hebt om als gezin te starten.",
+      steps: [
+        {
+          id: 1,
+          icon: 'fa-table-columns',
+          color: 'from-indigo-400 to-purple-600',
+          title: 'Navigatie',
+          text: '4 tabbladen onderaan het scherm:',
+          items: [
+            'Huis: Overzicht en snel missies toevoegen.',
+            'Klok: Transactiegeschiedenis en grafieken.',
+            'Bellen: Missies en cadeauverzoeken goedkeuren.',
+            'Profiel: Kinderen, doelen en instellingen beheren.'
+          ]
+        },
+        {
+          id: 2,
+          icon: 'fa-lock',
+          color: 'from-rose-400 to-pink-600',
+          title: 'Ouderomgeving — Beveiliging',
+          text: 'Op twee manieren beveiligd:',
+          items: [
+            '4-cijferige PIN-code ingesteld bij eerste gebruik.',
+            'Face ID / Touch ID als ingesteld op uw toestel.',
+            'PIN vergeten: voer uw Koiny-wachtwoord in om het te resetten.'
+          ]
+        },
+        {
+          id: 3,
+          icon: 'fa-child',
+          color: 'from-emerald-400 to-teal-600',
+          title: 'Kinderen beheren',
+          text: 'In het tabblad Profiel:',
+          items: [
+            'Voeg een kind toe: naam, kleur, optionele foto.',
+            'Pas het saldo handmatig aan met + / − knoppen.',
+            'Voeg doelen toe (bijv. fiets voor €150) om sparen te motiveren.'
+          ]
+        },
+        {
+          id: 4,
+          icon: 'fa-check-double',
+          color: 'from-blue-400 to-indigo-600',
+          title: 'Missies',
+          text: 'Volledige missiecyclus:',
+          items: [
+            'Aanmaken: Ouder maakt een missie met titel en beloning.',
+            'Actie: Kind tikt op "Klaar!" in zijn/haar ruimte.',
+            'Validatie: Ouder keurt goed of vraagt correctie.',
+            'Betaling: Beloning wordt automatisch aan het saldo toegevoegd.'
+          ]
+        },
+        {
+          id: 5,
+          icon: 'fa-gift',
+          color: 'from-amber-400 to-orange-600',
+          title: 'Doelen & Cadeaus',
+          text: 'Ingebouwd spaarsysteem:',
+          items: [
+            'Kind volgt voortgang via de kleurrijke balk.',
+            'Wanneer saldo het doel bereikt, verschijnt een "Opvragen"-knop.',
+            'Ouder bevestigt in het tabblad Bellen — saldo wordt afgetrokken.'
+          ]
+        },
+        {
+          id: 6,
+          icon: 'fa-piggy-bank',
+          color: 'from-amber-400 to-yellow-500',
+          title: 'Saldolimieten',
+          text: 'Realistisch en educatief blijven:',
+          items: [
+            'Saldo is geplafonneerd op €100 per kind.',
+            'Als een beloning dit plafond overschrijdt, wordt de betaling geblokkeerd.',
+            'Een mooie gelegenheid om over echt sparen en uitgeven te praten!'
+          ]
+        }
+      ],
+      close: 'Aan de slag!'
     }
-  }[language === 'nl' ? 'en' : language];
+  }[language] ?? {
+    title: 'User Guide', welcomeTitle: 'Welcome to Koiny!', welcomeText: '', steps: [], close: "Let's go!"
+  };
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">

@@ -1,5 +1,13 @@
-import { NativeBiometric, BiometryType } from '@capgo/capacitor-native-biometric';
+import { registerPlugin } from '@capacitor/core';
 import { Capacitor } from '@capacitor/core';
+
+interface KoinyBiometricPlugin {
+    isAvailable(): Promise<{ isAvailable: boolean; biometryType: string }>;
+    verifyIdentity(options: { reason: string; useFallback?: boolean }): Promise<void>;
+}
+
+// Register the custom in-app plugin (BiometricPlugin.swift in the App target)
+const KoinyBiometric = registerPlugin<KoinyBiometricPlugin>('KoinyBiometric');
 
 export interface BiometricStatus {
     isAvailable: boolean;
@@ -10,34 +18,25 @@ export interface BiometricStatus {
  * Check if biometric authentication is available on this device
  */
 export async function checkBiometricAvailability(): Promise<BiometricStatus> {
-    // Only available on native platforms
+    console.log('[Biometric] Checking — platform:', Capacitor.getPlatform());
     if (!Capacitor.isNativePlatform()) {
         return { isAvailable: false, biometryType: 'none' };
     }
 
     try {
-        const result = await NativeBiometric.isAvailable();
-
-        let biometryType: 'face' | 'fingerprint' | 'none' = 'none';
-        if (result.biometryType === BiometryType.FACE_ID || result.biometryType === BiometryType.FACE_AUTHENTICATION) {
-            biometryType = 'face';
-        } else if (result.biometryType === BiometryType.TOUCH_ID || result.biometryType === BiometryType.FINGERPRINT) {
-            biometryType = 'fingerprint';
-        }
-
-        return {
-            isAvailable: result.isAvailable,
-            biometryType
-        };
+        const result = await KoinyBiometric.isAvailable();
+        const type = result.biometryType as 'face' | 'fingerprint' | 'none';
+        console.log('[Biometric] Available:', result.isAvailable, 'Type:', type);
+        return { isAvailable: result.isAvailable, biometryType: type };
     } catch (error) {
-        console.warn('[Biometric] Not available:', error);
+        console.warn('[Biometric] Not available — error:', JSON.stringify(error));
         return { isAvailable: false, biometryType: 'none' };
     }
 }
 
 /**
- * Prompt the user for biometric authentication
- * Returns true if authentication was successful
+ * Prompt the user for biometric authentication.
+ * Returns true if authentication was successful.
  */
 export async function authenticateWithBiometric(reason: string): Promise<boolean> {
     if (!Capacitor.isNativePlatform()) {
@@ -45,17 +44,11 @@ export async function authenticateWithBiometric(reason: string): Promise<boolean
     }
 
     try {
-        await NativeBiometric.verifyIdentity({
-            reason,
-            title: 'Koiny',
-            subtitle: reason,
-            useFallback: false, // Don't fallback to device passcode
-            maxAttempts: 3,
-        });
-        return true; // Success — user was authenticated
+        await KoinyBiometric.verifyIdentity({ reason, useFallback: true });
+        return true;
     } catch (error) {
         console.warn('[Biometric] Auth failed:', error);
-        return false; // Failed or cancelled
+        return false;
     }
 }
 
@@ -63,12 +56,8 @@ export async function authenticateWithBiometric(reason: string): Promise<boolean
  * Get user-friendly name for the biometric type
  */
 export function getBiometricLabel(type: 'face' | 'fingerprint' | 'none', language: string): string {
-    if (type === 'face') {
-        return 'Face ID';
-    }
-    if (type === 'fingerprint') {
-        return 'Touch ID';
-    }
+    if (type === 'face') return 'Face ID';
+    if (type === 'fingerprint') return 'Touch ID';
     return language === 'fr' ? 'Biométrie' : language === 'nl' ? 'Biometrie' : 'Biometrics';
 }
 
@@ -76,11 +65,7 @@ export function getBiometricLabel(type: 'face' | 'fingerprint' | 'none', languag
  * Get icon class for the biometric type
  */
 export function getBiometricIcon(type: 'face' | 'fingerprint' | 'none'): string {
-    if (type === 'face') {
-        return 'fa-solid fa-face-smile';
-    }
-    if (type === 'fingerprint') {
-        return 'fa-solid fa-fingerprint';
-    }
+    if (type === 'face') return 'fa-solid fa-face-smile';
+    if (type === 'fingerprint') return 'fa-solid fa-fingerprint';
     return 'fa-solid fa-shield-halved';
 }

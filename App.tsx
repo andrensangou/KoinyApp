@@ -249,46 +249,52 @@ const App: React.FC = () => {
     CapApp.addListener('appUrlOpen', async (event: any) => {
       console.log('🔗 [DEEP LINK] Ouvert avec:', event.url);
 
-      // Gestion native de Supabase Auth
+      const supabase = getSupabase();
+      if (!supabase) return;
+
+      // Flux PKCE (Supabase v2 par défaut) — retourne ?code=XXXX
+      const urlObj = new URL(event.url);
+      const code = urlObj.searchParams.get('code');
+      if (code) {
+        console.log('🔐 [DEEP LINK] Code PKCE détecté, échange en cours...');
+        try {
+          const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(event.url);
+          if (error) {
+            console.error('❌ [DEEP LINK] Erreur exchangeCodeForSession:', error.message);
+          } else {
+            console.log('✅ [DEEP LINK] Session PKCE établie pour:', sessionData.session?.user?.email);
+            await Browser.close();
+            if (sessionData.session) await initialize(sessionData.session);
+          }
+        } catch (e: any) {
+          console.error('❌ [DEEP LINK] Exception PKCE:', e.message);
+        }
+        return;
+      }
+
+      // Flux implicite (fallback) — retourne #access_token=... ou ?access_token=...
       if (event.url.includes('access_token=') || event.url.includes('refresh_token=')) {
-        console.log('🔐 [DEEP LINK] Détection de tokens auth...');
-        const supabase = getSupabase();
-        if (supabase) {
-          // Extraction plus robuste des paramètres
-          const hashPart = event.url.includes('#') ? event.url.split('#')[1] : event.url.split('?')[1];
-          if (hashPart) {
-            const params = new URLSearchParams(hashPart);
-            const accessToken = params.get('access_token');
-            const refreshToken = params.get('refresh_token');
-
-            if (accessToken && refreshToken) {
-              console.log('🔐 [DEEP LINK] Tentative de setSession avec tokens...', {
-                accessTokenLength: accessToken.length,
-                refreshTokenLength: refreshToken.length
+        console.log('🔐 [DEEP LINK] Tokens implicites détectés...');
+        const hashPart = event.url.includes('#') ? event.url.split('#')[1] : event.url.split('?')[1];
+        if (hashPart) {
+          const params = new URLSearchParams(hashPart);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          if (accessToken && refreshToken) {
+            try {
+              const { data: sessionData, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken
               });
-
-              try {
-                const { data: sessionData, error } = await supabase.auth.setSession({
-                  access_token: accessToken,
-                  refresh_token: refreshToken
-                });
-
-                if (error) {
-                  console.error('❌ [DEEP LINK] Erreur setSession:', error.message);
-                  // Tentative secondaire : si setSession échoue à cause du refresh, on peut essayer d'initialiser via le session object
-                  if (error.message.includes('key')) {
-                    console.warn('⚡ [DEEP LINK] "Invalid API Key" détecté. Vérification de la config client...');
-                  }
-                } else {
-                  console.log('✅ [DEEP LINK] Session définie avec succès pour:', sessionData.session?.user?.email);
-                  await Browser.close(); // Fermer le navigateur in-app
-                  if (sessionData.session) await initialize(sessionData.session);
-                }
-              } catch (e: any) {
-                console.error('❌ [DEEP LINK] Exception fatale setSession:', e.message);
+              if (error) {
+                console.error('❌ [DEEP LINK] Erreur setSession:', error.message);
+              } else {
+                console.log('✅ [DEEP LINK] Session implicite établie pour:', sessionData.session?.user?.email);
+                await Browser.close();
+                if (sessionData.session) await initialize(sessionData.session);
               }
-            } else {
-              console.warn('⚠️ [DEEP LINK] Tokens manquants dans le hash:', { hasAccess: !!accessToken, hasRefresh: !!refreshToken });
+            } catch (e: any) {
+              console.error('❌ [DEEP LINK] Exception setSession:', e.message);
             }
           }
         }

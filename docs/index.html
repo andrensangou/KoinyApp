@@ -453,6 +453,7 @@
 
         function setLang(lang) {
             currentLang = lang;
+            localStorage.setItem('koiny_lang', lang);
             const t = translations[lang];
             // Update text-only elements
             document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -505,9 +506,11 @@
             observer.observe(el);
         });
 
-        // Auto-detect browser language
+        // Restore saved language or auto-detect
+        const savedLang = localStorage.getItem('koiny_lang');
         const browserLang = navigator.language?.slice(0, 2);
-        if (['en', 'nl'].includes(browserLang)) setLang(browserLang);
+        const initLang = savedLang || ((['en', 'nl'].includes(browserLang)) ? browserLang : 'fr');
+        if (initLang !== 'fr') setLang(initLang);
     </script>
 </body>
 
