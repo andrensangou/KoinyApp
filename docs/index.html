@@ -31,10 +31,10 @@
                 <span class="nav-logo-text">Koiny</span>
             </a>
             <div class="nav-links">
-                <a href="#features">Fonctionnalités</a>
-                <a href="#how-it-works">Comment ça marche</a>
+                <a href="#features" data-i18n="nav.features">Fonctionnalités</a>
+                <a href="#how-it-works" data-i18n="nav.howItWorks">Comment ça marche</a>
                 <a href="#download" class="nav-cta">
-                    <i class="fa-brands fa-apple"></i> Télécharger
+                    <i class="fa-brands fa-apple"></i> <span data-i18n="nav.download">Télécharger</span>
                 </a>
             </div>
         </div>
@@ -49,33 +49,33 @@
         </div>
         <div class="hero-container">
             <div class="hero-content">
-                <div class="hero-badge">✨ 100% Gratuit • 100% Virtuel</div>
-                <h1 class="hero-title">
+                <div class="hero-badge" data-i18n="hero.badge">✨ 100% Gratuit • 100% Virtuel</div>
+                <h1 class="hero-title" data-i18n-html="hero.title">
                     L'argent de poche
                     <span class="hero-gradient">réinventé</span>
                 </h1>
-                <p class="hero-subtitle">
+                <p class="hero-subtitle" data-i18n="hero.subtitle">
                     Koiny transforme les tâches du quotidien en aventures. Vos enfants accomplissent des missions,
                     gagnent de l'argent virtuel et épargnent pour leurs rêves.
                 </p>
                 <div class="hero-actions">
                     <a href="#download" class="btn-primary">
                         <i class="fa-brands fa-apple"></i>
-                        Télécharger sur l'App Store
+                        <span data-i18n="hero.cta">Télécharger sur l'App Store</span>
                     </a>
                     <a href="#how-it-works" class="btn-secondary">
                         <i class="fa-solid fa-play"></i>
-                        Découvrir
+                        <span data-i18n="hero.discover">Découvrir</span>
                     </a>
                 </div>
                 <div class="hero-trust">
                     <div class="hero-trust-item">
                         <i class="fa-solid fa-shield-halved"></i>
-                        <span>Sécurisé</span>
+                        <span data-i18n="hero.secure">Sécurisé</span>
                     </div>
                     <div class="hero-trust-item">
                         <i class="fa-solid fa-lock"></i>
-                        <span>PIN parental</span>
+                        <span data-i18n="hero.pin">PIN parental</span>
                     </div>
                     <div class="hero-trust-item">
                         <i class="fa-solid fa-language"></i>
@@ -90,27 +90,27 @@
                             <div class="mock-header">
                                 <div class="mock-avatar">🧒</div>
                                 <div>
-                                    <div class="mock-label">Bonjour</div>
+                                    <div class="mock-label" data-i18n="mock.hello">Bonjour</div>
                                     <div class="mock-name">Emma</div>
                                 </div>
                             </div>
                             <div class="mock-balance">
-                                <div class="mock-balance-label">Mon solde</div>
+                                <div class="mock-balance-label" data-i18n="mock.balance">Mon solde</div>
                                 <div class="mock-balance-amount">24.50<span>€</span></div>
                             </div>
                             <div class="mock-mission">
                                 <div class="mock-mission-icon">🧹</div>
                                 <div class="mock-mission-info">
-                                    <div class="mock-mission-name">Ranger la chambre</div>
-                                    <div class="mock-mission-status">● À faire</div>
+                                    <div class="mock-mission-name" data-i18n="mock.mission1">Ranger la chambre</div>
+                                    <div class="mock-mission-status" data-i18n="mock.todo">● À faire</div>
                                 </div>
                                 <div class="mock-mission-reward">+2€</div>
                             </div>
                             <div class="mock-mission">
                                 <div class="mock-mission-icon">📚</div>
                                 <div class="mock-mission-info">
-                                    <div class="mock-mission-name">Faire ses devoirs</div>
-                                    <div class="mock-mission-status">● À faire</div>
+                                    <div class="mock-mission-name" data-i18n="mock.mission2">Faire ses devoirs</div>
+                                    <div class="mock-mission-status" data-i18n="mock.todo">● À faire</div>
                                 </div>
                                 <div class="mock-mission-reward">+1.50€</div>
                             </div>
@@ -122,7 +122,7 @@
                                 <div class="mock-goal-bar">
                                     <div class="mock-goal-fill" style="width: 8%"></div>
                                 </div>
-                                <div class="mock-goal-remaining">Encore 275.50€</div>
+                                <div class="mock-goal-remaining" data-i18n="mock.remaining">Encore 275.50€</div>
                             </div>
                         </div>
                     </div>
@@ -138,46 +138,48 @@
     <section class="features" id="features">
         <div class="section-container">
             <div class="section-header">
-                <span class="section-badge">Fonctionnalités</span>
-                <h2 class="section-title">Tout pour apprendre la <span class="text-gradient">valeur de l'effort</span>
-                </h2>
-                <p class="section-desc">Un outil ludique qui enseigne l'épargne et la responsabilité aux enfants, tout
-                    en donnant le contrôle total aux parents.</p>
+                <span class="section-badge" data-i18n="features.badge">Fonctionnalités</span>
+                <h2 class="section-title" data-i18n-html="features.title">Tout pour apprendre la <span
+                        class="text-gradient">valeur de l'effort</span></h2>
+                <p class="section-desc" data-i18n="features.desc">Un outil ludique qui enseigne l'épargne et la
+                    responsabilité aux enfants, tout en donnant le contrôle total aux parents.</p>
             </div>
             <div class="features-grid">
                 <div class="feature-card feature-card-missions">
                     <div class="feature-icon"><i class="fa-solid fa-list-check"></i></div>
-                    <h3>Missions personnalisées</h3>
-                    <p>Créez des défis sur mesure. Ranger, aider, apprendre… chaque mission accomplie rapporte des
-                        pièces virtuelles.</p>
+                    <h3 data-i18n="features.missions.title">Missions personnalisées</h3>
+                    <p data-i18n="features.missions.desc">Créez des défis sur mesure. Ranger, aider, apprendre… chaque
+                        mission accomplie rapporte des pièces virtuelles.</p>
                 </div>
                 <div class="feature-card feature-card-savings">
                     <div class="feature-icon"><i class="fa-solid fa-piggy-bank"></i></div>
-                    <h3>Objectifs d'épargne</h3>
-                    <p>Vélo, jouet, jeu vidéo… vos enfants épargnent pour leurs rêves et visualisent leur progression.
-                    </p>
+                    <h3 data-i18n="features.savings.title">Objectifs d'épargne</h3>
+                    <p data-i18n="features.savings.desc">Vélo, jouet, jeu vidéo… vos enfants épargnent pour leurs rêves
+                        et visualisent leur progression.</p>
                 </div>
                 <div class="feature-card feature-card-multi">
                     <div class="feature-icon"><i class="fa-solid fa-children"></i></div>
-                    <h3>Multi-enfants</h3>
-                    <p>Gérez plusieurs profils avec des couleurs et avatars uniques. Chaque enfant a son propre espace.
-                    </p>
+                    <h3 data-i18n="features.multi.title">Multi-enfants</h3>
+                    <p data-i18n="features.multi.desc">Gérez plusieurs profils avec des couleurs et avatars uniques.
+                        Chaque enfant a son propre espace.</p>
                 </div>
                 <div class="feature-card feature-card-dashboard">
                     <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
-                    <h3>Tableau de bord parent</h3>
-                    <p>Suivez tout en un coup d'œil : historique, graphiques de progression, et gestion complète.</p>
+                    <h3 data-i18n="features.dashboard.title">Tableau de bord parent</h3>
+                    <p data-i18n="features.dashboard.desc">Suivez tout en un coup d'œil : historique, graphiques de
+                        progression, et gestion complète.</p>
                 </div>
                 <div class="feature-card feature-card-widget">
                     <div class="feature-icon"><i class="fa-brands fa-apple"></i></div>
-                    <h3>Widget iOS</h3>
-                    <p>Consultez le solde directement sur l'écran d'accueil grâce au widget natif intégré.</p>
+                    <h3 data-i18n="features.widget.title">Widget iOS</h3>
+                    <p data-i18n="features.widget.desc">Consultez le solde directement sur l'écran d'accueil grâce au
+                        widget natif intégré.</p>
                 </div>
                 <div class="feature-card feature-card-secure">
                     <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
-                    <h3>Sécurisé & privé</h3>
-                    <p>PIN parental chiffré, aucun tracking publicitaire, données locales. Vos données restent les
-                        vôtres.</p>
+                    <h3 data-i18n="features.secure.title">Sécurisé & privé</h3>
+                    <p data-i18n="features.secure.desc">PIN parental chiffré, aucun tracking publicitaire, données
+                        locales. Vos données restent les vôtres.</p>
                 </div>
             </div>
         </div>
@@ -187,54 +189,57 @@
     <section class="how-it-works" id="how-it-works">
         <div class="section-container">
             <div class="section-header">
-                <span class="section-badge">Comment ça marche</span>
-                <h2 class="section-title">Simple comme <span class="text-gradient">1, 2, 3</span></h2>
+                <span class="section-badge" data-i18n="steps.badge">Comment ça marche</span>
+                <h2 class="section-title" data-i18n-html="steps.title">Simple comme <span class="text-gradient">1, 2,
+                        3</span></h2>
             </div>
             <div class="steps-grid">
                 <div class="step-card">
                     <div class="step-number">1</div>
                     <div class="step-emoji">👨‍👩‍👧‍👦</div>
-                    <h3>Créez les profils</h3>
-                    <p>Ajoutez vos enfants avec un nom, un avatar et une couleur. Définissez un code PIN parental.</p>
+                    <h3 data-i18n="steps.s1.title">Créez les profils</h3>
+                    <p data-i18n="steps.s1.desc">Ajoutez vos enfants avec un nom, un avatar et une couleur. Définissez
+                        un code PIN parental.</p>
                 </div>
                 <div class="step-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                 <div class="step-card">
                     <div class="step-number">2</div>
                     <div class="step-emoji">🎯</div>
-                    <h3>Définissez les missions</h3>
-                    <p>Créez des défis quotidiens avec des récompenses en argent virtuel. "Ranger la chambre → 2€"</p>
+                    <h3 data-i18n="steps.s2.title">Définissez les missions</h3>
+                    <p data-i18n="steps.s2.desc">Créez des défis quotidiens avec des récompenses en argent virtuel.
+                        "Ranger la chambre → 2€"</p>
                 </div>
                 <div class="step-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                 <div class="step-card">
                     <div class="step-number">3</div>
                     <div class="step-emoji">🏆</div>
-                    <h3>Ils épargnent et apprennent</h3>
-                    <p>Les enfants accomplissent les missions, gagnent des pièces et épargnent pour leurs objectifs !
-                    </p>
+                    <h3 data-i18n="steps.s3.title">Ils épargnent et apprennent</h3>
+                    <p data-i18n="steps.s3.desc">Les enfants accomplissent les missions, gagnent des pièces et épargnent
+                        pour leurs objectifs !</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Languages / Testimonials area -->
+    <!-- Languages -->
     <section class="languages-section">
         <div class="section-container">
             <div class="languages-cards">
-                <div class="lang-card">
+                <button class="lang-card active" data-lang="fr" onclick="setLang('fr')">
                     <span class="lang-flag">🇫🇷</span>
                     <span class="lang-name">Français</span>
                     <span class="lang-desc">Interface complète</span>
-                </div>
-                <div class="lang-card">
+                </button>
+                <button class="lang-card" data-lang="en" onclick="setLang('en')">
                     <span class="lang-flag">🇬🇧</span>
                     <span class="lang-name">English</span>
                     <span class="lang-desc">Full interface</span>
-                </div>
-                <div class="lang-card">
+                </button>
+                <button class="lang-card" data-lang="nl" onclick="setLang('nl')">
                     <span class="lang-flag">🇳🇱</span>
                     <span class="lang-name">Nederlands</span>
                     <span class="lang-desc">Volledige interface</span>
-                </div>
+                </button>
             </div>
         </div>
     </section>
@@ -245,26 +250,33 @@
             <div class="download-card">
                 <div class="download-content">
                     <span class="download-emoji">🐷</span>
-                    <h2>Prêt à commencer l'aventure ?</h2>
-                    <p>Téléchargez Koiny gratuitement et transformez les tâches en jeu éducatif.</p>
-                    <a href="https://apps.apple.com/app/koiny/id0000000000" class="app-store-badge" target="_blank"
-                        rel="noopener">
+                    <h2 data-i18n="download.title">Prêt à commencer l'aventure ?</h2>
+                    <p data-i18n="download.desc">Téléchargez Koiny gratuitement et transformez les tâches en jeu
+                        éducatif.</p>
+                    <a href="https://apps.apple.com/app/koiny/id0000000000" class="app-store-badge" id="appStoreBadge"
+                        target="_blank" rel="noopener">
                         <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/fr-fr?size=250x83"
                             alt="Télécharger sur l'App Store" />
                     </a>
                     <p class="download-note">
                         <i class="fa-solid fa-circle-info"></i>
-                        Requiert iOS 15.0 ou ultérieur. iPhone & iPad.
+                        <span data-i18n="download.note">Requiert iOS 15.0 ou ultérieur. iPhone & iPad.</span>
                     </p>
                 </div>
                 <div class="download-visual">
                     <div class="download-features">
-                        <div class="dl-feature"><i class="fa-solid fa-check"></i> 100% Gratuit</div>
-                        <div class="dl-feature"><i class="fa-solid fa-check"></i> Aucune pub</div>
-                        <div class="dl-feature"><i class="fa-solid fa-check"></i> Pas d'achat in-app</div>
-                        <div class="dl-feature"><i class="fa-solid fa-check"></i> 100% argent virtuel</div>
-                        <div class="dl-feature"><i class="fa-solid fa-check"></i> Données privées</div>
-                        <div class="dl-feature"><i class="fa-solid fa-check"></i> Multi-langues</div>
+                        <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f1">100%
+                                Gratuit</span></div>
+                        <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f2">Aucune
+                                pub</span></div>
+                        <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f3">Pas
+                                d'achat in-app</span></div>
+                        <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f4">100%
+                                argent virtuel</span></div>
+                        <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f5">Données
+                                privées</span></div>
+                        <div class="dl-feature"><i class="fa-solid fa-check"></i> <span
+                                data-i18n="download.f6">Multi-langues</span></div>
                     </div>
                 </div>
             </div>
@@ -277,34 +289,193 @@
             <div class="footer-grid">
                 <div class="footer-brand">
                     <div class="footer-logo">🐷 Koiny</div>
-                    <p>L'argent de poche virtuel qui motive vos enfants. Un simulateur éducatif sûr et amusant.</p>
-                    <p class="footer-disclaimer">⚠️ Koiny est un simulateur. Aucune transaction financière réelle n'est
-                        effectuée.</p>
+                    <p data-i18n="footer.desc">L'argent de poche virtuel qui motive vos enfants. Un simulateur éducatif
+                        sûr et amusant.</p>
+                    <p class="footer-disclaimer" data-i18n="footer.disclaimer">⚠️ Koiny est un simulateur. Aucune
+                        transaction financière réelle n'est effectuée.</p>
                 </div>
                 <div class="footer-links">
-                    <h4>Liens utiles</h4>
-                    <a href="privacy.html">Politique de confidentialité</a>
-                    <a href="privacy.html#terms">Conditions d'utilisation</a>
+                    <h4 data-i18n="footer.useful">Liens utiles</h4>
+                    <a href="privacy.html" data-i18n="footer.privacy">Politique de confidentialité</a>
+                    <a href="privacy.html#terms" data-i18n="footer.terms">Conditions d'utilisation</a>
                     <a href="mailto:contact@koiny.app">Contact</a>
                 </div>
                 <div class="footer-links">
-                    <h4>L'application</h4>
-                    <a href="#features">Fonctionnalités</a>
-                    <a href="#how-it-works">Comment ça marche</a>
-                    <a href="#download">Télécharger</a>
+                    <h4 data-i18n="footer.app">L'application</h4>
+                    <a href="#features" data-i18n="nav.features">Fonctionnalités</a>
+                    <a href="#how-it-works" data-i18n="nav.howItWorks">Comment ça marche</a>
+                    <a href="#download" data-i18n="nav.download">Télécharger</a>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 Koiny. Tous droits réservés.</p>
+                <p>&copy; 2026 Koiny. <span data-i18n="footer.rights">Tous droits réservés.</span></p>
                 <div class="footer-bottom-links">
-                    <a href="privacy.html">Confidentialité</a>
-                    <a href="privacy.html#terms">CGU</a>
+                    <a href="privacy.html" data-i18n="footer.privacyShort">Confidentialité</a>
+                    <a href="privacy.html#terms" data-i18n="footer.termsShort">CGU</a>
                 </div>
             </div>
         </div>
     </footer>
 
     <script>
+        // ============ I18N TRANSLATIONS ============
+        const translations = {
+            fr: {
+                'nav.features': 'Fonctionnalités', 'nav.howItWorks': 'Comment ça marche', 'nav.download': 'Télécharger',
+                'hero.badge': '✨ 100% Gratuit • 100% Virtuel',
+                'hero.title': 'L\'argent de poche <span class="hero-gradient">réinventé</span>',
+                'hero.subtitle': 'Koiny transforme les tâches du quotidien en aventures. Vos enfants accomplissent des missions, gagnent de l\'argent virtuel et épargnent pour leurs rêves.',
+                'hero.cta': 'Télécharger sur l\'App Store', 'hero.discover': 'Découvrir',
+                'hero.secure': 'Sécurisé', 'hero.pin': 'PIN parental',
+                'mock.hello': 'Bonjour', 'mock.balance': 'Mon solde',
+                'mock.mission1': 'Ranger la chambre', 'mock.mission2': 'Faire ses devoirs',
+                'mock.todo': '● À faire', 'mock.remaining': 'Encore 275.50€',
+                'features.badge': 'Fonctionnalités',
+                'features.title': 'Tout pour apprendre la <span class="text-gradient">valeur de l\'effort</span>',
+                'features.desc': 'Un outil ludique qui enseigne l\'épargne et la responsabilité aux enfants, tout en donnant le contrôle total aux parents.',
+                'features.missions.title': 'Missions personnalisées',
+                'features.missions.desc': 'Créez des défis sur mesure. Ranger, aider, apprendre… chaque mission accomplie rapporte des pièces virtuelles.',
+                'features.savings.title': 'Objectifs d\'épargne',
+                'features.savings.desc': 'Vélo, jouet, jeu vidéo… vos enfants épargnent pour leurs rêves et visualisent leur progression.',
+                'features.multi.title': 'Multi-enfants',
+                'features.multi.desc': 'Gérez plusieurs profils avec des couleurs et avatars uniques. Chaque enfant a son propre espace.',
+                'features.dashboard.title': 'Tableau de bord parent',
+                'features.dashboard.desc': 'Suivez tout en un coup d\'œil : historique, graphiques de progression, et gestion complète.',
+                'features.widget.title': 'Widget iOS',
+                'features.widget.desc': 'Consultez le solde directement sur l\'écran d\'accueil grâce au widget natif intégré.',
+                'features.secure.title': 'Sécurisé & privé',
+                'features.secure.desc': 'PIN parental chiffré, aucun tracking publicitaire, données locales. Vos données restent les vôtres.',
+                'steps.badge': 'Comment ça marche',
+                'steps.title': 'Simple comme <span class="text-gradient">1, 2, 3</span>',
+                'steps.s1.title': 'Créez les profils', 'steps.s1.desc': 'Ajoutez vos enfants avec un nom, un avatar et une couleur. Définissez un code PIN parental.',
+                'steps.s2.title': 'Définissez les missions', 'steps.s2.desc': 'Créez des défis quotidiens avec des récompenses en argent virtuel. "Ranger la chambre → 2€"',
+                'steps.s3.title': 'Ils épargnent et apprennent', 'steps.s3.desc': 'Les enfants accomplissent les missions, gagnent des pièces et épargnent pour leurs objectifs !',
+                'download.title': 'Prêt à commencer l\'aventure ?',
+                'download.desc': 'Téléchargez Koiny gratuitement et transformez les tâches en jeu éducatif.',
+                'download.note': 'Requiert iOS 15.0 ou ultérieur. iPhone & iPad.',
+                'download.f1': '100% Gratuit', 'download.f2': 'Aucune pub', 'download.f3': 'Pas d\'achat in-app',
+                'download.f4': '100% argent virtuel', 'download.f5': 'Données privées', 'download.f6': 'Multi-langues',
+                'footer.desc': 'L\'argent de poche virtuel qui motive vos enfants. Un simulateur éducatif sûr et amusant.',
+                'footer.disclaimer': '⚠️ Koiny est un simulateur. Aucune transaction financière réelle n\'est effectuée.',
+                'footer.useful': 'Liens utiles', 'footer.privacy': 'Politique de confidentialité',
+                'footer.terms': 'Conditions d\'utilisation', 'footer.app': 'L\'application',
+                'footer.rights': 'Tous droits réservés.', 'footer.privacyShort': 'Confidentialité', 'footer.termsShort': 'CGU',
+                '_badge': 'fr-fr'
+            },
+            en: {
+                'nav.features': 'Features', 'nav.howItWorks': 'How it works', 'nav.download': 'Download',
+                'hero.badge': '✨ 100% Free • 100% Virtual',
+                'hero.title': 'Pocket money <span class="hero-gradient">reimagined</span>',
+                'hero.subtitle': 'Koiny turns everyday chores into adventures. Your kids complete missions, earn virtual money and save toward their dreams.',
+                'hero.cta': 'Download on the App Store', 'hero.discover': 'Discover',
+                'hero.secure': 'Secure', 'hero.pin': 'Parental PIN',
+                'mock.hello': 'Hello', 'mock.balance': 'My balance',
+                'mock.mission1': 'Clean the room', 'mock.mission2': 'Do homework',
+                'mock.todo': '● To do', 'mock.remaining': '275.50€ remaining',
+                'features.badge': 'Features',
+                'features.title': 'Everything to learn the <span class="text-gradient">value of effort</span>',
+                'features.desc': 'A fun tool that teaches savings and responsibility to children, while giving parents full control.',
+                'features.missions.title': 'Custom missions',
+                'features.missions.desc': 'Create tailored challenges. Clean, help, learn… each completed mission earns virtual coins.',
+                'features.savings.title': 'Savings goals',
+                'features.savings.desc': 'Bike, toy, video game… your kids save for their dreams and watch their progress grow.',
+                'features.multi.title': 'Multi-child',
+                'features.multi.desc': 'Manage multiple profiles with unique colors and avatars. Each child has their own space.',
+                'features.dashboard.title': 'Parent dashboard',
+                'features.dashboard.desc': 'Track everything at a glance: history, progress charts, and complete management.',
+                'features.widget.title': 'iOS Widget',
+                'features.widget.desc': 'Check the balance right from the home screen with the built-in native widget.',
+                'features.secure.title': 'Secure & private',
+                'features.secure.desc': 'Encrypted parental PIN, no ad tracking, local data. Your data stays yours.',
+                'steps.badge': 'How it works',
+                'steps.title': 'As easy as <span class="text-gradient">1, 2, 3</span>',
+                'steps.s1.title': 'Create profiles', 'steps.s1.desc': 'Add your children with a name, avatar and color. Set a parental PIN code.',
+                'steps.s2.title': 'Set up missions', 'steps.s2.desc': 'Create daily challenges with virtual money rewards. "Clean the room → 2€"',
+                'steps.s3.title': 'They save and learn', 'steps.s3.desc': 'Kids complete missions, earn coins and save toward their goals!',
+                'download.title': 'Ready to start the adventure?',
+                'download.desc': 'Download Koiny for free and turn chores into an educational game.',
+                'download.note': 'Requires iOS 15.0 or later. iPhone & iPad.',
+                'download.f1': '100% Free', 'download.f2': 'No ads', 'download.f3': 'No in-app purchases',
+                'download.f4': '100% virtual money', 'download.f5': 'Private data', 'download.f6': 'Multi-language',
+                'footer.desc': 'Virtual pocket money that motivates your kids. A safe and fun educational simulator.',
+                'footer.disclaimer': '⚠️ Koiny is a simulator. No real financial transactions are made.',
+                'footer.useful': 'Useful links', 'footer.privacy': 'Privacy Policy',
+                'footer.terms': 'Terms of Use', 'footer.app': 'The App',
+                'footer.rights': 'All rights reserved.', 'footer.privacyShort': 'Privacy', 'footer.termsShort': 'Terms',
+                '_badge': 'en-us'
+            },
+            nl: {
+                'nav.features': 'Functies', 'nav.howItWorks': 'Hoe het werkt', 'nav.download': 'Downloaden',
+                'hero.badge': '✨ 100% Gratis • 100% Virtueel',
+                'hero.title': 'Zakgeld <span class="hero-gradient">opnieuw uitgevonden</span>',
+                'hero.subtitle': 'Koiny verandert dagelijkse taken in avonturen. Je kinderen voltooien missies, verdienen virtueel geld en sparen voor hun dromen.',
+                'hero.cta': 'Download in de App Store', 'hero.discover': 'Ontdekken',
+                'hero.secure': 'Veilig', 'hero.pin': 'Ouderlijke PIN',
+                'mock.hello': 'Hallo', 'mock.balance': 'Mijn saldo',
+                'mock.mission1': 'Kamer opruimen', 'mock.mission2': 'Huiswerk maken',
+                'mock.todo': '● Te doen', 'mock.remaining': 'Nog 275.50€',
+                'features.badge': 'Functies',
+                'features.title': 'Alles om de <span class="text-gradient">waarde van inspanning</span> te leren',
+                'features.desc': 'Een leuk hulpmiddel dat kinderen leert sparen en verantwoordelijkheid, terwijl ouders volledige controle houden.',
+                'features.missions.title': 'Gepersonaliseerde missies',
+                'features.missions.desc': 'Maak uitdagingen op maat. Opruimen, helpen, leren… elke voltooide missie levert virtuele munten op.',
+                'features.savings.title': 'Spaardoelen',
+                'features.savings.desc': 'Fiets, speelgoed, videospel… je kinderen sparen voor hun dromen en zien hun voortgang groeien.',
+                'features.multi.title': 'Meerdere kinderen',
+                'features.multi.desc': 'Beheer meerdere profielen met unieke kleuren en avatars. Elk kind heeft zijn eigen ruimte.',
+                'features.dashboard.title': 'Ouder dashboard',
+                'features.dashboard.desc': 'Volg alles in één oogopslag: geschiedenis, voortgangsgrafieken en volledig beheer.',
+                'features.widget.title': 'iOS Widget',
+                'features.widget.desc': 'Bekijk het saldo rechtstreeks op het startscherm met de ingebouwde widget.',
+                'features.secure.title': 'Veilig & privé',
+                'features.secure.desc': 'Versleutelde ouderlijke PIN, geen advertentie-tracking, lokale opslag. Jouw gegevens blijven van jou.',
+                'steps.badge': 'Hoe het werkt',
+                'steps.title': 'Zo eenvoudig als <span class="text-gradient">1, 2, 3</span>',
+                'steps.s1.title': 'Maak profielen', 'steps.s1.desc': 'Voeg je kinderen toe met een naam, avatar en kleur. Stel een ouderlijke PIN-code in.',
+                'steps.s2.title': 'Stel missies in', 'steps.s2.desc': 'Maak dagelijkse uitdagingen met virtuele geldbeloningen. "Kamer opruimen → 2€"',
+                'steps.s3.title': 'Ze sparen en leren', 'steps.s3.desc': 'Kinderen voltooien missies, verdienen munten en sparen voor hun doelen!',
+                'download.title': 'Klaar voor het avontuur?',
+                'download.desc': 'Download Koiny gratis en verander taken in een educatief spel.',
+                'download.note': 'Vereist iOS 15.0 of hoger. iPhone & iPad.',
+                'download.f1': '100% Gratis', 'download.f2': 'Geen advertenties', 'download.f3': 'Geen in-app aankopen',
+                'download.f4': '100% virtueel geld', 'download.f5': 'Privé gegevens', 'download.f6': 'Meertalig',
+                'footer.desc': 'Virtueel zakgeld dat je kinderen motiveert. Een veilige en leuke educatieve simulator.',
+                'footer.disclaimer': '⚠️ Koiny is een simulator. Er worden geen echte financiële transacties uitgevoerd.',
+                'footer.useful': 'Nuttige links', 'footer.privacy': 'Privacybeleid',
+                'footer.terms': 'Gebruiksvoorwaarden', 'footer.app': 'De App',
+                'footer.rights': 'Alle rechten voorbehouden.', 'footer.privacyShort': 'Privacy', 'footer.termsShort': 'Voorwaarden',
+                '_badge': 'nl'
+            }
+        };
+
+        let currentLang = 'fr';
+
+        function setLang(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+            // Update text-only elements
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+            // Update HTML elements (with inner spans)
+            document.querySelectorAll('[data-i18n-html]').forEach(el => {
+                const key = el.getAttribute('data-i18n-html');
+                if (t[key]) el.innerHTML = t[key];
+            });
+            // Update App Store badge locale
+            const badge = document.querySelector('#appStoreBadge img');
+            if (badge) {
+                badge.src = `https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/${t._badge}?size=250x83`;
+            }
+            // Update active lang card
+            document.querySelectorAll('.lang-card').forEach(card => {
+                card.classList.toggle('active', card.getAttribute('data-lang') === lang);
+            });
+            // Update html lang
+            document.documentElement.lang = lang === 'en' ? 'en' : lang === 'nl' ? 'nl' : 'fr';
+        }
+
         // Smooth scroll
         document.querySelectorAll('a[href^="#"]').forEach(a => {
             a.addEventListener('click', e => {
@@ -332,6 +503,10 @@
         document.querySelectorAll('.feature-card, .step-card, .lang-card, .download-card').forEach(el => {
             observer.observe(el);
         });
+
+        // Auto-detect browser language
+        const browserLang = navigator.language?.slice(0, 2);
+        if (['en', 'nl'].includes(browserLang)) setLang(browserLang);
     </script>
 </body>
 
