@@ -175,15 +175,39 @@ const App: React.FC = () => {
       return;
     }
 
+    const t = translations[data.language || 'fr'];
+
     data.children.forEach(child => {
       const prevChild = prevChildrenRef.current.find(c => c.id === child.id);
       if (!prevChild) return;
 
-      if (child.giftRequested && !prevChild.giftRequested) notifications.notifyChildRequest(child.id, child.name, 'GIFT');
-      if (child.missionRequested && !prevChild.missionRequested) notifications.notifyChildRequest(child.id, child.name, 'MISSION');
+      if (child.giftRequested && !prevChild.giftRequested) {
+        notifications.notifyChildRequest(
+          child.id,
+          'GIFT',
+          t.parent.notifications.push.giftRequestTitle,
+          t.parent.notifications.push.giftRequestBody.replace('{name}', child.name)
+        );
+      }
+      if (child.missionRequested && !prevChild.missionRequested) {
+        notifications.notifyChildRequest(
+          child.id,
+          'MISSION',
+          t.parent.notifications.push.missionRequestTitle,
+          t.parent.notifications.push.missionRequestBody.replace('{name}', child.name)
+        );
+      }
+
       child.missions.forEach(m => {
         const prevM = prevChild.missions.find(pm => pm.id === m.id);
-        if (m.status === 'PENDING' && prevM?.status !== 'PENDING') notifications.notifyMissionComplete(child.id, child.name, m.id);
+        if (m.status === 'PENDING' && prevM?.status !== 'PENDING') {
+          notifications.notifyMissionComplete(
+            child.id,
+            m.id,
+            t.parent.notifications.push.missionCompleteTitle,
+            t.parent.notifications.push.missionCompleteBody.replace('{name}', child.name)
+          );
+        }
       });
     });
 
@@ -201,8 +225,9 @@ const App: React.FC = () => {
 
       if (now - lastSent > threeDaysInMs) {
         const anyChildNoMission = data.children.some(child => child.missions.length === 0);
+        const t = translations[data.language || 'fr'];
         if (anyChildNoMission) {
-          notifications.notifyParentReminder();
+          notifications.notifyParentReminder(t.parent.notifications.push.parentReminderTitle, t.parent.notifications.push.parentReminderBody);
           setData(prev => ({ ...prev, lastReminderSent: new Date().toISOString(), updatedAt: new Date().toISOString() }));
         }
       }

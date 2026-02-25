@@ -258,7 +258,17 @@ export const translations = {
         goalReachedTitle: "Objectif atteint ! 🎉",
         goalReachedDesc: "{child} a assez d'argent pour : {goal} !",
         birthdayTitle: "C'est l'anniversaire de {child} ! 🎂",
-        birthdayDesc: "Un bonus de 10€ a été offert automatiquement."
+        birthdayDesc: "Un bonus de 10€ a été offert automatiquement.",
+        push: {
+          giftRequestTitle: "🎁 Demande de cadeau !",
+          giftRequestBody: "{name} a fait une demande de cadeau.",
+          missionRequestTitle: "🎯 Nouveau défi demandé !",
+          missionRequestBody: "{name} aimerait un nouveau défi pour gagner des pièces.",
+          missionCompleteTitle: "✅ Mission terminée !",
+          missionCompleteBody: "{name} a terminé une mission. À vous de valider !",
+          parentReminderTitle: "💡 Idée de mission ?",
+          parentReminderBody: "Vos enfants n'ont plus de défi en cours. Et si vous leur lanciez un petit challenge ?"
+        }
       },
       tabs: {
         family: "Enfants",
@@ -570,7 +580,17 @@ export const translations = {
         goalReachedTitle: "Doel bereikt! 🎉",
         goalReachedDesc: "{child} heeft genoeg geld for: {goal}!",
         birthdayTitle: "{child} is jarig! 🎂",
-        birthdayDesc: "Een bonus van 10€ is automatisch toegevoegd."
+        birthdayDesc: "Een bonus van 10€ is automatisch toegevoegd.",
+        push: {
+          giftRequestTitle: "🎁 Cadeau aangevraagd!",
+          giftRequestBody: "{name} heeft een cadeau aangevraagd.",
+          missionRequestTitle: "🎯 Nieuwe uitdaging gevraagd!",
+          missionRequestBody: "{name} wil graag een nieuwe uitdaging om munten te verdienen.",
+          missionCompleteTitle: "✅ Missie voltooid!",
+          missionCompleteBody: "{name} heeft een missie voltooid. Tijd om te valideren!",
+          parentReminderTitle: "💡 Idee voor een missie?",
+          parentReminderBody: "Je kinderen hebben geen uitdagingen meer. Tijd voor een nieuwe challenge?"
+        }
       },
       tabs: {
         family: "Kinderen",
@@ -882,7 +902,17 @@ export const translations = {
         goalReachedTitle: "Goal Reached! 🎉",
         goalReachedDesc: "{child} has enough money for: {goal}!",
         birthdayTitle: "It's {child}'s birthday! 🎂",
-        birthdayDesc: "A 10€ bonus was offered automatically."
+        birthdayDesc: "A 10€ bonus was offered automatically.",
+        push: {
+          giftRequestTitle: "🎁 Gift Request!",
+          giftRequestBody: "{name} has requested a gift.",
+          missionRequestTitle: "🎯 New Challenge Requested!",
+          missionRequestBody: "{name} would like a new challenge to earn coins.",
+          missionCompleteTitle: "✅ Mission Complete!",
+          missionCompleteBody: "{name} has completed a mission. Time to validate!",
+          parentReminderTitle: "💡 Mission Idea?",
+          parentReminderBody: "Your kids have no active challenges. How about giving them a new one?"
+        }
       },
       tabs: {
         family: "Children",

@@ -72,13 +72,13 @@ Le projet utilise un schéma relationnel robuste sur Supabase :
 
 | Couche | Technologie |
 |---|---|
-| **Frontend** | React 18, TypeScript, Tailwind CSS |
+| **Frontend** | React 18, TypeScript, Tailwind CSS v3 |
 | **Build Tool** | Vite.js |
-| **Mobile Runtime** | Capacitor (iOS/Android native support) |
+| **Mobile Runtime** | Capacitor (Capacitor 5, app certifiée iOS 15+) |
 | **Backend / DB** | Supabase (PostgreSQL, Auth, Realtime) |
-| **Plugins Natifs** | Capacitor (Local Notifications, Apple Sign-In, Preferences) |
-| **Charts** | Recharts (Visualisation des tendances) |
-| **Design** | Headless UI, FontAwesome, Google Fonts, Tailwind CSS v3 |
+| **Plugins Natifs** | Capacitor (Haptics, Notifications, Biometry, Apple Sign-In) |
+| **Crash & Perf** | Sentry (Crashlytics) & Web Vitals |
+| **Performances** | React-Virtual (60FPS sur grosses listes), Code Splitting (Lazy Loading) |
 
 ---
 
@@ -129,6 +129,8 @@ npx cap open ios
 - **Mode Démo** : Un mode hors-connexion permet aux familles de tester l'application avant de créer un compte (données volatiles).
 - **RGPD Ready** : Les données sont structurées de manière à permettre l'export ou la suppression totale d'un compte et de ses données liées (via RPC Postgres).
 - **Isolation des familles** : Utilisation intensive des **Row Level Security (RLS)** sur Supabase pour garantir qu'une famille ne peut jamais voir les données d'une autre.
+- **Résilience Réseau** : Tous les appels base de données incluent un "Retry exponentiel" pour garantir la persistance même avec une connexion 4G instable.
+- **Accessibilité Apple (W3C)** : L'interface implémente les rôles ARIA complets (VoiceOver) et gère le Dynamic Type pour les déficients visuels.
 
 ---
 

@@ -11,6 +11,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 const HistoryChart = React.lazy(() => import('./HistoryChart'));
+const VirtualHistoryList = React.lazy(() => import('./VirtualHistoryList'));
 import confetti from 'canvas-confetti';
 import { notifications } from '../services/notifications';
 import { getIcon } from '../constants/icons';
@@ -1405,35 +1406,15 @@ const ParentView: React.FC<ParentViewProps> = ({
 
               <div className="bg-transparent overflow-hidden min-h-[400px]">
                 {historyView === 'LIST' ? (
-                  <div className="divide-y divide-slate-50 dark:divide-slate-800 p-2">
-                    {filteredHistory.length > 0 ? filteredHistory.map((item) => {
-                      const neg = item.amount < 0;
-                      const penalty = neg && isPenalty(item.title);
-                      return (
-                        <div key={item.id} className="p-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <span className="text-[10px] font-black flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 w-12 h-12 rounded-2xl shrink-0 leading-tight">
-                              <span className="text-xs text-slate-800 dark:text-slate-300">{item.date.split('/')[0]}</span>
-                              <span className="text-[8px] uppercase">{['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(item.date.split('/')[1]) - 1] || item.date.split('/')[1]}</span>
-                            </span>
-                            <div>
-                              <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">{getTranslatedTitle(item.title, language)}</h3>
-                              {item.note && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{item.note}</p>}
-                            </div>
-                          </div>
-                          <span className={`font-black text-sm px-4 py-2 rounded-xl whitespace-nowrap ${penalty ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' : (neg ? 'text-slate-900 dark:text-slate-300' : 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20')}`}>
-                            {penalty ? <i className="fa-solid fa-gavel mr-2"></i> : null}
-                            {neg ? '-' : '+'}{Math.abs(item.amount).toFixed(2)} €
-                          </span>
-                        </div>
-                      );
-                    }) : (
-                      <div className="flex flex-col items-center justify-center py-20 text-slate-300">
-                        <i className="fa-solid fa-receipt text-6xl mb-4 opacity-20"></i>
-                        <p className="font-bold text-sm italic">{historyFilter === 'THIS_MONTH' ? t.parent.history.noDataMonth : t.parent.history.noData}</p>
-                      </div>
-                    )}
-                  </div>
+                  <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-400 font-bold">Chargement...</div>}>
+                    <VirtualHistoryList
+                      history={filteredHistory}
+                      language={language}
+                      isPenalty={isPenalty}
+                      getTranslatedTitle={getTranslatedTitle}
+                      emptyMessage={historyFilter === 'THIS_MONTH' ? t.parent.history.noDataMonth : t.parent.history.noData}
+                    />
+                  </React.Suspense>
                 ) : (
                   <div className="p-8 h-[400px] flex flex-col">
                     {activeChild.history && activeChild.history.length > 0 ? (

@@ -8,24 +8,7 @@
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
-export const NOTIFICATION_TYPES = {
-    CHILD_REQUEST_GIFT: {
-        title: '🎁 Demande de cadeau !',
-        body: (name: string) => `${name} a fait une demande de cadeau. Allez voir !`
-    },
-    CHILD_REQUEST_MISSION: {
-        title: '🎯 Nouveau défi demandé !',
-        body: (name: string) => `${name} aimerait un nouveau défi pour gagner des pièces.`
-    },
-    MISSION_COMPLETED: {
-        title: '✅ Mission terminée !',
-        body: (name: string) => `${name} a terminé une mission. À vous de valider !`
-    },
-    PARENT_REMINDER: {
-        title: '💡 Idée de mission ?',
-        body: "Vos enfants n'ont plus de défi en cours. Et si vous leur lanciez un petit challenge ?"
-    }
-};
+// Removed hardcoded NOTIFICATION_TYPES to support i18n directly from components
 
 class NotificationService {
     private hasPermission: boolean = false;
@@ -183,26 +166,22 @@ class NotificationService {
     /**
      * Notify for child request
      */
-    notifyChildRequest(childId: string, name: string, type: 'GIFT' | 'MISSION') {
-        const config = type === 'GIFT' ? NOTIFICATION_TYPES.CHILD_REQUEST_GIFT : NOTIFICATION_TYPES.CHILD_REQUEST_MISSION;
-        const bodyText = type === 'GIFT' ? `${name} a fait une demande de cadeau.` : config.body(name);
-        this.send(config.title, bodyText, { childId, type });
+    notifyChildRequest(childId: string, type: 'GIFT' | 'MISSION', title: string, body: string) {
+        this.send(title, body, { childId, type });
     }
 
     /**
      * Notify for mission completion
      */
-    notifyMissionComplete(childId: string, name: string, missionId?: string) {
-        const config = NOTIFICATION_TYPES.MISSION_COMPLETED;
-        this.send(config.title, `${name} a terminé une mission. À valider !`, { childId, type: 'MISSION_COMPLETE', missionId });
+    notifyMissionComplete(childId: string, missionId: string | undefined, title: string, body: string) {
+        this.send(title, body, { childId, type: 'MISSION_COMPLETE', missionId });
     }
 
     /**
      * Periodic reminder for parents
      */
-    notifyParentReminder() {
-        const config = NOTIFICATION_TYPES.PARENT_REMINDER;
-        this.send(config.title, config.body, { type: 'PARENT_REMINDER' });
+    notifyParentReminder(title: string, body: string) {
+        this.send(title, body, { type: 'PARENT_REMINDER' });
     }
 }
 
