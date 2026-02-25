@@ -47,5 +47,4 @@ yarn.lock
 pnpm-lock.yaml
 
 # Capacitor (si jamais ajouté plus tard)
-/ios
 /android

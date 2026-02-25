@@ -1,17 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, log } from '../config';
 import { GoalStatus } from '../types';
 import { ICON_MAP } from '../constants/icons';
 
 // Debug log for configuration (safely — production-safe)
-if (import.meta.env.DEV) {
-    console.log('🔌 [SUPABASE] Initialisation (DEV mode)', {
-        url: SUPABASE_URL,
-        isNative: Capacitor.isNativePlatform()
-    });
-}
+log('🔌 [SUPABASE] Initialisation', {
+    url: SUPABASE_URL,
+    isNative: Capacitor.isNativePlatform()
+});
 
 // Initialize the Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -24,6 +22,25 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 // Flag pour éviter les sauvegardes concurrentes
 let isSaving = false;
+
+/**
+ * Executes a Promise with an exponential backoff retry strategy.
+ */
+export const withRetry = async <T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> => {
+    let lastError: any;
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await operation();
+        } catch (error: any) {
+            lastError = error;
+            log(`⏳ [NETWORK] Tentative ${i + 1}/${retries} échouée. Retrait dans ${delay * Math.pow(2, i)}ms...`);
+            if (i < retries - 1) {
+                await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
+            }
+        }
+    }
+    throw lastError;
+};
 
 export const getSupabase = () => {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('YOUR_')) {
@@ -102,7 +119,7 @@ export const signInWithApple = async () => {
 
             if (error) throw error;
 
-            console.log('✅ Apple Sign-In successful');
+            log('✅ Apple Sign-In successful');
             return { data, error: null };
         } else {
             // Web: Use Supabase OAuth redirect
@@ -152,7 +169,7 @@ export const deleteAccount = async () => {
 
 export const ensureUserProfile = async (userId: string, email?: string) => {
     try {
-        console.log(`🔍 [SUPABASE] Vérification profil pour: ${userId}`);
+        log(`🔍 [SUPABASE] Vérification profil pour: ${userId}`);
 
         const checkPromise = supabase
             .from('profiles')
@@ -168,7 +185,7 @@ export const ensureUserProfile = async (userId: string, email?: string) => {
             const { data } = await Promise.race([checkPromise, timeoutPromise]) as any;
 
             if (!data) {
-                console.log('🆕 [SUPABASE] Profil inexistant. Création...');
+                log('🆕 [SUPABASE] Profil inexistant. Création...');
 
                 const { error: profileError } = await supabase
                     .from('profiles')
@@ -181,9 +198,9 @@ export const ensureUserProfile = async (userId: string, email?: string) => {
 
                 if (profileError) throw new Error(`Profile creation failed: ${profileError.message}`);
 
-                console.log('✅ [SUPABASE] Profil créé avec succès');
+                log('✅ [SUPABASE] Profil créé avec succès');
             } else {
-                console.log(`✅ [SUPABASE] Profil existant vérifié`);
+                log(`✅ [SUPABASE] Profil existant vérifié`);
             }
         } catch (e: any) {
             console.warn('⚠️ [SUPABASE] Erreur lors de l\'initialisation:', e.message);
@@ -202,7 +219,7 @@ export const ensureUserProfile = async (userId: string, email?: string) => {
 export const loadFromSupabase = async (userId: string): Promise<any> => {
     const start = performance.now();
     try {
-        console.log(`📥 [SUPABASE] Chargement données V2 pour: ${userId}`);
+        log(`📥 [SUPABASE] Chargement données V2 pour: ${userId}`);
 
         const fetchData = async () => {
             const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -237,11 +254,12 @@ export const loadFromSupabase = async (userId: string): Promise<any> => {
             setTimeout(() => reject(new Error('TIMEOUT_LOAD_DATA')), 8000)
         );
 
-        const result = await Promise.race([fetchData(), timeoutPromise]) as any;
+        // Usage de l'outil retry réseau: 3 tentatives avec backoff exponentiel
+        const result = await withRetry(() => Promise.race([fetchData(), timeoutPromise])) as any;
         if (!result) return null;
 
         const { profile, children } = result;
-        console.log(`✅ [SUPABASE] V2 Data loaded in ${(performance.now() - start).toFixed(0)}ms`);
+        log(`✅ [SUPABASE] V2 Data loaded in ${(performance.now() - start).toFixed(0)}ms`);
 
         // 3. Map to GlobalState
         return {
@@ -306,20 +324,20 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
     if (!userId || userId === 'local-owner' || userId === 'demo') return { success: false, idMapping };
 
     if (isSaving) {
-        console.log('⏭️ [SUPABASE] Save already in progress, skipping');
+        log('⏭️ [SUPABASE] Save already in progress, skipping');
         return { success: false, idMapping };
     }
 
     isSaving = true;
 
-    console.log(`☁️ [SUPABASE] Save V2 START`);
+    log(`☁️ [SUPABASE] Save V2 START`);
 
     try {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         if (!currentUser) return { success: false, idMapping };
 
         const userId = currentUser.id;
-        console.log(`👶 [SUPABASE] Enfants à sync: ${state.children?.length}`);
+        log(`👶 [SUPABASE] Enfants à sync: ${state.children?.length}`);
 
         // 1. Update Profile
         const { error: profErr } = await supabase.from('profiles').update({
@@ -336,7 +354,7 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
         const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
         for (const child of (state.children || [])) {
-            console.log(`👶 [SUPABASE] Processing child: ${child.name} (ID: ${child.id}, isUUID: ${isUUID(child.id)})`);
+            log(`👶 [SUPABASE] Processing child: ${child.name} (ID: ${child.id}, isUUID: ${isUUID(child.id)})`);
 
             const childPayload: any = {
                 user_id: userId,
@@ -369,7 +387,7 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                     // L'enfant existe déjà → utiliser son ID
                     savedChildId = existing.id;
                     idMapping[child.id] = existing.id;
-                    console.log('♻️ [SUPABASE] Child already exists, reusing ID:', existing.id);
+                    log('♻️ [SUPABASE] Child already exists, reusing ID:', existing.id);
                 } else {
                     const { data: insertedChild, error: cInsErr } = await supabase
                         .from('children')
@@ -385,7 +403,7 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                     if (insertedChild) {
                         savedChildId = insertedChild.id;
                         idMapping[child.id] = savedChildId;
-                        console.log(`✅ [SUPABASE] Child created! New ID: ${savedChildId}`);
+                        log(`✅ [SUPABASE] Child created! New ID: ${savedChildId}`);
                     }
                 }
             }
@@ -516,7 +534,7 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                     .map((h: any) => mapTransaction(h));
 
                 if (newTransactions.length > 0) {
-                    console.log(`🆕 [SUPABASE] Inserting ${newTransactions.length} new transactions`);
+                    log(`🆕 [SUPABASE] Inserting ${newTransactions.length} new transactions`);
                     const { error: tErr } = await supabase.from('transactions').insert(newTransactions);
                     if (tErr) {
                         console.error('❌ Transactions insert error:', tErr.message);
@@ -539,7 +557,7 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
             }
         }
 
-        console.log(`✅ [SUPABASE] Save V2 DONE. ID mappings:`, idMapping);
+        log(`✅ [SUPABASE] Save V2 DONE. ID mappings:`, idMapping);
         return { success: true, idMapping };
 
     } catch (err: any) {

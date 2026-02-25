@@ -53,8 +53,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
             </div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">{t.login.noProfileTitle}</h2>
             <p className="text-slate-500 dark:text-slate-400 mb-6">{t.login.noProfileDesc}</p>
-            <button
-              onClick={onParentAccess}
+            <button               onClick={onParentAccess}
               className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 w-full transition-all"
             >
               {t.login.createFirstProfile}
@@ -63,8 +62,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
         ) : (
           <div className="grid grid-cols-2 gap-4 mb-4">
             {data.children.map(child => (
-              <button
-                key={child.id}
+              <button                 key={child.id}
                 onClick={() => onSelectChild(child.id)}
                 aria-label={`${child.name} — ${child.balance.toFixed(2)}€`}
                 className="bg-white dark:bg-slate-900 p-4 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border-4 border-transparent hover:border-indigo-400 active:scale-95 transition-all group flex flex-col items-center gap-3 relative overflow-hidden"
@@ -85,8 +83,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
 
         {data.children.length > 0 && (
           <div className="text-center mt-auto pt-6">
-            <button
-              onClick={onParentAccess}
+            <button               onClick={onParentAccess}
               className="group inline-flex items-center gap-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-10 py-5 rounded-[2rem] hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-xl hover:shadow-2xl active:scale-95 w-full justify-center"
             >
               <i className="fa-solid fa-lock text-emerald-400 dark:text-emerald-500 group-hover:rotate-12 transition-transform" aria-hidden="true"></i>
@@ -97,8 +94,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
 
         {/* Legal Link */}
         <div className="text-center mt-8">
-          <button
-            onClick={() => {
+          <button             onClick={() => {
               const event = new CustomEvent('openLegalModal');
               window.dispatchEvent(event);
             }}

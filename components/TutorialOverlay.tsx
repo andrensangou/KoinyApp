@@ -62,14 +62,12 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ steps, onComplete, co
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button
-            onClick={handleSkip}
+          <button             onClick={handleSkip}
             className="flex-1 py-3 text-slate-400 dark:text-slate-500 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
           >
             {labels.skip}
           </button>
-          <button
-            onClick={handleNext}
+          <button             onClick={handleNext}
             className={`flex-[2] py-3 bg-${colorClass}-600 text-white font-bold rounded-xl shadow-lg shadow-${colorClass}-200 dark:shadow-none hover:bg-${colorClass}-700 active:scale-95 transition-all`}
           >
             {currentStep === steps.length - 1 ? labels.start : labels.next}

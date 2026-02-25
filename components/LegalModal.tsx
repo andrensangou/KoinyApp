@@ -21,7 +21,12 @@ const LegalModal: React.FC<LegalModalProps> = ({ language }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col max-h-[85vh] border border-white/20 dark:border-white/10 transition-colors duration-500">
+      <div
+        className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col max-h-[85vh] border border-white/20 dark:border-white/10 transition-colors duration-500"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="legal-dialog-title"
+      >
         {/* Header */}
         <div className="bg-slate-900 dark:bg-black p-6 flex justify-between items-center shrink-0 border-b border-slate-800 transition-colors duration-500">
           <div className="flex items-center gap-3">
@@ -29,7 +34,7 @@ const LegalModal: React.FC<LegalModalProps> = ({ language }) => {
               <i className="fa-solid fa-scale-balanced text-xl"></i>
             </div>
             <div>
-              <h3 className="text-white font-bold text-lg leading-tight">{t.legal.title}</h3>
+              <h3 id="legal-dialog-title" className="text-white font-bold text-lg leading-tight">{t.legal.title}</h3>
               <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-widest mt-0.5">Koiny v1.0</p>
             </div>
           </div>
@@ -61,8 +66,7 @@ const LegalModal: React.FC<LegalModalProps> = ({ language }) => {
 
         {/* Footer */}
         <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-center shrink-0 transition-colors duration-500">
-          <button
-            onClick={() => setShow(false)}
+          <button onClick={() => setShow(false)}
             className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-xl shadow-slate-200 dark:shadow-none active:scale-[0.98]"
           >
             {t.common.close}

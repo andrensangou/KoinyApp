@@ -71,7 +71,13 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             ></div>
 
             {/* Modal Card - Glassmorphism style */}
-            <div className="bg-white/90 dark:bg-slate-900/80 w-full max-w-sm rounded-[2.5rem] shadow-[0_30px_100px_-20px_rgba(0,0,0,0.5)] p-8 relative z-10 animate-scale-in border border-white dark:border-white/10 overflow-hidden group">
+            <div
+                className="bg-white/90 dark:bg-slate-900/80 w-full max-w-sm rounded-[2.5rem] shadow-[0_30px_100px_-20px_rgba(0,0,0,0.5)] p-8 relative z-10 animate-scale-in border border-white dark:border-white/10 overflow-hidden group"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="dialog-title"
+                aria-describedby="dialog-description"
+            >
 
                 {/* Visual Accent Bar */}
                 <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-${styles.accentColor}-400 to-transparent opacity-50`}></div>
@@ -83,26 +89,24 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                     </div>
 
                     {/* Text content with premium typography */}
-                    <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight leading-tight">
+                    <h3 id="dialog-title" className="text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight leading-tight">
                         {title}
                     </h3>
-                    <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mb-10 leading-relaxed px-2">
+                    <p id="dialog-description" className="text-slate-500 dark:text-slate-400 font-bold text-sm mb-10 leading-relaxed px-2">
                         {message}
                     </p>
 
                     {/* Buttons with modern rounded look and glow */}
                     <div className="flex gap-4 w-full">
-                        <button
-                            onClick={onClose}
+                        <button onClick={onClose}
                             className="flex-1 py-4 px-4 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all uppercase tracking-widest text-[10px] active:scale-95 border border-transparent hover:border-slate-300 dark:hover:border-slate-600"
                         >
                             {cancelLabel}
                         </button>
-                        <button
-                            onClick={() => {
-                                onConfirm();
-                                onClose();
-                            }}
+                        <button onClick={() => {
+                            onConfirm();
+                            onClose();
+                        }}
                             className={`flex-1 py-4 px-4 text-white font-black rounded-2xl transition-all uppercase tracking-widest text-[10px] active:scale-95 ${styles.btnBg} ${styles.btnShadow}`}
                         >
                             {confirmLabel}

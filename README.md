@@ -32,7 +32,7 @@ Une interface miroir (Parent/Enfant) où chaque gain est le résultat d'une miss
 - **Validation avec preuve** : Système d'approbation/rejet des missions terminées avec possibilité de feedback.
 - **Co-parentalité** : Invitez un autre parent à gérer la famille en temps réel.
 - **Contrôle du solde** : Possibilité de faire des transactions manuelles (bonus/malus).
-- **Sécurité par PIN** : Accès à l'interface parent protégé par un code PIN sécurisé.
+- **Sécurité par PIN & Biométrie** : Accès à l'interface parent protégé par un code PIN sécurisé et possibilité d'utiliser **Face ID / Touch ID**.
 
 ### 👶 Pour les Enfants (Utilisateurs)
 - **Profils personnalisés** : Thèmes de couleurs et avatars uniques choisis par l'enfant.
@@ -76,8 +76,9 @@ Le projet utilise un schéma relationnel robuste sur Supabase :
 | **Build Tool** | Vite.js |
 | **Mobile Runtime** | Capacitor (iOS/Android native support) |
 | **Backend / DB** | Supabase (PostgreSQL, Auth, Realtime) |
+| **Plugins Natifs** | Capacitor (Local Notifications, Apple Sign-In, Preferences) |
 | **Charts** | Recharts (Visualisation des tendances) |
-| **Design** | Headless UI, FontAwesome, Google Fonts (Outfit) |
+| **Design** | Headless UI, FontAwesome, Google Fonts, Tailwind CSS v3 |
 
 ---
 
@@ -123,8 +124,9 @@ npx cap open ios
 
 ## 🔒 Sécurité et Confidentialité
 
-- **Authentification forte** : Intégration de Google OAuth pour une connexion simplifiée et sécurisée.
-- **Code PIN local-first** : Le PIN parent est haché et stocké de manière sécurisée (hashage Argon2-like concept) pour empêcher l'accès non autorisé par l'enfant.
+- **Authentification forte** : Intégration de Google OAuth et **Apple Sign-In** pour une connexion simplifiée et sécurisée sur tous les appareils.
+- **Code PIN et Biométrie local-first** : Le PIN parent est stocké de manière sécurisée. Les parents peuvent aussi utiliser **Face ID / Touch ID** pour réinitialiser le code PIN de manière ultra-sécurisée.
+- **Mode Démo** : Un mode hors-connexion permet aux familles de tester l'application avant de créer un compte (données volatiles).
 - **RGPD Ready** : Les données sont structurées de manière à permettre l'export ou la suppression totale d'un compte et de ses données liées (via RPC Postgres).
 - **Isolation des familles** : Utilisation intensive des **Row Level Security (RLS)** sur Supabase pour garantir qu'une famille ne peut jamais voir les données d'une autre.
 
@@ -137,7 +139,7 @@ Koiny/
 ├── App.tsx              # Cœur de l'application (Main Logic & Routing)
 ├── components/          # Composants UI (ParentView, ChildView, etc.)
 ├── services/            # Logique métier (Supabase, Notifications, Storage)
-├── i18n.ts             # Service de traduction multilingue (FR/EN)
+├── i18n.ts             # Service de traduction multilingue (FR / EN / NL)
 ├── types.ts            # Définition des interfaces TypeScript
 ├── ios/                 # Projet natif Xcode (Capacitor)
 └── public/              # Assets et mascottes

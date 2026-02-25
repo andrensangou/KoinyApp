@@ -2,7 +2,10 @@
 /**
  * Koiny Monitoring Service v2
  * Centralise le tracking technique et business.
+ * Integre Sentry pour les rapports de crash.
  */
+import * as Sentry from '@sentry/capacitor';
+import * as SentryReact from '@sentry/react';
 
 type MetricType = 'PERF' | 'BUSINESS' | 'ERROR' | 'SECURITY';
 
@@ -18,13 +21,23 @@ class MonitoringService {
   private static instance: MonitoringService;
   private isDebug = window.location.hostname === 'localhost';
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): MonitoringService {
     if (!MonitoringService.instance) {
       MonitoringService.instance = new MonitoringService();
     }
     return MonitoringService.instance;
+  }
+
+  /**
+   * Initialise le SDK Sentry
+   */
+  public initSentry() {
+    Sentry.init({
+      dsn: "https://examplePublicKey@o0.ingest.sentry.io/0", // Remplacer par le vrai DSN
+      tracesSampleRate: 0.2, // Faible en prod pour réduire la consommation
+    }, SentryReact.init);
   }
 
   /**
@@ -55,9 +68,11 @@ class MonitoringService {
       console.log(`%c[${type}] ${name}`, colors[type] || '', { value, ...event.metadata });
     }
 
-    // Pipeline de persistance (Placeholder pour API de télémétrie réelle)
+    // Pipeline de persistance
     if (!this.isDebug && type === 'ERROR') {
-      // Logic pour envoyer les erreurs critiques même en prod
+      Sentry.captureException(new Error(name), {
+        extra: event.metadata,
+      });
     }
   }
 
@@ -73,10 +88,10 @@ class MonitoringService {
       return result;
     } catch (error) {
       const duration = performance.now() - start;
-      this.track('ERROR', `${name}_FAILED`, duration, { 
-        error: (error as Error).message, 
+      this.track('ERROR', `${name}_FAILED`, duration, {
+        error: (error as Error).message,
         stack: (error as Error).stack,
-        ...metadata 
+        ...metadata
       });
       throw error;
     }

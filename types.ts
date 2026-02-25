@@ -104,7 +104,7 @@ export const getDemoData = (language: Language = 'fr'): GlobalState => {
   return {
     parentTutorialSeen: true,
     language: language,
-    parentPin: '0000', // Code PIN simple pour la démo
+    parentPin: '73df605645ebf3aca750aa13c079f9ee:bf375d4b25c1ccd172d6efe41753c6b6965e472c9acf88bea88b08f917afdac1d1ebbfc3181669f80ace18e3bad0cb52dea1e613ec555b4bb2692b869801c4e1', // Code "0000" hashé avec PBKDF2
     soundEnabled: true,
     parentBadge: 'EXPERT',
     totalApprovedMissions: 15,

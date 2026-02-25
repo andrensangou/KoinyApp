@@ -90,6 +90,18 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
             'Si une récompense dépasse ce plafond, le paiement est bloqué.',
             'C\'est l\'occasion d\'expliquer l\'épargne et la dépense réelle !'
           ]
+        },
+        {
+          id: 7,
+          icon: 'fa-eye',
+          color: 'from-cyan-400 to-blue-500',
+          title: 'Mode Démo',
+          text: 'Information sur le compte d\'essai :',
+          items: [
+            'Si vous testez Koiny en mode démo, pensez à vous déconnecter.',
+            'Pour utiliser l\'application avec votre propre famille, il faudra créer un vrai compte.',
+            'Vos données en mode démo ne sont pas transférables.'
+          ]
         }
       ],
       close: 'C\'est parti !'
@@ -171,6 +183,18 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
             'Balance is capped at €100 per child.',
             'If a reward exceeds this limit, payment is blocked.',
             'A great opportunity to talk about real saving and spending!'
+          ]
+        },
+        {
+          id: 7,
+          icon: 'fa-eye',
+          color: 'from-cyan-400 to-blue-500',
+          title: 'Demo Mode',
+          text: 'Information about the trial account:',
+          items: [
+            'If you are testing Koiny via demo mode, remember to log out.',
+            'To use the app with your own family, you will need to create a real account.',
+            'Your data in demo mode is not transferable.'
           ]
         }
       ],
@@ -254,6 +278,18 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
             'Als een beloning dit plafond overschrijdt, wordt de betaling geblokkeerd.',
             'Een mooie gelegenheid om over echt sparen en uitgeven te praten!'
           ]
+        },
+        {
+          id: 7,
+          icon: 'fa-eye',
+          color: 'from-cyan-400 to-blue-500',
+          title: 'Demo Modus',
+          text: 'Informatie over het proefaccount:',
+          items: [
+            'Als je Koiny via de demo modus test, vergeet dan niet uit te loggen.',
+            'Om de app met je eigen gezin te gebruiken, moet je een echt account aanmaken.',
+            'Je gegevens in de demo modus kunnen niet worden overgezet.'
+          ]
         }
       ],
       close: 'Aan de slag!'
@@ -271,7 +307,12 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
       ></div>
 
       {/* Modal Card */}
-      <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col max-h-[85vh] border border-white/20 dark:border-white/10 relative z-10">
+      <div
+        className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col max-h-[85vh] border border-white/20 dark:border-white/10 relative z-10"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="help-dialog-title"
+      >
 
         {/* Animated Background Accents */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -279,14 +320,13 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
 
         {/* Header */}
         <div className="bg-gradient-to-r from-slate-800 to-slate-900 dark:from-black dark:to-slate-900 p-6 flex justify-between items-center shrink-0 border-b border-white/10">
-          <h3 className="text-white font-black text-xl uppercase tracking-tighter flex items-center gap-3">
+          <h3 id="help-dialog-title" className="text-white font-black text-xl uppercase tracking-tighter flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-500/30">
               <i className="fa-solid fa-book-open text-indigo-400"></i>
             </div>
             {t.title}
           </h3>
-          <button
-            onClick={onClose}
+          <button onClick={onClose}
             className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all active:scale-90"
           >
             <i className="fa-solid fa-xmark text-lg"></i>
@@ -340,8 +380,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
 
         {/* Footer */}
         <div className="p-6 border-t border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 flex justify-center shrink-0">
-          <button
-            onClick={onClose}
+          <button onClick={onClose}
             className="group relative w-full bg-slate-900 dark:bg-indigo-500 text-white py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] overflow-hidden shadow-xl hover:shadow-indigo-500/40 active:scale-[0.98] transition-all"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>

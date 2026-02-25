@@ -3,6 +3,14 @@
 export const APP_NAME = "Koiny";
 export const VERSION = "2.0.0";
 export const IS_LOCAL = import.meta.env.VITE_IS_LOCAL === "true" || false;
+export const IS_PRODUCTION = import.meta.env.PROD;
+
+// Wrapper pour n'afficher les logs qu'en mode développement
+export const log = (...args: any[]) => {
+    if (!IS_PRODUCTION) {
+        console.log(...args);
+    }
+};
 
 // ✅ SÉCURISÉ: Pas de fallbacks pour les clés API
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;

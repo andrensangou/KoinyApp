@@ -171,12 +171,15 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ language, onSetLanguage
                                 key={l.code}
                                 onClick={() => onSetLanguage(l.code)}
                                 aria-label={l.label}
-                                className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm transition-all duration-300 active:scale-90
-                  ${language === l.code
+                                className={`w-11 h-11 flex items-center justify-center transition-all duration-300 active:scale-90`}
+                            >
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm
+                                    ${language === l.code
                                         ? 'bg-white/20 backdrop-blur-md shadow-lg scale-110 ring-1 ring-white/30'
                                         : 'bg-white/5 hover:bg-white/10 opacity-60'}`}
-                            >
-                                {l.flag}
+                                >
+                                    {l.flag}
+                                </div>
                             </button>
                         ))}
                     </div>
@@ -281,7 +284,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ language, onSetLanguage
 
                 {/* Legal hint on last slide */}
                 {isLast && (
-                    <p className="text-center text-white/50 text-[10px] font-bold uppercase tracking-widest mt-5 animate-onboarding-desc">
+                    <p className="text-center text-white/80 text-[10px] font-bold uppercase tracking-widest mt-5 animate-onboarding-desc">
                         {language === 'fr' ? 'Koiny est un simulateur • 100% argent virtuel' : language === 'nl' ? 'Koiny is een simulator • 100% virtueel geld' : 'Koiny is a simulator • 100% virtual money'}
                     </p>
                 )}

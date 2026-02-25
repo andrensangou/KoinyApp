@@ -5,6 +5,7 @@ import TutorialOverlay, { TutorialStep } from './TutorialOverlay';
 import { translations } from '../i18n';
 import confetti from 'canvas-confetti';
 import { getIcon } from '../constants/icons';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 interface ChildViewProps {
   data: ChildProfile;
@@ -113,11 +114,11 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
         setTimeout(() => setBalanceDiff(null), 3000);
 
         if (type === 'PENALTY') {
-          if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]);
-          playSound(soundEnabled, 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', 0.4);
+          Haptics.impact({ style: ImpactStyle.Heavy });
+          playSound(soundEnabled, '/sounds/penalty.mp3', 0.4);
         } else if (type === 'GAIN') {
-          if ("vibrate" in navigator) navigator.vibrate([10, 30, 10]);
-          playSound(soundEnabled, 'https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3', 0.4);
+          Haptics.impact({ style: ImpactStyle.Light });
+          playSound(soundEnabled, '/sounds/gain.mp3', 0.4);
         }
       }
 
@@ -128,8 +129,8 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
   }, [data.balance, data.history, soundEnabled]);
 
   const handleMissionClick = (id: string) => {
-    if ("vibrate" in navigator) navigator.vibrate([10, 30, 10, 50]);
-    playSound(soundEnabled, 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3');
+    Haptics.impact({ style: ImpactStyle.Heavy });
+    playSound(soundEnabled, '/sounds/mission.mp3');
     if (typeof confetti === 'function') {
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }
@@ -141,8 +142,8 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
   };
 
   const handlePurchase = (goal: Goal) => {
-    if ("vibrate" in navigator) navigator.vibrate(100);
-    playSound(soundEnabled, 'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
+    Haptics.impact({ style: ImpactStyle.Medium });
+    playSound(soundEnabled, '/sounds/purchase.mp3');
     if (typeof confetti === 'function') {
       confetti({
         particleCount: 150,
@@ -208,8 +209,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => { setShowHistory(!showHistory); if ("vibrate" in navigator) navigator.vibrate(10); }}
+              <button onClick={() => { setShowHistory(!showHistory); if ("vibrate" in navigator) navigator.vibrate(10); }}
                 aria-label={showHistory ? t.child.historyHeader : t.child.historyHeader}
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all backdrop-blur-xl border ${showHistory ? 'bg-white dark:bg-slate-100 text-slate-800 border-white dark:border-slate-100' : 'bg-white/10 text-white border-white/10 hover:bg-white/20 hover:border-white/20'}`}
               >
@@ -223,7 +223,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
           </div>
 
           <div className="mt-8 mb-4 text-center relative z-10">
-            <p className="text-white/50 mb-3 text-[10px] font-black uppercase tracking-[0.3em]">{t.child.myBalance}</p>
+            <p className="text-white/80 mb-3 text-[10px] font-black uppercase tracking-[0.3em]">{t.child.myBalance}</p>
             <div className={`flex items-baseline justify-center transform transition-all duration-300 ${isBalanceAnimating ? 'animate-balance-pop' : 'hover:scale-105'}`}>
               <span className="text-7xl sm:text-8xl font-black tracking-tighter tabular-nums drop-shadow-[0_10px_20px_rgba(0,0,0,0.2)]">
                 {data.balance.toFixed(2)}
@@ -370,8 +370,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                               {language === 'fr' ? 'Obtenu !' : language === 'nl' ? 'Behaald!' : 'Purchased!'}
                             </div>
                           ) : isReached ? (
-                            <button
-                              onClick={() => handlePurchase(goal)}
+                            <button onClick={() => handlePurchase(goal)}
                               aria-label={`${t.child.reached} ${goal.name}`}
                               className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all animate-bounce-short flex items-center justify-center gap-2"
                             >
@@ -391,9 +390,9 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                                     width: `${Math.max(percentage, 2)}%`,
                                     background: (() => {
                                       if (percentage >= 100) return 'linear-gradient(to right, #fbbf24, #f59e0b)';
-                                      if (percentage >= 75)  return 'linear-gradient(to right, #34d399, #10b981)';
-                                      if (percentage >= 50)  return 'linear-gradient(to right, #a3e635, #fde047)';
-                                      if (percentage >= 25)  return 'linear-gradient(to right, #fb923c, #f97316)';
+                                      if (percentage >= 75) return 'linear-gradient(to right, #34d399, #10b981)';
+                                      if (percentage >= 50) return 'linear-gradient(to right, #a3e635, #fde047)';
+                                      if (percentage >= 25) return 'linear-gradient(to right, #fb923c, #f97316)';
                                       return 'linear-gradient(to right, #f87171, #fb7185)';
                                     })()
                                   }}

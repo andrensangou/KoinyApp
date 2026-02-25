@@ -89,8 +89,7 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
 
           <div className="flex items-center gap-3 sm:gap-6">
             <div className="relative shrink-0" ref={langMenuRef}>
-              <button
-                onClick={() => setIsLangOpen(!isLangOpen)}
+              <button                 onClick={() => setIsLangOpen(!isLangOpen)}
                 className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 transition-all text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 active:scale-95 shadow-sm"
               >
                 <span className="text-base sm:text-sm">{currentLang.flag}</span>
@@ -101,8 +100,7 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
               {isLangOpen && (
                 <div className="absolute right-0 mt-3 w-48 sm:w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-scale-in origin-top-right py-2 z-[110]">
                   {languages.map((l) => (
-                    <button
-                      key={l.code}
+                    <button                       key={l.code}
                       onClick={() => {
                         onSetLanguage(l.code);
                         setIsLangOpen(false);
@@ -120,8 +118,7 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
               )}
             </div>
 
-            <button
-              onClick={onGetStarted}
+            <button               onClick={onGetStarted}
               className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm hover:bg-indigo-600 dark:hover:bg-indigo-50 transition-all shadow-xl shadow-slate-200 dark:shadow-none active:scale-95 whitespace-nowrap shrink-0"
             >
               {t.auth.login}
@@ -150,8 +147,7 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
               {t.auth.description} {language === 'fr' ? 'Koiny est l\'outil indispensable pour les familles qui souhaitent enseigner la valeur de l\'argent.' : language === 'nl' ? 'Koiny is het onmisbare hulpmiddel voor gezinnen.' : 'Koiny is the essential tool for families.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-5">
-              <button
-                onClick={onGetStarted}
+              <button                 onClick={onGetStarted}
                 className="bg-indigo-600 dark:bg-indigo-500 text-white px-12 py-6 rounded-3xl font-black text-xl shadow-2xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all active:scale-95 flex items-center justify-center gap-4 group"
               >
                 {language === 'fr' ? 'Essayer Koiny' : language === 'nl' ? 'Probeer Koiny' : 'Try Koiny'}
@@ -275,8 +271,7 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
           <div className="space-y-4">
             {(faqData[language] || faqData.fr).map((item, i) => (
               <div key={i} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden transition-all duration-500">
-                <button
-                  onClick={() => setActiveFaq(activeFaq === i ? null : i)}
+                <button                   onClick={() => setActiveFaq(activeFaq === i ? null : i)}
                   className="w-full flex justify-between items-center p-6 text-left hover:bg-white/5 transition-all"
                 >
                   <span className="text-lg font-bold pr-6">{item.q}</span>
@@ -305,8 +300,7 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
           <p className="text-xl text-slate-500 dark:text-slate-400 mb-12 font-medium">
             {language === 'fr' ? 'Rejoignez des milliers de familles qui éduquent déjà leurs enfants à l\'argent avec Koiny.' : language === 'nl' ? 'Sluit je aan bij duizenden gezinnen.' : 'Join thousands of families already using Koiny.'}
           </p>
-          <button
-            onClick={onGetStarted}
+          <button             onClick={onGetStarted}
             className="bg-indigo-600 dark:bg-indigo-500 text-white px-16 py-7 rounded-3xl font-black text-2xl shadow-2xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all active:scale-[0.98] animate-bounce-short"
           >
             {t.common.start}
@@ -330,8 +324,7 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
           </div>
 
           <div className="flex flex-wrap justify-center gap-10">
-            <button
-              onClick={() => { const event = new CustomEvent('openLegalModal'); window.dispatchEvent(event); }}
+            <button               onClick={() => { const event = new CustomEvent('openLegalModal'); window.dispatchEvent(event); }}
               className="text-slate-500 dark:text-slate-500 font-black hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors text-xs uppercase tracking-[0.2em]"
             >
               {language === 'fr' ? 'Confidentialité & Mentions' : 'Privacy & Terms'}

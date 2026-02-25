@@ -31,8 +31,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             </div>
 
             <div className="absolute left-1/2 -translate-x-1/2 -top-6">
-                <button
-                    onClick={onAddClick}
+                <button                     onClick={onAddClick}
                     className="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/40 hover:scale-105 active:scale-95 transition-all border-[6px] border-slate-50 dark:border-[#020617] group"
                 >
                     <i className="fa-solid fa-plus text-white text-2xl group-hover:rotate-90 transition-transform duration-300"></i>
@@ -63,8 +62,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 };
 
 const NavButton = ({ icon, label, isActive, onClick }: { icon: string, label: string, isActive: boolean, onClick: () => void }) => (
-    <button
-        onClick={onClick}
+    <button         onClick={onClick}
         className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${isActive ? 'text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
     >
         <i className={`fa-solid ${icon} text-xl ${isActive ? '-translate-y-1' : ''} transition-transform`}></i>

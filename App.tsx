@@ -214,6 +214,7 @@ const App: React.FC = () => {
   }, [data.children, data.lastReminderSent, loading]);
 
   useEffect(() => {
+    monitoring.initSentry();
     monitoring.initWebVitals();
     monitoring.track('BUSINESS', 'APP_OPEN');
 
