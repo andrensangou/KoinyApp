@@ -240,7 +240,7 @@ export const translations = {
         title: "Koiny Premium",
         desc: "Débloquez toutes les fonctionnalités pour votre famille.",
         upgrade: "Passer au Premium",
-        features: "Enfants illimités • Co-parents illimités • Statistiques détaillées",
+        features: "Enfants illimités • Statistiques détaillées • Co-parents ill. (prochainement)",
         price: "2,99€ / mois par famille"
       },
       tutorial: {
@@ -568,7 +568,7 @@ export const translations = {
         title: "Koiny Premium",
         desc: "Ontgrendel alle functies voor je gezin.",
         upgrade: "Upgrade naar Premium",
-        features: "Onbeperkt aantal kinderen • Onbeperkt aantal co-ouders • Geavanceerde statistieken",
+        features: "Onbeperkt aantal kinderen • Geavanceerde statistieken • Onbeperkt co-ouders (binnenkort)",
         price: "2,99€ / maand per gezin"
       },
       tutorial: {
@@ -896,7 +896,7 @@ export const translations = {
         title: "Koiny Premium",
         desc: "Unlock all features for your family.",
         upgrade: "Go Premium",
-        features: "Unlimited children • Unlimited co-parents • Advanced stats",
+        features: "Unlimited children • Advanced stats • Unlimited co-parents (coming soon)",
         price: "2,99€ / month per family"
       },
       tutorial: {
