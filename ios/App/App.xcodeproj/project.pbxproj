@@ -21,8 +21,8 @@
 		65A8A0D82F4B890800DBB640 /* KoinyWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 65A8A0C62F4B890500DBB640 /* KoinyWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		65A8A0E12F4B910E00DBB640 /* KoinyWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65A8A0E02F4B910E00DBB640 /* KoinyWidgetBridge.swift */; };
 		65A8A0E32F4B910E00DBB640 /* BiometricPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65A8A0E22F4B910E00DBB640 /* BiometricPlugin.swift */; };
-		65C9B0A12F6E100000CC1234 /* KoinyBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C9B0A02F6E100000CC1234 /* KoinyBridgeViewController.swift */; };
 		65B1F0012F5D000000AABB01 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B1F0002F5D000000AABB01 /* SceneDelegate.swift */; };
+		65C9B0A12F6E100000CC1234 /* KoinyBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C9B0A02F6E100000CC1234 /* KoinyBridgeViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,8 +67,8 @@
 		65A8A0DF2F4B8EBC00DBB640 /* KoinyWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KoinyWidgetExtension.entitlements; sourceTree = "<group>"; };
 		65A8A0E02F4B910E00DBB640 /* KoinyWidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KoinyWidgetBridge.swift; sourceTree = "<group>"; };
 		65A8A0E22F4B910E00DBB640 /* BiometricPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricPlugin.swift; sourceTree = "<group>"; };
-		65C9B0A02F6E100000CC1234 /* KoinyBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KoinyBridgeViewController.swift; sourceTree = "<group>"; };
 		65B1F0002F5D000000AABB01 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		65C9B0A02F6E100000CC1234 /* KoinyBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KoinyBridgeViewController.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 

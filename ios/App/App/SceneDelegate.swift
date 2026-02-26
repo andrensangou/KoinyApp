@@ -69,7 +69,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 childName:   payload.childName,
                 balance:     payload.balance,
                 goalName:    payload.goalName,
-                goalTarget:  payload.goalTarget
+                goalTarget:  payload.goalTarget,
+                language:    payload.language ?? "fr"
             )
         } catch {
             print("[SceneDelegate] ⚠️ Widget sync skipped: \(error.localizedDescription)")

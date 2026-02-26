@@ -6,7 +6,7 @@ import { ChildProfile } from '../types';
  * so the native AppDelegate can read it from UserDefaults.standard
  * and forward it to the widget's App Group.
  */
-export const updateWidgetData = async (children: ChildProfile[]) => {
+export const updateWidgetData = async (children: ChildProfile[], language?: string) => {
   try {
     const child = children[0];
     if (!child) return;
@@ -15,11 +15,14 @@ export const updateWidgetData = async (children: ChildProfile[]) => {
     const primaryGoal =
       child.goals?.find(g => !g.status || g.status === 'ACTIVE') ?? null;
 
+    const lang = language || localStorage.getItem('koiny_language') || 'fr';
+
     const payload = {
       childName: child.name,
       balance: child.balance,
       goalName: primaryGoal?.name ?? null,
       goalTarget: primaryGoal?.target ?? 0,
+      language: lang,
     };
 
     // Write to standard Capacitor Preferences

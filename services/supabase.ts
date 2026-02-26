@@ -103,7 +103,7 @@ export const signInWithApple = async () => {
                 clientId: 'com.koiny.app',
                 redirectURI: 'https://xmicutzneisrrtqgstro.supabase.co/auth/v1/callback',
                 scopes: 'email name',
-                state: '12345', // CSRF protection
+                state: crypto.randomUUID(), // CSRF protection - random per request
                 nonce: crypto.randomUUID(), // Replay attack protection
             });
 

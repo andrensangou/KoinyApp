@@ -17,12 +17,44 @@ struct KoinyWidgetData: Codable {
     var balance: Double = 0
     var goalName: String? = nil
     var goalTarget: Double = 0
+    var language: String = "fr"
 
     var progress: Double {
         guard goalTarget > 0 else { return 0 }
         return min(1.0, balance / goalTarget)
     }
     var remaining: Double { max(0, goalTarget - balance) }
+
+    // Localized strings
+    var goalLabel: String {
+        switch language {
+        case "nl": return "DOEL"
+        case "en": return "GOAL"
+        default:   return "OBJECTIF"
+        }
+    }
+    var remainingLabel: String {
+        let value = String(format: "%.2f€", remaining)
+        switch language {
+        case "nl": return "\(value) resterend"
+        case "en": return "\(value) remaining"
+        default:   return "\(value) restant"
+        }
+    }
+    var noGoalLabel: String {
+        switch language {
+        case "nl": return "Geen doel ingesteld"
+        case "en": return "No goal set"
+        default:   return "Aucun objectif défini"
+        }
+    }
+    var widgetDescription: String {
+        switch language {
+        case "nl": return "Saldo en doel van je kind."
+        case "en": return "Your child's balance and goal."
+        default:   return "Solde et objectif de votre enfant."
+        }
+    }
 
     static var placeholder: Self {
         KoinyWidgetData(childName: "Emma", balance: 12.50, goalName: "Vélo 🚲", goalTarget: 50)
@@ -160,7 +192,7 @@ struct KoinyMediumView: View {
             // Right: goal
             VStack(alignment: .leading, spacing: 6) {
                 if let goal = data.goalName, data.goalTarget > 0 {
-                    Text("OBJECTIF")
+                    Text(data.goalLabel)
                         .font(.system(size: 8, weight: .black))
                         .foregroundStyle(.white.opacity(0.45))
                     Spacer()
@@ -177,7 +209,7 @@ struct KoinyMediumView: View {
                     }
                     .frame(height: 6)
                     HStack {
-                        Text(String(format: "%.2f€ restant", data.remaining))
+                        Text(data.remainingLabel)
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(.white.opacity(0.6))
                         Spacer()
@@ -188,7 +220,7 @@ struct KoinyMediumView: View {
                     Spacer()
                 } else {
                     Spacer()
-                    Text("Aucun objectif défini")
+                    Text(data.noGoalLabel)
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.white.opacity(0.35))
                     Spacer()
@@ -232,7 +264,7 @@ struct KoinyWidget: Widget {
             KoinyWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Koiny")
-        .description("Solde et objectif de votre enfant.")
+        .description("Your child's balance and goal.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

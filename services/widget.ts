@@ -10,8 +10,8 @@ export const widgetService = {
         console.log('[WidgetService] Initialized (direct App Group write via widgetBridge)');
     },
 
-    async syncChildData(child: ChildProfile) {
+    async syncChildData(child: ChildProfile, language?: string) {
         // Delegate to the unified widgetBridge with a single-element array
-        await updateWidgetData([child]);
+        await updateWidgetData([child], language);
     },
 };

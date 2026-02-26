@@ -125,6 +125,12 @@ const App: React.FC = () => {
       });
       setOwnerId(result.ownerId);
 
+      // Sync widget data on initial load
+      if (cloudData.children?.length > 0) {
+        const lang = savedLanguage || cloudData.language || 'fr';
+        updateWidgetData(cloudData.children, lang);
+      }
+
       // ✅ FIX DU FLASH : Ne pas écraser la vue si on a déjà restauré (CHILD ou PARENT)
       if (!cachedView || cachedView === 'LANDING') {
         if (session) {
@@ -383,7 +389,7 @@ const App: React.FC = () => {
       try {
         if (!loading && view !== 'AUTH' && view !== 'LANDING' && !criticalError) {
           const changes = await saveData(data, ownerId, immediateSave);
-          updateWidgetData(data.children);
+          updateWidgetData(data.children, data.language);
 
           // Si des IDs ont changé (ex: création enfant ou goal), on met à jour le state local
           // pour éviter de recréer les objets en boucle
@@ -410,7 +416,7 @@ const App: React.FC = () => {
           if (immediateSave) setImmediateSave(false);
           if (data.children && data.children.length > 0) {
             const childToSync = data.children.find(c => c.id === activeChildId) || data.children[0];
-            widgetService.syncChildData(childToSync);
+            widgetService.syncChildData(childToSync, data.language);
           }
         }
       } finally {
@@ -624,7 +630,13 @@ const App: React.FC = () => {
   };
 
   const setLanguage = (lang: Language) => {
-    setData(prev => ({ ...prev, language: lang, updatedAt: new Date().toISOString() }));
+    setData(prev => {
+      // Sync widget with new language immediately
+      if (prev.children?.length > 0) {
+        updateWidgetData(prev.children, lang);
+      }
+      return { ...prev, language: lang, updatedAt: new Date().toISOString() };
+    });
     localStorage.setItem('koiny_language', lang);
   };
   const handleLogout = () => { setActiveChildId(null); setView('LOGIN'); };

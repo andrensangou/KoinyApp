@@ -71,6 +71,8 @@
 	</array>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Koiny utilise Face ID pour vérifier votre identité et réinitialiser votre code PIN de manière sécurisée.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>

@@ -5,33 +5,35 @@ interface BottomNavigationProps {
     onTabChange: (tab: string) => void;
     onAddClick: () => void;
     pendingCount?: number;
+    t: any;
 }
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     activeTab,
     onTabChange,
     onAddClick,
-    pendingCount = 0
+    pendingCount = 0,
+    t
 }) => {
     return (
         <div className="fixed bottom-6 left-4 right-4 h-[4.5rem] bg-slate-900/95 dark:bg-black/90 backdrop-blur-xl rounded-[2rem] shadow-2xl flex items-center justify-between px-2 z-40 border border-white/10 ring-1 ring-black/5">
             <div className="flex-1 flex justify-around items-center pr-8">
                 <NavButton
                     icon="fa-border-all"
-                    label="Dashboard"
+                    label={t.parent.tabs.dashboard}
                     isActive={activeTab === 'dashboard'}
                     onClick={() => onTabChange('dashboard')}
                 />
                 <NavButton
                     icon="fa-calendar-days"
-                    label="Historique"
+                    label={t.parent.tabs.history}
                     isActive={activeTab === 'history'}
                     onClick={() => onTabChange('history')}
                 />
             </div>
 
             <div className="absolute left-1/2 -translate-x-1/2 -top-6">
-                <button                     onClick={onAddClick}
+                <button onClick={onAddClick}
                     className="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/40 hover:scale-105 active:scale-95 transition-all border-[6px] border-slate-50 dark:border-[#020617] group"
                 >
                     <i className="fa-solid fa-plus text-white text-2xl group-hover:rotate-90 transition-transform duration-300"></i>
@@ -42,7 +44,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                 <div className="relative">
                     <NavButton
                         icon="fa-comment-dots"
-                        label="Demandes"
+                        label={t.parent.tabs.requests}
                         isActive={activeTab === 'requests'}
                         onClick={() => onTabChange('requests')}
                     />
@@ -52,7 +54,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                 </div>
                 <NavButton
                     icon="fa-user"
-                    label="Profil"
+                    label={t.parent.tabs.profile}
                     isActive={activeTab === 'profile'}
                     onClick={() => onTabChange('profile')}
                 />
@@ -62,7 +64,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 };
 
 const NavButton = ({ icon, label, isActive, onClick }: { icon: string, label: string, isActive: boolean, onClick: () => void }) => (
-    <button         onClick={onClick}
+    <button onClick={onClick}
         className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${isActive ? 'text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
     >
         <i className={`fa-solid ${icon} text-xl ${isActive ? '-translate-y-1' : ''} transition-transform`}></i>

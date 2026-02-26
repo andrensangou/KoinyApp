@@ -1368,8 +1368,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <button onClick={() => openActionModal(mission.id, 'REJECT')} className="py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 text-slate-500 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm">Corriger</button>
-                      <button onClick={() => openActionModal(mission.id, 'APPROVE')} className="py-3.5 rounded-2xl bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-200 dark:shadow-none hover:bg-emerald-600 transition-colors text-sm">Valider</button>
+                      <button onClick={() => openActionModal(mission.id, 'REJECT')} className="py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 text-slate-500 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm">{t.parent.btnCorrect}</button>
+                      <button onClick={() => openActionModal(mission.id, 'APPROVE')} className="py-3.5 rounded-2xl bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-200 dark:shadow-none hover:bg-emerald-600 transition-colors text-sm">{t.parent.btnValidate}</button>
                     </div>
                   </div>
                 ))}
@@ -2206,6 +2206,7 @@ const ParentView: React.FC<ParentViewProps> = ({
           }, 100);
         }}
         pendingCount={totalPendingCount}
+        t={t}
       />
     </div>
   );

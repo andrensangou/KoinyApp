@@ -152,6 +152,8 @@ export const translations = {
       childBalance: "Cagnotte de",
       childGoal: "Épargne",
       pendingValidations: "À valider",
+      btnCorrect: "Corriger",
+      btnValidate: "Valider",
       activeMissions: "Missions en cours",
       deleteMissionConfirm: "Annuler cette mission ?",
       allUpToDate: "Tout est à jour ! Félicitations !",
@@ -272,7 +274,11 @@ export const translations = {
       },
       tabs: {
         family: "Enfants",
-        account: "Mon Compte"
+        account: "Mon Compte",
+        dashboard: "Dashboard",
+        history: "Historique",
+        requests: "Demandes",
+        profile: "Profil"
       },
       account: {
         changePin: "Modifier le code PIN",
@@ -474,6 +480,8 @@ export const translations = {
       childBalance: "Spaarpot van",
       childGoal: "Sparen",
       pendingValidations: "Te valideren",
+      btnCorrect: "Corrigeren",
+      btnValidate: "Valideren",
       activeMissions: "Lopende missies",
       deleteMissionConfirm: "Deze missie annuleren?",
       allUpToDate: "Alles is up-to-date! Gefeliciteerd!",
@@ -594,7 +602,11 @@ export const translations = {
       },
       tabs: {
         family: "Kinderen",
-        account: "Mijn Account"
+        account: "Mijn Account",
+        dashboard: "Dashboard",
+        history: "Geschiedenis",
+        requests: "Aanvragen",
+        profile: "Profiel"
       },
       account: {
         changePin: "Pincode wijzigen",
@@ -796,6 +808,8 @@ export const translations = {
       childBalance: "Savings for",
       childGoal: "Target",
       pendingValidations: "To approve",
+      btnCorrect: "Correct",
+      btnValidate: "Approve",
       activeMissions: "Active missions",
       deleteMissionConfirm: "Cancel this mission?",
       allUpToDate: "All up to date! Well done!",
@@ -916,7 +930,11 @@ export const translations = {
       },
       tabs: {
         family: "Children",
-        account: "My Account"
+        account: "My Account",
+        dashboard: "Dashboard",
+        history: "History",
+        requests: "Requests",
+        profile: "Profile"
       },
       account: {
         changePin: "Change PIN code",

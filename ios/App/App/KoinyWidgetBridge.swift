@@ -19,6 +19,7 @@ struct KoinyWidgetBridge {
         let balance: Double
         let goalName: String?
         let goalTarget: Double
+        let language: String?
     }
 
     /// Write data and ask WidgetKit to refresh.
@@ -26,11 +27,13 @@ struct KoinyWidgetBridge {
     static func update(childName: String,
                        balance: Double,
                        goalName: String? = nil,
-                       goalTarget: Double = 0) {
+                       goalTarget: Double = 0,
+                       language: String = "fr") {
         let payload = Payload(childName: childName,
                               balance: balance,
                               goalName: goalName,
-                              goalTarget: goalTarget)
+                              goalTarget: goalTarget,
+                              language: language)
 
         guard let encoded = try? JSONEncoder().encode(payload) else {
             print("[WidgetBridge] ⚠️ Failed to encode payload")
