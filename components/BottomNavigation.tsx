@@ -34,9 +34,10 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
             <div className="absolute left-1/2 -translate-x-1/2 -top-6">
                 <button onClick={onAddClick}
+                    aria-label="Add Mission"
                     className="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/40 hover:scale-105 active:scale-95 transition-all border-[6px] border-slate-50 dark:border-[#020617] group"
                 >
-                    <i className="fa-solid fa-plus text-white text-2xl group-hover:rotate-90 transition-transform duration-300"></i>
+                    <i className="fa-solid fa-plus text-white text-2xl group-hover:rotate-90 transition-transform duration-300" aria-hidden="true"></i>
                 </button>
             </div>
 

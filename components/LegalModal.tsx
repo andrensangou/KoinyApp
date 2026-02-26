@@ -38,8 +38,8 @@ const LegalModal: React.FC<LegalModalProps> = ({ language }) => {
               <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-widest mt-0.5">Koiny v1.0</p>
             </div>
           </div>
-          <button onClick={() => setShow(false)} className="w-10 h-10 bg-white/10 rounded-full text-white/60 hover:text-white hover:bg-white/20 transition-all flex items-center justify-center">
-            <i className="fa-solid fa-xmark text-lg"></i>
+          <button aria-label={language === 'fr' ? 'Fermer' : language === 'nl' ? 'Sluiten' : 'Close'} onClick={() => setShow(false)} className="w-10 h-10 bg-white/10 rounded-full text-white/60 hover:text-white hover:bg-white/20 transition-all flex items-center justify-center">
+            <i className="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
           </button>
         </div>
 

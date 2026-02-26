@@ -5,7 +5,8 @@ import TutorialOverlay, { TutorialStep } from './TutorialOverlay';
 import { BottomNavigation } from './BottomNavigation';
 import { translations } from '../i18n';
 import { getSupabase } from '../services/supabase';
-import { loadParentPinLocally } from '../services/pinStorage';
+import { saveParentPinLocally, loadParentPinLocally, deleteParentPinLocally } from '../services/pinStorage';
+import { verifyPin } from '../services/security';
 import HelpModal from './HelpModal';
 import ConfirmDialog from './ConfirmDialog';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
@@ -346,17 +347,30 @@ const ParentView: React.FC<ParentViewProps> = ({
     }
   }, [activeChild, goalsFilter]);
 
-  const handlePinInput = (val: string) => {
+  const handlePinInput = async (val: string) => {
     const cleanVal = val.replace(/[^0-9]/g, '').slice(0, 4);
     setPin(cleanVal);
     // Vérifier le PIN local en priorité, sinon le PIN de Supabase
     const effectivePin = localPin || data.parentPin;
     const storedPin = effectivePin ? String(effectivePin).trim() : null;
-    if (storedPin && cleanVal === storedPin) {
-      setTimeout(() => {
-        setIsAuthenticated(true);
-        setPin('');
-      }, 200);
+
+    if (storedPin) {
+      let isMatch = false;
+
+      // Si le PIN stocké contient un ":", c'est un hash PBKDF2 sécurisé
+      if (storedPin.includes(':')) {
+        isMatch = await verifyPin(cleanVal, storedPin);
+      } else {
+        // Fallback pour les anciens PINs en clair (à supprimer plus tard)
+        isMatch = (cleanVal === storedPin);
+      }
+
+      if (isMatch) {
+        setTimeout(() => {
+          setIsAuthenticated(true);
+          setPin('');
+        }, 200);
+      }
     }
   };
 

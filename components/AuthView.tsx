@@ -145,15 +145,16 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
         <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex gap-2">
             {(['fr', 'nl', 'en'] as Language[]).map((lang) => (
-              <button                 key={lang}
+              <button key={lang}
                 onClick={() => onSetLanguage(lang)}
+                aria-label={lang === 'fr' ? 'Passer en Français' : lang === 'nl' ? 'Schakel over naar Nederlands' : 'Switch to English'}
                 className={`w-10 h-10 rounded-xl border-2 transition-all flex items-center justify-center font-black text-xs ${language === lang ? 'border-indigo-500 bg-white dark:bg-slate-900 shadow-sm scale-110' : 'border-transparent text-slate-400 dark:text-slate-600 opacity-60'}`}
               >
                 {lang === 'fr' ? '🇫🇷' : lang === 'nl' ? '🇳🇱' : '🇬🇧'}
               </button>
             ))}
           </div>
-          <button             onClick={() => setShowHelp(true)}
+          <button onClick={() => setShowHelp(true)}
             aria-label={language === 'fr' ? 'Aide' : language === 'nl' ? 'Help' : 'Help'}
             className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-sm flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-slate-100 dark:border-slate-800 active:scale-90 transition-transform"
           >

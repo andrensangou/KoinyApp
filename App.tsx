@@ -629,14 +629,17 @@ const App: React.FC = () => {
     }
   };
 
-  const setLanguage = (lang: Language) => {
-    setData(prev => {
-      // Sync widget with new language immediately
-      if (prev.children?.length > 0) {
-        updateWidgetData(prev.children, lang);
-      }
-      return { ...prev, language: lang, updatedAt: new Date().toISOString() };
-    });
+  const setLanguage = async (lang: Language) => {
+    // Sync widget with new language BEFORE updating state
+    if (data.children?.length > 0) {
+      await updateWidgetData(data.children, lang);
+    }
+    // THEN update state
+    setData(prev => ({
+      ...prev,
+      language: lang,
+      updatedAt: new Date().toISOString()
+    }));
     localStorage.setItem('koiny_language', lang);
   };
   const handleLogout = () => { setActiveChildId(null); setView('LOGIN'); };
