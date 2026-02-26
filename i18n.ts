@@ -240,7 +240,7 @@ export const translations = {
         title: "Koiny Premium",
         desc: "Débloquez toutes les fonctionnalités pour votre famille.",
         upgrade: "Passer au Premium",
-        features: "Enfants illimités • Statistiques détaillées • Co-parents ill. (prochainement)",
+        features: "Enfants illimités • Statistiques détaillées",
         price: "2,99€ / mois par famille"
       },
       tutorial: {
@@ -324,7 +324,11 @@ export const translations = {
         premiumSoonTitle: "Bientôt disponible",
         premiumSoonMessage: "Débloquez des fonctionnalités illimitées pour toute la famille. Bientôt disponible !",
         notificationsDisabledMessage: "Les notifications sont désactivées dans les réglages système. Veuillez les activer pour Koiny.",
-        notificationsErrorMessage: "Erreur lors de l'activation des notifications."
+        notificationsErrorMessage: "Erreur lors de l'activation des notifications.",
+        giftRequested: "Cadeau demandé",
+        missionRequested: "Demande de mission",
+        configure: "Configurer",
+        createMission: "Créer une mission"
       }
     }
   },
@@ -568,7 +572,7 @@ export const translations = {
         title: "Koiny Premium",
         desc: "Ontgrendel alle functies voor je gezin.",
         upgrade: "Upgrade naar Premium",
-        features: "Onbeperkt aantal kinderen • Geavanceerde statistieken • Onbeperkt co-ouders (binnenkort)",
+        features: "Onbeperkt aantal kinderen • Geavanceerde statistieken",
         price: "2,99€ / maand per gezin"
       },
       tutorial: {
@@ -652,7 +656,11 @@ export const translations = {
         premiumSoonTitle: "Binnenkort beschikbaar",
         premiumSoonMessage: "Ontgrendel onbeperkte functies voor het hele gezin. Binnenkort beschikbaar!",
         notificationsDisabledMessage: "Meldingen zijn uitgeschakeld in de systeeminstellingen. Schakel ze in voor Koiny.",
-        notificationsErrorMessage: "Fout bij het inschakelen van meldingen."
+        notificationsErrorMessage: "Fout bij het inschakelen van meldingen.",
+        giftRequested: "Cadeau aangevraagd",
+        missionRequested: "Missie aangevraagd",
+        configure: "Configureren",
+        createMission: "Missie aanmaken"
       }
     }
   },
@@ -896,7 +904,7 @@ export const translations = {
         title: "Koiny Premium",
         desc: "Unlock all features for your family.",
         upgrade: "Go Premium",
-        features: "Unlimited children • Advanced stats • Unlimited co-parents (coming soon)",
+        features: "Unlimited children • Advanced stats",
         price: "2,99€ / month per family"
       },
       tutorial: {
@@ -980,7 +988,11 @@ export const translations = {
         premiumSoonTitle: "Coming Soon",
         premiumSoonMessage: "Unlock unlimited features for the whole family. Coming soon!",
         notificationsDisabledMessage: "Notifications are disabled in system settings. Please enable them for Koiny.",
-        notificationsErrorMessage: "Error while enabling notifications."
+        notificationsErrorMessage: "Error while enabling notifications.",
+        giftRequested: "Gift requested",
+        missionRequested: "Mission requested",
+        configure: "Configure",
+        createMission: "Create mission"
       }
     }
   }

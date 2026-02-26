@@ -476,7 +476,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                   </div>
                   <div className="space-y-1">
                     <p className="text-slate-500 font-black text-sm uppercase tracking-widest">{t.child.noMissions}</p>
-                    <p className="text-slate-400 text-xs font-medium">{isNudging ? t.child.nudgeSent : language === 'fr' ? 'Demande une mission à tes parents !' : 'Ask your parents for a mission!'}</p>
+                    <p className="text-slate-400 text-xs font-medium">{isNudging ? t.child.nudgeSent : t.child.askNewMission}</p>
                   </div>
                   <button onClick={() => { setIsNudging(true); if (onRequestMission) onRequestMission(); setTimeout(() => setIsNudging(false), 3000); }} className="mt-4 px-8 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95">
                     {t.child.askButton}

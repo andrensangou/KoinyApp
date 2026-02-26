@@ -1339,7 +1339,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                       </div>
                       <div>
                         <h4 className="font-black text-slate-800 dark:text-white uppercase tracking-tighter">
-                          {language === 'fr' ? 'Cadeau demandé' : 'Gift requested'}
+                          {t.parent.messages.giftRequested}
                         </h4>
                       </div>
                     </div>
@@ -1351,7 +1351,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                           formGoalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }, 150);
                       }, 200);
-                    }} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm">Configurer</button>
+                    }} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm">{t.parent.messages.configure}</button>
                   </div>
                 )}
 
@@ -1361,10 +1361,10 @@ const ParentView: React.FC<ParentViewProps> = ({
                       <div className="w-12 h-12 bg-indigo-100 text-indigo-500 rounded-2xl flex items-center justify-center text-xl"><i className="fa-solid fa-bell"></i></div>
                       <div>
                         <h3 className="font-bold text-slate-900 dark:text-white text-lg leading-tight">{t.child.askNewMission}</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Demande de mission</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">{t.parent.messages.missionRequested}</p>
                       </div>
                     </div>
-                    <button onClick={() => { setMainView('dashboard'); setTimeout(() => missionFormRef.current?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-sm">Créer une mission</button>
+                    <button onClick={() => { setMainView('dashboard'); setTimeout(() => missionFormRef.current?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-sm">{t.parent.messages.createMission}</button>
                   </div>
                 )}
 
