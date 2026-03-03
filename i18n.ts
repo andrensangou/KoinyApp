@@ -328,7 +328,9 @@ export const translations = {
         giftRequested: "Cadeau demandé",
         missionRequested: "Demande de mission",
         configure: "Configurer",
-        createMission: "Créer une mission"
+        createMission: "Créer une mission",
+        premiumActive: "Premium Activé",
+        premiumThankYou: "Merci !"
       }
     }
   },
@@ -660,7 +662,9 @@ export const translations = {
         giftRequested: "Cadeau aangevraagd",
         missionRequested: "Missie aangevraagd",
         configure: "Configureren",
-        createMission: "Missie aanmaken"
+        createMission: "Missie aanmaken",
+        premiumActive: "Premium Geactiveerd",
+        premiumThankYou: "Dank je!"
       }
     }
   },
@@ -992,7 +996,9 @@ export const translations = {
         giftRequested: "Gift requested",
         missionRequested: "Mission requested",
         configure: "Configure",
-        createMission: "Create mission"
+        createMission: "Create mission",
+        premiumActive: "Premium Active",
+        premiumThankYou: "Thank you!"
       }
     }
   }

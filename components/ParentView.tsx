@@ -1307,14 +1307,32 @@ const ParentView: React.FC<ParentViewProps> = ({
                   <div className="h-px bg-slate-200 flex-1"></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <button onClick={() => { setActiveTab('ACCOUNT'); setMainView('profile'); }} className="bg-gradient-to-br from-violet-600 to-fuchsia-600 p-3 rounded-2xl shadow-lg shadow-violet-200 flex flex-col items-center justify-center gap-2 hover:translate-y-[-2px] transition-all text-white text-center py-6 relative overflow-hidden group border border-white/20">
-                    <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/20 rounded-full blur-xl group-hover:bg-white/30 transition-colors"></div>
-                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm shadow-inner mb-1 ring-2 ring-white/30">
-                      <i className="fa-solid fa-crown text-yellow-300 text-xl drop-shadow-sm"></i>
+                  <button
+                    onClick={() => !data.isPremium && (setActiveTab('ACCOUNT'), setMainView('profile'))}
+                    disabled={data.isPremium}
+                    className={`p-3 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 text-white text-center py-6 relative overflow-hidden group border transition-all ${
+                      data.isPremium
+                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-200 border-emerald-400/20 opacity-90 cursor-default'
+                        : 'bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-violet-200 border-white/20 hover:translate-y-[-2px]'
+                    }`}
+                  >
+                    <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl transition-colors ${
+                      data.isPremium
+                        ? 'bg-white/10'
+                        : 'bg-white/20 group-hover:bg-white/30'
+                    }`}></div>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm shadow-inner mb-1 ring-2 relative z-10 ${
+                      data.isPremium
+                        ? 'bg-white/20 ring-emerald-300/20 text-white'
+                        : 'bg-white/20 ring-white/30 text-yellow-300'
+                    }`}>
+                      <i className={`fa-solid ${data.isPremium ? 'fa-check' : 'fa-crown'} text-xl drop-shadow-sm`}></i>
                     </div>
                     <div className="relative z-10">
                       <p className="font-black text-xs leading-tight mb-1 uppercase tracking-wider">Premium</p>
-                      <p className="text-[10px] text-white/90 font-medium">Débloquer tout</p>
+                      <p className="text-[10px] text-white/90 font-medium">
+                        {data.isPremium ? t.parent.messages.premiumThankYou : t.parent.messages.createMission}
+                      </p>
                     </div>
                   </button>
                 </div>

@@ -69,6 +69,7 @@ export interface GlobalState {
   totalApprovedMissions?: number;
   lastReminderSent?: string;
   maxBalance?: number;
+  isPremium?: boolean;
   updatedAt?: string;
 }
 
