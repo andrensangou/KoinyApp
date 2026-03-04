@@ -41,6 +41,29 @@
         </div>
     </nav>
 
+    <!-- Languages -->
+    <section class="languages-section languages-top">
+        <div class="section-container">
+            <div class="languages-cards">
+                <button class="lang-card active" data-lang="fr" onclick="setLang('fr')">
+                    <span class="lang-flag">🇫🇷</span>
+                    <span class="lang-name">Français</span>
+                    <span class="lang-desc">Interface complète</span>
+                </button>
+                <button class="lang-card" data-lang="en" onclick="setLang('en')">
+                    <span class="lang-flag">🇬🇧</span>
+                    <span class="lang-name">English</span>
+                    <span class="lang-desc">Full interface</span>
+                </button>
+                <button class="lang-card" data-lang="nl" onclick="setLang('nl')">
+                    <span class="lang-flag">🇳🇱</span>
+                    <span class="lang-name">Nederlands</span>
+                    <span class="lang-desc">Volledige interface</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-bg">
@@ -89,47 +112,11 @@
                 </div>
             </div>
             <div class="hero-visual">
-                <div class="phone-mockup">
-                    <div class="phone-screen">
-                        <div class="phone-app">
-                            <div class="mock-header">
-                                <div class="mock-avatar">🧒</div>
-                                <div>
-                                    <div class="mock-label" data-i18n="mock.hello">Bonjour</div>
-                                    <div class="mock-name">Emma</div>
-                                </div>
-                            </div>
-                            <div class="mock-balance">
-                                <div class="mock-balance-label" data-i18n="mock.balance">Mon solde</div>
-                                <div class="mock-balance-amount">24.50<span>€</span></div>
-                            </div>
-                            <div class="mock-mission">
-                                <div class="mock-mission-icon">🧹</div>
-                                <div class="mock-mission-info">
-                                    <div class="mock-mission-name" data-i18n="mock.mission1">Ranger la chambre</div>
-                                    <div class="mock-mission-status" data-i18n="mock.todo">● À faire</div>
-                                </div>
-                                <div class="mock-mission-reward">+2€</div>
-                            </div>
-                            <div class="mock-mission">
-                                <div class="mock-mission-icon">📚</div>
-                                <div class="mock-mission-info">
-                                    <div class="mock-mission-name" data-i18n="mock.mission2">Faire ses devoirs</div>
-                                    <div class="mock-mission-status" data-i18n="mock.todo">● À faire</div>
-                                </div>
-                                <div class="mock-mission-reward">+1.50€</div>
-                            </div>
-                            <div class="mock-goal">
-                                <div class="mock-goal-header">
-                                    <span>🎮 Nintendo Switch</span>
-                                    <span>300€</span>
-                                </div>
-                                <div class="mock-goal-bar">
-                                    <div class="mock-goal-fill" style="width: 8%"></div>
-                                </div>
-                                <div class="mock-goal-remaining" data-i18n="mock.remaining">Encore 275.50€</div>
-                            </div>
-                        </div>
+                <div class="phone-mockup phone-mockup-hero">
+                    <div class="phone-frame">
+                        <div class="phone-notch"></div>
+                        <img src="screenshots/fr/dashboard-parent.png" alt="Koiny Dashboard" class="phone-screenshot"
+                            data-i18n-src="screenshots/{lang}/dashboard-parent.png" />
                     </div>
                 </div>
                 <div class="floating-coin floating-coin-1">🪙</div>
@@ -190,6 +177,51 @@
         </div>
     </section>
 
+    <!-- App Screenshots Showcase -->
+    <section class="screenshots-showcase" id="screenshots">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge" data-i18n="screenshots.badge">Aperçu</span>
+                <h2 class="section-title" data-i18n-html="screenshots.title">Découvrez Koiny <span
+                        class="text-gradient">en action</span></h2>
+                <p class="section-desc" data-i18n="screenshots.desc">Une interface ludique pensée pour toute la famille.
+                    Les captures changent automatiquement selon votre langue !</p>
+            </div>
+            <div class="screenshots-grid">
+                <div class="screenshot-card">
+                    <div class="screenshot-label" data-i18n="screenshots.label1">Espace Parents</div>
+                    <div class="phone-mockup phone-mockup-showcase">
+                        <div class="phone-frame">
+                            <div class="phone-notch"></div>
+                            <img src="screenshots/fr/dashboard-parent.png" alt="Dashboard Parent"
+                                class="phone-screenshot" data-i18n-src="screenshots/{lang}/dashboard-parent.png" />
+                        </div>
+                    </div>
+                </div>
+                <div class="screenshot-card screenshot-card-featured">
+                    <div class="screenshot-label" data-i18n="screenshots.label2">Espace Enfant</div>
+                    <div class="phone-mockup phone-mockup-showcase phone-mockup-large">
+                        <div class="phone-frame">
+                            <div class="phone-notch"></div>
+                            <img src="screenshots/fr/dashboard-enfant.png" alt="Dashboard Enfant"
+                                class="phone-screenshot" data-i18n-src="screenshots/{lang}/dashboard-enfant.png" />
+                        </div>
+                    </div>
+                </div>
+                <div class="screenshot-card">
+                    <div class="screenshot-label" data-i18n="screenshots.label3">Missions</div>
+                    <div class="phone-mockup phone-mockup-showcase">
+                        <div class="phone-frame">
+                            <div class="phone-notch"></div>
+                            <img src="screenshots/fr/mission.png" alt="Missions" class="phone-screenshot"
+                                data-i18n-src="screenshots/{lang}/mission.png" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- How it Works -->
     <section class="how-it-works" id="how-it-works">
         <div class="section-container">
@@ -226,28 +258,6 @@
         </div>
     </section>
 
-    <!-- Languages -->
-    <section class="languages-section">
-        <div class="section-container">
-            <div class="languages-cards">
-                <button class="lang-card active" data-lang="fr" onclick="setLang('fr')">
-                    <span class="lang-flag">🇫🇷</span>
-                    <span class="lang-name">Français</span>
-                    <span class="lang-desc">Interface complète</span>
-                </button>
-                <button class="lang-card" data-lang="en" onclick="setLang('en')">
-                    <span class="lang-flag">🇬🇧</span>
-                    <span class="lang-name">English</span>
-                    <span class="lang-desc">Full interface</span>
-                </button>
-                <button class="lang-card" data-lang="nl" onclick="setLang('nl')">
-                    <span class="lang-flag">🇳🇱</span>
-                    <span class="lang-name">Nederlands</span>
-                    <span class="lang-desc">Volledige interface</span>
-                </button>
-            </div>
-        </div>
-    </section>
 
     <!-- Download CTA -->
     <section class="download" id="download">
@@ -271,11 +281,11 @@
                 <div class="download-visual">
                     <div class="download-features">
                         <div class="dl-feature"><i class="fa-solid fa-check"></i> <span
-                                data-i18n="download.f1">Gratuit</span></div>
+                                data-i18n="download.f1">Téléchargement gratuit</span></div>
                         <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f2">Aucune
                                 pub</span></div>
-                        <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f3">Pas
-                                d'achat in-app</span></div>
+                        <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f3">Version
+                                gratuite généreuse</span></div>
                         <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f4">100%
                                 argent virtuel</span></div>
                         <div class="dl-feature"><i class="fa-solid fa-check"></i> <span data-i18n="download.f5">Données
@@ -335,6 +345,9 @@
                 'mock.hello': 'Bonjour', 'mock.balance': 'Mon solde',
                 'mock.mission1': 'Ranger la chambre', 'mock.mission2': 'Faire ses devoirs',
                 'mock.todo': '● À faire', 'mock.remaining': 'Encore 275.50€',
+                'screenshots.badge': 'Aperçu', 'screenshots.title': 'Découvrez Koiny <span class="text-gradient">en action</span>',
+                'screenshots.desc': 'Une interface ludique pensée pour toute la famille. Les captures changent automatiquement selon votre langue !',
+                'screenshots.label1': 'Espace Parents', 'screenshots.label2': 'Espace Enfant', 'screenshots.label3': 'Missions',
                 'features.badge': 'Fonctionnalités',
                 'features.title': 'Tout pour apprendre la <span class="text-gradient">valeur de l\'effort</span>',
                 'features.desc': 'Un outil ludique qui enseigne l\'épargne et la responsabilité aux enfants, tout en donnant le contrôle total aux parents.',
@@ -358,7 +371,7 @@
                 'download.title': 'Prêt à commencer l\'aventure ?',
                 'download.desc': 'Téléchargez Koiny gratuitement et transformez les tâches en jeu éducatif.',
                 'download.note': 'Requiert iOS 15.0 ou ultérieur. iPhone & iPad.',
-                'download.f1': 'Gratuit', 'download.f2': 'Aucune pub', 'download.f3': 'Pas d\'achat in-app',
+                'download.f1': 'Téléchargement gratuit', 'download.f2': 'Aucune pub', 'download.f3': 'Version gratuite généreuse',
                 'download.f4': '100% argent virtuel', 'download.f5': 'Données privées', 'download.f6': 'Multi-langues',
                 'footer.desc': 'L\'argent de poche virtuel qui motive vos enfants. Un simulateur éducatif sûr et amusant.',
                 'footer.disclaimer': '⚠️ Koiny est un simulateur. Aucune transaction financière réelle n\'est effectuée.',
@@ -377,6 +390,9 @@
                 'mock.hello': 'Hello', 'mock.balance': 'My balance',
                 'mock.mission1': 'Clean the room', 'mock.mission2': 'Do homework',
                 'mock.todo': '● To do', 'mock.remaining': '275.50€ remaining',
+                'screenshots.badge': 'Preview', 'screenshots.title': 'See Koiny <span class="text-gradient">in action</span>',
+                'screenshots.desc': 'A fun interface designed for the whole family. Screenshots change automatically with your language!',
+                'screenshots.label1': 'Parent Space', 'screenshots.label2': 'Child Space', 'screenshots.label3': 'Missions',
                 'features.badge': 'Features',
                 'features.title': 'Everything to learn the <span class="text-gradient">value of effort</span>',
                 'features.desc': 'A fun tool that teaches savings and responsibility to children, while giving parents full control.',
@@ -400,7 +416,7 @@
                 'download.title': 'Ready to start the adventure?',
                 'download.desc': 'Download Koiny for free and turn chores into an educational game.',
                 'download.note': 'Requires iOS 15.0 or later. iPhone & iPad.',
-                'download.f1': 'Free', 'download.f2': 'No ads', 'download.f3': 'No in-app purchases',
+                'download.f1': 'Free to download', 'download.f2': 'No ads', 'download.f3': 'Generous free version',
                 'download.f4': '100% virtual money', 'download.f5': 'Private data', 'download.f6': 'Multi-language',
                 'footer.desc': 'Virtual pocket money that motivates your kids. A safe and fun educational simulator.',
                 'footer.disclaimer': '⚠️ Koiny is a simulator. No real financial transactions are made.',
@@ -419,6 +435,9 @@
                 'mock.hello': 'Hallo', 'mock.balance': 'Mijn saldo',
                 'mock.mission1': 'Kamer opruimen', 'mock.mission2': 'Huiswerk maken',
                 'mock.todo': '● Te doen', 'mock.remaining': 'Nog 275.50€',
+                'screenshots.badge': 'Voorbeeld', 'screenshots.title': 'Ontdek Koiny <span class="text-gradient">in actie</span>',
+                'screenshots.desc': 'Een leuke interface ontworpen voor het hele gezin. Screenshots veranderen automatisch met je taal!',
+                'screenshots.label1': 'Ouderruimte', 'screenshots.label2': 'Kinderruimte', 'screenshots.label3': 'Missies',
                 'features.badge': 'Functies',
                 'features.title': 'Alles om de <span class="text-gradient">waarde van inspanning</span> te leren',
                 'features.desc': 'Een leuk hulpmiddel dat kinderen leert sparen en verantwoordelijkheid, terwijl ouders volledige controle houden.',
@@ -442,7 +461,7 @@
                 'download.title': 'Klaar voor het avontuur?',
                 'download.desc': 'Download Koiny gratis en verander taken in een educatief spel.',
                 'download.note': 'Vereist iOS 15.0 of hoger. iPhone & iPad.',
-                'download.f1': 'Gratis', 'download.f2': 'Geen advertenties', 'download.f3': 'Geen in-app aankopen',
+                'download.f1': 'Gratis te downloaden', 'download.f2': 'Geen advertenties', 'download.f3': 'Royale gratis versie',
                 'download.f4': '100% virtueel geld', 'download.f5': 'Privé gegevens', 'download.f6': 'Meertalig',
                 'footer.desc': 'Virtueel zakgeld dat je kinderen motiveert. Een veilige en leuke educatieve simulator.',
                 'footer.disclaimer': '⚠️ Koiny is een simulator. Er worden geen echte financiële transacties uitgevoerd.',
@@ -474,6 +493,11 @@
             if (badge) {
                 badge.src = `https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/${t._badge}?size=250x83`;
             }
+            // Update localized screenshots
+            document.querySelectorAll('[data-i18n-src]').forEach(img => {
+                const template = img.getAttribute('data-i18n-src');
+                img.src = template.replace('{lang}', lang);
+            });
             // Update active lang card
             document.querySelectorAll('.lang-card').forEach(card => {
                 card.classList.toggle('active', card.getAttribute('data-lang') === lang);
@@ -506,7 +530,7 @@
             });
         }, { threshold: 0.1 });
 
-        document.querySelectorAll('.feature-card, .step-card, .lang-card, .download-card').forEach(el => {
+        document.querySelectorAll('.feature-card, .step-card, .lang-card, .download-card, .screenshot-card').forEach(el => {
             observer.observe(el);
         });
 
