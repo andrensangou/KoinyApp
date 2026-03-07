@@ -11,7 +11,7 @@ export default {
     // Safelist dynamic color classes built at runtime (e.g. `bg-${child.colorClass}-500`)
     safelist: [
         {
-            pattern: /(from|to|bg|border|text|shadow|ring)-(indigo|pink|emerald|amber|blue|rose|violet|cyan|teal|orange)-(100|200|300|400|500|600|700|800|900)/,
+            pattern: /(from|to|bg|border|text|shadow|ring)-(indigo|pink|emerald|amber|blue|rose|purple|violet|cyan|teal|orange)-(50|100|200|300|400|500|600|700|800|900)/,
             variants: ['dark', 'hover', 'dark:hover', 'group-hover'],
         },
     ],

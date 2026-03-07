@@ -21,6 +21,26 @@ class NotificationService {
         if (!this.isNative && typeof window !== 'undefined' && 'Notification' in window) {
             this.hasPermission = Notification.permission === 'granted';
         }
+
+        if (this.isNative) {
+            this.initializeChannels();
+        }
+    }
+
+    private async initializeChannels() {
+        try {
+            await LocalNotifications.createChannel({
+                id: 'koiny-gains',
+                name: 'Gains Koiny',
+                description: 'Sons de pièces lors des validations',
+                sound: 'coins.mp3',
+                importance: 5,
+                visibility: 1,
+            });
+            console.log('[Notifications] Channel koiny-gains créé');
+        } catch (error) {
+            console.error('[Notifications] Erreur création channel:', error);
+        }
     }
 
     /**
@@ -109,9 +129,9 @@ class NotificationService {
     }
 
     /**
-     * Envoie une notification locale
+     * Envoie une notification locale avec regroupement par type
      */
-    async send(title: string, body: string, data?: { childId?: string; type?: string; missionId?: string }) {
+    async send(title: string, body: string, data?: { childId?: string; type?: string; missionId?: string }, channelId?: string) {
         if (!this.hasPermission) {
             console.warn('Permission notifications non accordée');
             return;
@@ -122,17 +142,24 @@ class NotificationService {
             return;
         }
 
+        // Déterminer le type et l'ID pour le regroupement
+        const notificationType = data?.type || 'default';
+        const notificationId = this.getNotificationId(notificationType);
+        const tag = `koiny-${notificationType}`;
+
         if (this.isNative) {
             // Notification native iOS/Android
+            // L'ID stable (1001, 1002, 1003) remplace les anciennes du même type
             try {
                 await LocalNotifications.schedule({
                     notifications: [
                         {
-                            id: this.notificationId++,
+                            id: notificationId,
                             title: title,
                             body: body,
                             schedule: { at: new Date(Date.now() + 1000), allowWhileIdle: true }, // Dans 1 seconde
-                            sound: 'default',
+                            sound: channelId === 'koiny-gains' ? 'coins.mp3' : 'default',
+                            channelId: channelId || 'default',
                             smallIcon: 'ic_stat_icon_config_sample',
                             iconColor: '#667eea',
                             extra: data || {} // Add extra data for deep linking
@@ -150,7 +177,7 @@ class NotificationService {
                         body: body,
                         icon: '/favicon.svg',
                         badge: '/favicon.svg',
-                        tag: `koiny-${Date.now()}`,
+                        tag: tag, // Regroupement par type
                         data: data || {} // Add data for web notifications
                     });
                 });
@@ -158,10 +185,25 @@ class NotificationService {
                 new Notification(title, {
                     body: body,
                     icon: '/favicon.svg',
-                    data: data || {}
+                    data: data || {},
+                    tag: tag // Regroupement par type
                 });
             }
         }
+    }
+
+    /**
+     * Obtient un ID stable basé sur le type de notification
+     */
+    private getNotificationId(type: string): number {
+        const idMap: { [key: string]: number } = {
+            'GIFT': 1001,
+            'MISSION': 1002,
+            'MISSION_COMPLETE': 1003,
+            'PARENT_REMINDER': this.notificationId++, // Rappels sans limite
+            'default': this.notificationId++
+        };
+        return idMap[type] || this.notificationId++;
     }
     /**
      * Notify for child request
@@ -174,7 +216,7 @@ class NotificationService {
      * Notify for mission completion
      */
     notifyMissionComplete(childId: string, missionId: string | undefined, title: string, body: string) {
-        this.send(title, body, { childId, type: 'MISSION_COMPLETE', missionId });
+        this.send(title, body, { childId, type: 'MISSION_COMPLETE', missionId }, 'koiny-gains');
     }
 
     /**

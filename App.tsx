@@ -7,10 +7,12 @@ import ParentView from './components/ParentView';
 import LandingView from './components/LandingView';
 import OnboardingView from './components/OnboardingView';
 import LegalModal from './components/LegalModal';
+import AlertBanner from './components/AlertBanner';
 import { GlobalState, INITIAL_DATA, HistoryEntry, ChildProfile, Language, Goal, BADGE_THRESHOLDS, ParentBadge, MAX_BALANCE } from './types';
 import { loadData, saveData } from './services/storage';
 import { updateWidgetData } from './services/widgetBridge';
 import { getSupabase, updatePassword, deleteAccount, ensureUserProfile } from './services/supabase';
+import { alertService, AppAlert } from './services/alertService';
 import { notifications } from './services/notifications';
 import { translations } from './i18n';
 import { monitoring } from './services/monitoring';
@@ -35,6 +37,8 @@ const App: React.FC = () => {
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [appError, setAppError] = useState<string | null>(null);
   const [notificationAction, setNotificationAction] = useState<{ type: string; childId: string } | null>(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [currentAlert, setCurrentAlert] = useState<AppAlert | null>(null);
 
   const prevChildrenRef = React.useRef<ChildProfile[]>([]);
 
@@ -52,6 +56,40 @@ const App: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [loading]);
+
+  // Détection connexion via navigator.onLine + events natifs
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOfflineMode(false);
+      // Forcer un sync Supabase dès que la connexion revient
+      // pour envoyer toutes les modifications faites en offline
+      setImmediateSave(true);
+    };
+    const handleOffline = () => setIsOfflineMode(true);
+
+    // Vérifier l'état initial
+    setIsOfflineMode(!navigator.onLine);
+
+    // Écouter les changements réseau natifs
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Fetcher les alertes au startup
+  useEffect(() => {
+    const fetchAlert = async () => {
+      const alert = await alertService.fetchAlert(data.language);
+      if (alert) {
+        setCurrentAlert(alert);
+      }
+    };
+    fetchAlert();
+  }, [data.language]);
 
   const initialize = useCallback(async (session: any) => {
     // Restauration immédiate de la langue préférée
@@ -459,9 +497,10 @@ const App: React.FC = () => {
 
   const handleApprove = async (childId: string, missionId: string, note?: string) => {
     monitoring.track('BUSINESS', 'MISSION_APPROVED', 1, { childId });
+
     const supabase = getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !ownerId) return;
+    // ⭐ ownerId est déjà en cache React — zéro appel réseau (fonctionne offline)
+    const userId = (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') ? ownerId : null;
 
     const t = translations[data.language];
     const child = data.children.find(c => c.id === childId);
@@ -490,78 +529,66 @@ const App: React.FC = () => {
     const today = new Date();
     const dateFormatted = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
-    // 1. Operations directes Supabase
-    isDirectSupabaseOperation.current = true;
+    // ⭐ 1. PRIORITÉ: Update local state TOUJOURS d'abord (offline-friendly)
+    setData(prev => {
+      const newTotalMissions = (prev.totalApprovedMissions || 0) + 1;
+      const newBadge = calculateBadge(newTotalMissions);
 
-    try {
-      // Marquer la mission comme validée (si UUID)
-      if (missionId.includes('-')) {
-        const { error: mErr } = await supabase
-          .from('missions')
-          .update({
-            status: 'validated',
-            validated_at: new Date().toISOString(),
-            validated_by: user.id
-          })
-          .eq('id', missionId);
-        if (mErr) throw new Error(`Mise à jour mission échouée : ${mErr.message}`);
-      }
+      return {
+        ...prev,
+        totalApprovedMissions: newTotalMissions,
+        parentBadge: newBadge,
+        updatedAt: new Date().toISOString(),
+        children: prev.children.map(c => {
+          if (c.id !== childId) return c;
+          return {
+            ...c,
+            balance: Number((c.balance + effectiveReward).toFixed(2)),
+            history: [{
+              id: transactionId,
+              date: dateFormatted,
+              title: mission.title + titleSuffix,
+              amount: effectiveReward,
+              note: note
+            }, ...c.history],
+            missions: c.missions.filter(m => m.id !== missionId)
+          };
+        })
+      };
+    });
 
-      // Insérer la transaction
-      const { error: tErr } = await supabase.from('transactions').insert({
-        id: transactionId,
-        child_id: childId,
-        type: 'mission',
-        amount: effectiveReward,
-        description: mission.title + titleSuffix,
-        created_by: user.id
-      });
-
-      if (tErr) throw new Error(`Insertion transaction échouée : ${tErr.message}`);
-
-      // 2. Update local state
-      setData(prev => {
-        const newTotalMissions = (prev.totalApprovedMissions || 0) + 1;
-        const newBadge = calculateBadge(newTotalMissions);
-
-        return {
-          ...prev,
-          totalApprovedMissions: newTotalMissions,
-          parentBadge: newBadge,
-          updatedAt: new Date().toISOString(),
-          children: prev.children.map(c => {
-            if (c.id !== childId) return c;
-            return {
-              ...c,
-              balance: Number((c.balance + effectiveReward).toFixed(2)),
-              history: [{
-                id: transactionId,
-                date: dateFormatted,
-                title: mission.title + titleSuffix,
-                amount: effectiveReward,
-                note: note
-              }, ...c.history],
-              missions: c.missions.filter(m => m.id !== missionId)
-            };
-          })
-        };
-      });
-    } catch (err: any) {
-      console.error('❌ Erreur approbation message:', err?.message);
-      console.error('❌ Erreur approbation code:', err?.code);
-      console.error('❌ Erreur approbation details:', err?.details);
-      console.error('❌ Erreur approbation hint:', err?.hint);
-      console.error('❌ Erreur approbation full:', JSON.stringify(err));
-    } finally {
-      setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
+    // 2. Sync Supabase ciblé en arrière-plan (non-bloquant, n'interfère pas avec l'auto-save)
+    if (userId) {
+      (async () => {
+        try {
+          if (missionId.includes('-')) {
+            await supabase.from('missions').update({
+              status: 'validated',
+              validated_at: new Date().toISOString(),
+              validated_by: userId
+            }).eq('id', missionId);
+          }
+          await supabase.from('transactions').insert({
+            id: transactionId,
+            child_id: childId,
+            type: 'mission',
+            amount: effectiveReward,
+            description: mission.title + titleSuffix,
+            created_by: userId
+          });
+        } catch (err: any) {
+          console.warn('⚠️ Sync Supabase (offline?):', err?.message);
+          // Détecter si c'est une erreur réseau
+          const isNetworkError = !err?.status || err?.message?.includes('Failed to fetch') || err?.message?.includes('network');
+          if (isNetworkError) {
+            setIsOfflineMode(true);
+          }
+        }
+      })();
     }
   };
 
   const handleManualTransaction = async (childId: string, amount: number, reason: string) => {
-    const supabase = getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !ownerId) return;
-
     let effectiveAmount = amount;
     let finalReason = reason;
 
@@ -590,42 +617,53 @@ const App: React.FC = () => {
     const today = new Date();
     const dateFormatted = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
-    // 1. Operations directes Supabase
-    isDirectSupabaseOperation.current = true;
+    // ⭐ 1. PRIORITÉ: Update local state TOUJOURS d'abord (offline-friendly)
+    updateChild(childId, (child) => ({
+      ...child,
+      balance: Math.max(0, Math.min(MAX_BALANCE, Number((child.balance + effectiveAmount).toFixed(2)))),
+      history: [{
+        id: transactionId,
+        date: dateFormatted,
+        title: finalReason,
+        amount: effectiveAmount
+      }, ...child.history]
+    }));
 
-    try {
-      const { error } = await supabase
-        .from('transactions')
-        .insert({
-          id: transactionId,
-          child_id: childId,
-          type: effectiveAmount >= 0 ? 'bonus' : 'withdrawal',
-          amount: effectiveAmount,
-          description: finalReason,
-          created_by: user.id
-        });
+    // 2. Operations Supabase en arrière-plan (non-bloquant)
+    if (ownerId && ownerId !== 'local-owner') {
+      (async () => {
+        isDirectSupabaseOperation.current = true;
+        try {
+          const supabase = getSupabase();
+          const { data: { user } } = await supabase.auth.getUser();
 
-      if (error) throw new Error(`Transaction echouée : ${error.message}`);
+          if (!user) {
+            console.warn('⚠️ Pas de session pour sync Supabase');
+            return;
+          }
 
-      // 2. Update local state
-      updateChild(childId, (child) => ({
-        ...child,
-        balance: Math.max(0, Math.min(MAX_BALANCE, Number((child.balance + effectiveAmount).toFixed(2)))),
-        history: [{
-          id: transactionId,
-          date: dateFormatted,
-          title: finalReason,
-          amount: effectiveAmount
-        }, ...child.history]
-      }));
-    } catch (err: any) {
-      console.error('❌ Erreur transaction manuelle message:', err?.message);
-      console.error('❌ Erreur transaction manuelle code:', err?.code);
-      console.error('❌ Erreur transaction manuelle details:', err?.details);
-      console.error('❌ Erreur transaction manuelle hint:', err?.hint);
-      console.error('❌ Erreur transaction manuelle full:', JSON.stringify(err));
-    } finally {
-      setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
+          const { error } = await supabase
+            .from('transactions')
+            .insert({
+              id: transactionId,
+              child_id: childId,
+              type: effectiveAmount >= 0 ? 'bonus' : 'withdrawal',
+              amount: effectiveAmount,
+              description: finalReason,
+              created_by: user.id
+            });
+
+          if (error) {
+            console.warn('⚠️ Sync transaction échouée:', error.message);
+          } else {
+            console.log('✅ Sync Supabase réussi');
+          }
+        } catch (err: any) {
+          console.warn('⚠️ Erreur sync Supabase (offline?):', err?.message);
+        } finally {
+          setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
+        }
+      })();
     }
   };
 
@@ -670,56 +708,56 @@ const App: React.FC = () => {
   const handleReject = (childId: string, missionId: string, note?: string) => { updateChild(childId, (child) => ({ ...child, missions: child.missions.map(m => m.id === missionId ? { ...m, status: 'ACTIVE', feedback: note } : m) })); };
   const handleAddMission = async (childId: string, title: string, amount: number) => {
     const supabase = getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !ownerId) return;
+    // ⭐ ownerId est déjà en cache React — zéro appel réseau (fonctionne offline)
+    const userId = (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') ? ownerId : null;
 
     const missionId = crypto.randomUUID();
 
-    // 1. Operations directes Supabase
-    isDirectSupabaseOperation.current = true;
+    // ⭐ 1. PRIORITÉ: Update local state TOUJOURS d'abord (offline-friendly)
+    updateChild(childId, (child) => ({
+      ...child,
+      missionRequested: false,
+      missions: [...child.missions, {
+        id: missionId,
+        title,
+        reward: amount,
+        icon: 'fa-solid fa-star',
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString()
+      }]
+    }));
 
-    try {
-      const { error } = await supabase
-        .from('missions')
-        .insert({
-          id: missionId,
-          child_id: childId,
-          title: title,
-          amount: amount,
-          icon_id: 'icon_star',
-          status: 'available',
-          created_by: user.id
-        });
+    // 2. Sync Supabase en arrière-plan (seulement si connecté)
+    if (userId) {
+      isDirectSupabaseOperation.current = true;
+      (async () => {
+        try {
+          const { error } = await supabase
+            .from('missions')
+            .insert({
+              id: missionId,
+              child_id: childId,
+              title: title,
+              amount: amount,
+              icon_id: 'icon_star',
+              status: 'available',
+              created_by: userId
+            });
+          if (error) console.warn('⚠️ Sync mission échouée:', error.message);
 
-      if (error) throw new Error(`Creation mission echouée : ${error.message}`);
-
-      // ✅ Reset mission_requested flag in DB
-      await supabase
-        .from('children')
-        .update({ mission_requested: false })
-        .eq('id', childId);
-
-      // 2. Update local state
-      updateChild(childId, (child) => ({
-        ...child,
-        missionRequested: false,
-        missions: [...child.missions, {
-          id: missionId,
-          title,
-          reward: amount,
-          icon: 'fa-solid fa-star',
-          status: 'ACTIVE',
-          createdAt: new Date().toISOString()
-        }]
-      }));
-    } catch (err: any) {
-      console.error('❌ Erreur ajout mission message:', err?.message);
-      console.error('❌ Erreur ajout mission code:', err?.code);
-      console.error('❌ Erreur ajout mission details:', err?.details);
-      console.error('❌ Erreur ajout mission hint:', err?.hint);
-      console.error('❌ Erreur ajout mission full:', JSON.stringify(err));
-    } finally {
-      setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
+          await supabase
+            .from('children')
+            .update({ mission_requested: false })
+            .eq('id', childId);
+        } catch (err: any) {
+          console.warn('⚠️ Sync addMission (offline?):', err?.message);
+          // Détecter si c'est une erreur réseau
+          const isNetworkError = !err?.status || err?.message?.includes('Failed to fetch') || err?.message?.includes('network');
+          if (isNetworkError) {
+            setIsOfflineMode(true);
+          }
+        }
+      })();
     }
   };
   const handleDeleteActiveMission = async (childId: string, missionId: string) => {
@@ -1048,6 +1086,15 @@ const App: React.FC = () => {
         )
       )}
       <LegalModal language={data.language} />
+      {currentAlert && (
+        <div style={{ padding: '16px 24px', maxWidth: '1100px', margin: '0 auto' }}>
+          <AlertBanner
+            type={currentAlert.type}
+            message={currentAlert.message}
+            onClose={() => setCurrentAlert(null)}
+          />
+        </div>
+      )}
       {view === 'PARENT' && (
         <ParentView
           data={data} ownerId={ownerId} language={data.language} onApprove={handleApprove} onReject={handleReject} onAddMission={handleAddMission}
@@ -1058,6 +1105,7 @@ const App: React.FC = () => {
           onUpdateMaxBalance={handleUpdateMaxBalance}
           notificationAction={notificationAction} onClearNotificationAction={() => setNotificationAction(null)}
           onSignOut={handleFullSignOut}
+          isOfflineMode={isOfflineMode}
         />
       )}
 

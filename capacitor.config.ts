@@ -6,15 +6,21 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   plugins: {
     SplashScreen: {
-      launchShowDuration: 10000,
+      launchShowDuration: 3000,
       launchAutoHide: false,
-      backgroundColor: "#ffffff",
+      backgroundColor: "#3730A3",
       showSpinner: true,
       androidSpinnerStyle: "large",
       iosSpinnerStyle: "small",
-      spinnerColor: "#999999",
+      spinnerColor: "#ffffff",
       splashFullScreen: true,
       splashImmersive: true,
+    },
+    GoogleAuth: {
+      scopes: ["profile", "email"],
+      serverClientId: "165597226617-2uhqfl4khjnfdi41jd84uv8j6tmka1as.apps.googleusercontent.com",
+      iosClientId: "165597226617-d32lvds9bq8vpvglc6kh9c90s817eqe2.apps.googleusercontent.com",
+      forceCodeForRefreshToken: true,
     },
   },
   server: {

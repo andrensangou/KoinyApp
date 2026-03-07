@@ -9,6 +9,7 @@ import { saveParentPinLocally, loadParentPinLocally, deleteParentPinLocally } fr
 import { verifyPin } from '../services/security';
 import HelpModal from './HelpModal';
 import ConfirmDialog from './ConfirmDialog';
+import { SubscriptionModal } from './SubscriptionModal';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 const HistoryChart = React.lazy(() => import('./HistoryChart'));
@@ -47,6 +48,7 @@ interface ParentViewProps {
   onSignOut: () => Promise<void>;
   onDeleteGoal?: (childId: string, goalId: string) => void;
   onArchiveGoal?: (childId: string, goalId: string) => void;
+  isOfflineMode?: boolean;
 }
 
 type ActionType = 'APPROVE' | 'REJECT' | null;
@@ -125,7 +127,8 @@ const ParentView: React.FC<ParentViewProps> = ({
   onManualTransaction, onAddChild, onEditChild, onDeleteChild, onSetPin,
   onClearHistory, onUpdatePassword, onDeleteAccount,
   onExit, onTutorialComplete, onToggleSound, onSetLanguage, onUpdateMaxBalance,
-  notificationAction, onClearNotificationAction, onSignOut, onDeleteGoal, onArchiveGoal
+  notificationAction, onClearNotificationAction, onSignOut, onDeleteGoal, onArchiveGoal,
+  isOfflineMode = false
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState('');
@@ -134,6 +137,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [confirmPin, setConfirmPin] = useState('');
   const [pinError, setPinError] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showOfflineModal, setShowOfflineModal] = useState(false);
 
   const [selectedChildId, setSelectedChildId] = useState<string>(data.children && data.children.length > 0 ? data.children[0].id : '');
   const [newTitle, setNewTitle] = useState('');
@@ -152,6 +156,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [activeTab, setActiveTab] = useState<SettingsTab>('FAMILY');
   const [settingsView, setSettingsView] = useState<'LIST' | 'FORM'>('LIST');
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
 
   /* NAV & TABS STATE */
   const [mainView, setMainView] = useState<'dashboard' | 'history' | 'requests' | 'profile'>('dashboard');
@@ -503,6 +508,16 @@ const ParentView: React.FC<ParentViewProps> = ({
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle || !newAmount || !selectedChildId) return;
+    const selectedChild = data.children.find(c => c.id === selectedChildId);
+    if (!data.isPremium && selectedChild && selectedChild.missions.filter(m => m.status === 'ACTIVE').length >= FREE_MISSIONS_LIMIT) {
+      openPrompt({
+        title: t.parent.premium.limitTitle || 'Koiny Premium',
+        message: t.parent.premium.missionsLimitMessage || `Limite de ${FREE_MISSIONS_LIMIT} missions atteinte. Passez au Premium pour en créer plus !`,
+        type: 'info',
+        onConfirm: () => setIsSubscriptionModalOpen(true)
+      });
+      return;
+    }
     onAddMission(selectedChildId, newTitle, parseFloat(newAmount));
     setNewTitle('');
     setNewAmount('');
@@ -609,8 +624,23 @@ const ParentView: React.FC<ParentViewProps> = ({
       onEditChild(child.id, { giftRequested: false });
     }
   }, [onEditChild]);
+  const FREE_CHILD_LIMIT = 1;
+  const FREE_HISTORY_LIMIT = 5;
+  const FREE_MISSIONS_LIMIT = 2;
+  const FREE_GOALS_LIMIT = 1;
 
   const startAddChild = useCallback(() => {
+    // Limitation : max 2 enfants en version gratuite
+    if (!data.isPremium && data.children && data.children.length >= FREE_CHILD_LIMIT) {
+      openPrompt({
+        title: t.parent.premium.limitTitle || 'Koiny Premium',
+        message: t.parent.premium.limitMessage || `Vous avez atteint la limite de ${FREE_CHILD_LIMIT} enfants. Passez au Premium pour en ajouter plus !`,
+        type: 'info',
+        onConfirm: () => setIsSubscriptionModalOpen(true)
+      });
+      return;
+    }
+
     setEditingChildId(null);
     setFormName('');
     setFormAvatar(AVAILABLE_SEEDS[0]);
@@ -622,7 +652,7 @@ const ParentView: React.FC<ParentViewProps> = ({
     setMainView('profile');
     setActiveTab('FAMILY');
     setScrollToGoalsOnOpen(false);
-  }, []);
+  }, [data.isPremium, data.children, t]);
 
   // Handle notification actions (e.g., open mission creation from notification click)
   useEffect(() => {
@@ -694,6 +724,15 @@ const ParentView: React.FC<ParentViewProps> = ({
   };
 
   const handleAddGoalToForm = () => {
+    if (!data.isPremium && formGoals.length >= FREE_GOALS_LIMIT) {
+      openPrompt({
+        title: t.parent.premium.limitTitle || 'Koiny Premium',
+        message: t.parent.premium.goalsLimitMessage || `Limite de ${FREE_GOALS_LIMIT} objectif atteinte. Passez au Premium pour en créer plus !`,
+        type: 'info',
+        onConfirm: () => setIsSubscriptionModalOpen(true)
+      });
+      return;
+    }
     const newGoal: Goal = {
       id: Date.now().toString(),
       name: '',
@@ -705,13 +744,16 @@ const ParentView: React.FC<ParentViewProps> = ({
 
   const filteredHistory = useMemo(() => {
     if (!activeChild || !activeChild.history) return [];
-    if (historyFilter === 'ALL') return activeChild.history;
+    const history = !data.isPremium
+      ? activeChild.history.slice(0, FREE_HISTORY_LIMIT)
+      : activeChild.history;
+    if (historyFilter === 'ALL') return history;
 
     const today = new Date();
     const currentMonth = today.getMonth() + 1;
     const currentYear = today.getFullYear();
 
-    return activeChild.history.filter(item => {
+    return history.filter(item => {
       const cleanDate = item.date.trim();
       const parts = cleanDate.split('/');
       if (parts.length < 2) return false;
@@ -999,13 +1041,17 @@ const ParentView: React.FC<ParentViewProps> = ({
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${mainView !== 'dashboard' ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800' : 'pointer-events-none safe-pt'}`}>
         <div className={`max-w-7xl mx-auto px-4 ${mainView !== 'dashboard' ? 'py-2 safe-pt pb-2' : 'py-4'} flex justify-between items-center gap-4`}>
           {/* Left: Premium Button */}
-          <button onClick={() => openPrompt({ title: t.parent.messages.premiumSoonTitle, message: t.parent.messages.premiumSoonMessage, type: 'info', onConfirm: () => { } })}
-            className={`flex items-center justify-center bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl w-12 h-12 rounded-2xl shadow-lg border border-white/20 dark:border-white/10 pointer-events-auto active:scale-95 transition-transform group shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl shadow-sm' : ''}`}
-          >
-            <div className={`w-full h-full rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-orange-200 dark:shadow-none shadow-lg group-hover:scale-110 transition-transform ${mainView !== 'dashboard' ? 'text-sm' : 'text-xl'}`}>
-              <i className="fa-solid fa-crown"></i>
-            </div>
-          </button>
+          {!data.isPremium ? (
+            <button onClick={() => setIsSubscriptionModalOpen(true)}
+              className={`flex items-center justify-center bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl w-12 h-12 rounded-2xl shadow-lg border border-white/20 dark:border-white/10 pointer-events-auto active:scale-95 transition-transform group shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl shadow-sm' : ''}`}
+            >
+              <div className={`w-full h-full rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-orange-200 text-white flex items-center justify-center dark:shadow-none shadow-lg group-hover:scale-110 transition-transform ${mainView !== 'dashboard' ? 'text-sm' : 'text-xl'}`}>
+                <i className="fa-solid fa-crown"></i>
+              </div>
+            </button>
+          ) : (
+            <div className={`shrink-0 w-12 h-12 ${mainView !== 'dashboard' ? 'w-10 h-10' : ''}`}></div>
+          )}
 
           {/* Center: Child Selector (Compact for non-dashboard) */}
           {mainView !== 'dashboard' && (
@@ -1033,14 +1079,89 @@ const ParentView: React.FC<ParentViewProps> = ({
             </div>
           )}
 
-          {/* Right: Power Button */}
+          {/* Right: Offline badge + Power Button */}
           <div className="flex items-center gap-2 pointer-events-auto shrink-0">
+            {isOfflineMode && (
+              <button
+                onClick={() => setShowOfflineModal(true)}
+                className="flex items-center gap-1 bg-orange-500 text-white px-2 py-1 rounded-xl text-xs font-bold shadow-lg shadow-orange-200 active:scale-95 transition-transform"
+              >
+                <i className="fa-solid fa-wifi text-[10px]"></i>
+                <span>Offline</span>
+              </button>
+            )}
             <button onClick={onExit} aria-label={language === 'fr' ? 'Déconnexion' : 'Logout'} className={`bg-rose-500 text-white flex items-center justify-center rounded-2xl shadow-lg shadow-rose-200 transition-all active:scale-90 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl shadow-sm' : 'w-12 h-12'}`}>
               <i className={`fa-solid fa-power-off ${mainView !== 'dashboard' ? 'text-sm' : 'text-lg'}`} aria-hidden="true"></i>
             </button>
           </div>
+
         </div>
       </nav>
+
+      {/* Offline Modal — en dehors de la nav pour éviter pointer-events-none du dashboard */}
+      {showOfflineModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-end justify-center p-4 pointer-events-auto"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setShowOfflineModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-100 rounded-2xl flex items-center justify-center">
+                  <i className="fa-solid fa-wifi-slash text-orange-500 text-lg"></i>
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-800 dark:text-white text-base">
+                    {language === 'fr' ? 'Mode hors ligne' : language === 'nl' ? 'Offline-modus' : 'Offline mode'}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {language === 'fr' ? 'Données sauvegardées localement' : language === 'nl' ? 'Gegevens lokaal opgeslagen' : 'Data saved locally'}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowOfflineModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-xs font-bold text-emerald-600 mb-2">✅ {language === 'fr' ? 'Ce qui fonctionne :' : language === 'nl' ? 'Wat werkt:' : 'What works:'}</p>
+              <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-1 ml-2">
+                {(language === 'fr'
+                  ? ['Valider des missions', 'Ajouter des missions', 'Transactions manuelles', 'Éditer les profils enfants']
+                  : language === 'nl'
+                  ? ['Missies goedkeuren', 'Missies toevoegen', 'Handmatige transacties', 'Kinderprofielen bewerken']
+                  : ['Approve missions', 'Add missions', 'Manual transactions', 'Edit child profiles']
+                ).map((item, i) => <li key={i}>• {item}</li>)}
+              </ul>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-xs font-bold text-red-500 mb-2">❌ {language === 'fr' ? 'Ce qui ne fonctionne pas :' : language === 'nl' ? 'Wat werkt niet:' : 'What doesn\'t work:'}</p>
+              <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-1 ml-2">
+                {(language === 'fr'
+                  ? ['Créer un nouvel enfant', 'Supprimer un enfant', 'Charger de nouvelles données']
+                  : language === 'nl'
+                  ? ['Nieuw kind toevoegen', 'Kind verwijderen', 'Nieuwe gegevens laden']
+                  : ['Create a new child', 'Delete a child', 'Load new data']
+                ).map((item, i) => <li key={i}>• {item}</li>)}
+              </ul>
+            </div>
+
+            <p className="text-xs text-slate-400 italic">
+              {language === 'fr'
+                ? 'Les données se synchroniseront automatiquement quand la connexion revient.'
+                : language === 'nl'
+                ? 'Gegevens synchroniseren automatisch wanneer de verbinding hersteld is.'
+                : 'Data will sync automatically when connection returns.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Hero Section (Dashboard Only) */}
       {mainView === 'dashboard' && (
@@ -1310,28 +1431,25 @@ const ParentView: React.FC<ParentViewProps> = ({
                   <button
                     onClick={() => !data.isPremium && (setActiveTab('ACCOUNT'), setMainView('profile'))}
                     disabled={data.isPremium}
-                    className={`p-3 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 text-white text-center py-6 relative overflow-hidden group border transition-all ${
-                      data.isPremium
-                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-200 border-emerald-400/20 opacity-90 cursor-default'
-                        : 'bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-violet-200 border-white/20 hover:translate-y-[-2px]'
-                    }`}
+                    className={`p-3 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 text-white text-center py-6 relative overflow-hidden group border transition-all ${data.isPremium
+                      ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-200 border-emerald-400/20 opacity-90 cursor-default'
+                      : 'bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-violet-200 border-white/20 hover:translate-y-[-2px]'
+                      }`}
                   >
-                    <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl transition-colors ${
-                      data.isPremium
-                        ? 'bg-white/10'
-                        : 'bg-white/20 group-hover:bg-white/30'
-                    }`}></div>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm shadow-inner mb-1 ring-2 relative z-10 ${
-                      data.isPremium
-                        ? 'bg-white/20 ring-emerald-300/20 text-white'
-                        : 'bg-white/20 ring-white/30 text-yellow-300'
-                    }`}>
+                    <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl transition-colors ${data.isPremium
+                      ? 'bg-white/10'
+                      : 'bg-white/20 group-hover:bg-white/30'
+                      }`}></div>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm shadow-inner mb-1 ring-2 relative z-10 ${data.isPremium
+                      ? 'bg-white/20 ring-emerald-300/20 text-white'
+                      : 'bg-white/20 ring-white/30 text-yellow-300'
+                      }`}>
                       <i className={`fa-solid ${data.isPremium ? 'fa-check' : 'fa-crown'} text-xl drop-shadow-sm`}></i>
                     </div>
                     <div className="relative z-10">
                       <p className="font-black text-xs leading-tight mb-1 uppercase tracking-wider">Premium</p>
                       <p className="text-[10px] text-white/90 font-medium">
-                        {data.isPremium ? t.parent.messages.premiumThankYou : t.parent.messages.createMission}
+                        {data.isPremium ? t.parent.messages.premiumThankYou : t.parent.premium.upgrade}
                       </p>
                     </div>
                   </button>
@@ -1449,7 +1567,20 @@ const ParentView: React.FC<ParentViewProps> = ({
                   </React.Suspense>
                 ) : (
                   <div className="p-8 h-[400px] flex flex-col">
-                    {activeChild.history && activeChild.history.length > 0 ? (
+                    {!data.isPremium ? (
+                      <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                          <i className="fa-solid fa-crown text-2xl text-indigo-500"></i>
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-700 dark:text-slate-200 text-base">{t.parent.premium.limitTitle}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t.parent.premium.statsLimitMessage}</p>
+                        </div>
+                        <button onClick={() => setIsSubscriptionModalOpen(true)} className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-black shadow-md shadow-indigo-200 active:scale-95 transition-all">
+                          {t.parent.premium.upgrade}
+                        </button>
+                      </div>
+                    ) : activeChild.history && activeChild.history.length > 0 ? (
                       <>
                         <React.Suspense fallback={<div className="h-full w-full flex items-center justify-center text-slate-400 font-bold text-sm">Chargement...</div>}>
                           <HistoryChart chartData={chartData} />
@@ -1783,9 +1914,26 @@ const ParentView: React.FC<ParentViewProps> = ({
                           ))}
                         </div>
 
-                        <button onClick={() => openPrompt({ title: t.parent.messages.premiumSoonTitle, message: t.parent.messages.premiumSoonMessage, type: 'info', onConfirm: () => { } })} className="w-full bg-white dark:bg-indigo-500 text-slate-900 dark:text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all hover:bg-slate-50 dark:hover:bg-indigo-600 transition-colors">
-                          {t.parent.premium.upgrade}
+                        <button onClick={() => setIsSubscriptionModalOpen(true)} className="w-full bg-white dark:bg-indigo-500 text-slate-900 dark:text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all hover:bg-slate-50 dark:hover:bg-indigo-600 transition-colors">
+                          {data.isPremium ? t.parent.messages.premiumActive : t.parent.premium.upgrade}
                         </button>
+                        {/* DEV: Toggle Premium for testing */}
+                        {data.isPremium && (
+                          <button
+                            onClick={async () => {
+                              // Supprimer des deux stockages
+                              localStorage.removeItem('koiny_premium_active');
+                              try {
+                                const { Preferences } = await import('@capacitor/preferences');
+                                await Preferences.remove({ key: 'koiny_premium_active' });
+                              } catch (e) { /* web fallback */ }
+                              window.location.reload();
+                            }}
+                            className="w-full mt-3 bg-red-50 dark:bg-red-900/20 text-red-500 font-bold py-3 rounded-2xl text-[10px] uppercase tracking-[0.15em] border border-red-200 dark:border-red-800 active:scale-95 transition-all"
+                          >
+                            🧪 DEV — Désactiver Premium
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -2083,6 +2231,24 @@ const ParentView: React.FC<ParentViewProps> = ({
       }
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} language={language} />
+
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
+        onSubscribed={async () => {
+          // Marquer isPremium dans les deux stockages
+          localStorage.setItem('koiny_premium_active', 'true');
+          try {
+            const { Preferences } = await import('@capacitor/preferences');
+            await Preferences.set({ key: 'koiny_premium_active', value: 'true' });
+          } catch (e) { /* web fallback */ }
+          setIsSubscriptionModalOpen(false);
+          window.location.reload();
+        }}
+        t={t}
+        language={language}
+      />
 
       {/* Confirmation Dialog System */}
       <ConfirmDialog

@@ -4,19 +4,32 @@ import { Browser } from '@capacitor/browser';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, log } from '../config';
 import { GoalStatus } from '../types';
 import { ICON_MAP } from '../constants/icons';
+import { Preferences } from '@capacitor/preferences';
 
-// Debug log for configuration (safely — production-safe)
-log('🔌 [SUPABASE] Initialisation', {
-    url: SUPABASE_URL,
-    isNative: Capacitor.isNativePlatform()
-});
+/**
+ * Stockage natif persistant pour Supabase Auth (survit aux fermetures d'app)
+ * Utilise @capacitor/preferences au lieu du localStorage du WebView
+ */
+const CapacitorStorageAdapter = {
+    async getItem(key: string): Promise<string | null> {
+        const { value } = await Preferences.get({ key });
+        return value;
+    },
+    async setItem(key: string, value: string): Promise<void> {
+        await Preferences.set({ key, value });
+    },
+    async removeItem(key: string): Promise<void> {
+        await Preferences.remove({ key });
+    },
+};
 
 // Initialize the Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: !Capacitor.isNativePlatform() // Auto sur web, manuel sur natif
+        detectSessionInUrl: !Capacitor.isNativePlatform(),
+        ...(Capacitor.isNativePlatform() && { storage: CapacitorStorageAdapter }),
     }
 });
 
@@ -55,31 +68,72 @@ export const getSupabase = () => {
 export const signInWithGoogle = async () => {
     try {
         const isNative = Capacitor.isNativePlatform();
-        const redirectTo = isNative ? 'com.koiny.app://callback' : window.location.origin;
+        const platform = Capacitor.getPlatform(); // 'ios' | 'android' | 'web'
 
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo,
-                skipBrowserRedirect: isNative, // Seulement sur natif (on gère manuellement)
-                queryParams: {
-                    access_type: 'offline',
-                    prompt: 'consent',
-                },
-            },
-        });
+        // Android : Utiliser le plugin natif Google Auth (SDK natif)
+        if (isNative && platform === 'android') {
+            try {
+                const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+                await GoogleAuth.initialize({
+                    clientId: '165597226617-2uhqfl4khjnfdi41jd84uv8j6tmka1as.apps.googleusercontent.com',
+                    scopes: ['profile', 'email'],
+                    grantOfflineAccess: true,
+                });
+                const googleUser = await GoogleAuth.signIn();
 
-        if (error) throw error;
+                if (!googleUser.authentication.idToken) {
+                    throw new Error('No ID token received from Google');
+                }
 
-        // Ouvrir l'URL Google dans un in-app browser contrôlé
-        if (isNative && data?.url) {
-            await Browser.open({
-                url: data.url,
-                presentationStyle: 'popover',
-            });
+                const { data, error } = await supabase.auth.signInWithIdToken({
+                    provider: 'google',
+                    token: googleUser.authentication.idToken,
+                });
+
+                if (error) throw error;
+                return { data, error: null };
+            } catch (nativeError: any) {
+                console.warn('⚠️ [GOOGLE] Native sign-in failed, falling back to browser:', nativeError.message);
+                // Fallback to browser if native fails
+            }
         }
 
-        return { data, error: null };
+        // iOS : Utiliser le flux OAuth via le navigateur
+        if (isNative) {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: 'com.koiny.app://callback',
+                    skipBrowserRedirect: true,
+                },
+            });
+
+            if (error) throw error;
+
+            if (data?.url) {
+                console.log('🌐 [GOOGLE iOS] Opening OAuth URL:', data.url.substring(0, 80) + '...');
+                try {
+                    await Browser.open({ url: data.url });
+                } catch (browserError: any) {
+                    console.warn('⚠️ [GOOGLE iOS] Browser.open failed, trying fallback:', browserError.message);
+                    // Fallback : ouvrir dans une nouvelle fenêtre
+                    window.open(data.url, '_blank');
+                }
+            } else {
+                console.error('❌ [GOOGLE iOS] No URL returned from OAuth');
+            }
+            return { data, error: null };
+        } else {
+            // Web classique
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin,
+                },
+            });
+            if (error) throw error;
+            return { data, error: null };
+        }
     } catch (error: any) {
         console.error('Error signing in with Google:', error.message);
         return { data: null, error };

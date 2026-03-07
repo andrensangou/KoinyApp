@@ -1,3 +1,4 @@
+import { Preferences } from '@capacitor/preferences';
 import { GlobalState, INITIAL_DATA } from '../types';
 import { getSupabase, loadFromSupabase, saveToSupabase } from './supabase';
 
@@ -5,7 +6,36 @@ const STORAGE_KEY = 'koiny_local_v1';
 const BACKUP_KEY = 'koiny_local_v1_backup';
 
 /**
- * VERSION HYBRIDE - Supporte LocalStorage et Supabase Cloud Sync
+ * Wrapper asynchrone pour le stockage persistant (Natif + Web)
+ * @capacitor/preferences utilise SharedPreferences sur Android et UserDefaults sur iOS,
+ * ce qui est beaucoup plus fiable que le localStorage du WebView.
+ */
+export const persistentStorage = {
+  async get(key: string): Promise<string | null> {
+    const { value } = await Preferences.get({ key });
+    // Fallback sur localStorage pour la transition (migration transparente)
+    if (value === null) {
+      const old = localStorage.getItem(key);
+      if (old !== null) {
+        await Preferences.set({ key, value: old });
+        return old;
+      }
+    }
+    return value;
+  },
+  async set(key: string, value: string): Promise<void> {
+    await Preferences.set({ key, value });
+    // Optionnel : garder localStorage à jour pour le web
+    localStorage.setItem(key, value);
+  },
+  async remove(key: string): Promise<void> {
+    await Preferences.remove({ key });
+    localStorage.removeItem(key);
+  }
+};
+
+/**
+ * VERSION HYBRIDE - Supporte Preferences et Supabase Cloud Sync
  */
 export const loadData = async (): Promise<{ data: GlobalState, ownerId?: string }> => {
   const supabase = getSupabase();
@@ -36,7 +66,7 @@ export const loadData = async (): Promise<{ data: GlobalState, ownerId?: string 
 
       if (cloudData) {
         console.log('✅ [STORAGE] Données chargées depuis le cloud');
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData));
+        await persistentStorage.set(STORAGE_KEY, JSON.stringify(cloudData));
 
         return {
           data: migrateData(cloudData),
@@ -48,20 +78,20 @@ export const loadData = async (): Promise<{ data: GlobalState, ownerId?: string 
     }
   }
 
-  // 2. Fallback LocalStorage (Offline ou Invité)
+  // 2. Fallback Storage Natif (Offline ou Invité)
   try {
-    const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(BACKUP_KEY);
+    const stored = await persistentStorage.get(STORAGE_KEY) || await persistentStorage.get(BACKUP_KEY);
 
     if (stored) {
       const parsed = JSON.parse(stored);
-      console.log('💾 [STORAGE] Données chargées depuis localStorage');
+      console.log('💾 [STORAGE] Données chargées depuis stockage natif');
       return {
         data: migrateData(parsed),
         ownerId: user?.id || 'local-owner'
       };
     }
   } catch (e) {
-    console.error('❌ [STORAGE] Erreur chargement localStorage:', e);
+    console.error('❌ [STORAGE] Erreur chargement local:', e);
   }
 
   console.log('📦 [STORAGE] Aucune donnée trouvée, retour aux données initiales');
@@ -216,62 +246,68 @@ export const saveData = async (data: GlobalState, ownerId?: string, immediate?: 
 
   let changes: Record<string, string> = {};
 
-  // 2. Gestion des conflits de synchronisation
-  if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
-    try {
-      // Charger la version cloud
-      const cloudData = await loadFromSupabase(ownerId);
-
-      if (cloudData) {
-        const localTimestamp = new Date(dataToSave.updatedAt || 0).getTime();
-        const cloudTimestamp = new Date(cloudData.updatedAt || 0).getTime();
-
-        // Détecter conflit (marge de tolérance : 5 secondes)
-        if (cloudTimestamp > localTimestamp + 5000) {
-          console.warn('⚠️ [STORAGE] Conflit détecté, merge automatique');
-          const merged = mergeGlobalStates(dataToSave, cloudData);
-          dataToSave = { ...merged, updatedAt: merged.updatedAt || new Date().toISOString() };
-        }
-      }
-    } catch (e) {
-      console.error('❌ [STORAGE] Erreur détection conflits:', e);
-    }
-  }
-
-  // 3. Sauvegarde locale avec gestion quota
+  // ⭐ 2. PRIORITÉ: Sauvegarde locale TOUJOURS d'abord (mode offline friendly)
   try {
-    const current = localStorage.getItem(STORAGE_KEY);
-    if (current) localStorage.setItem(BACKUP_KEY, current);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    const current = await persistentStorage.get(STORAGE_KEY);
+    if (current) await persistentStorage.set(BACKUP_KEY, current);
+    await persistentStorage.set(STORAGE_KEY, JSON.stringify(dataToSave));
+    console.log('✅ [STORAGE] Données sauvegardées localement');
   } catch (e: any) {
-    if (e.name === 'QuotaExceededError') {
-      console.error('❌ [STORAGE] Quota localStorage dépassé, purge d\'urgence');
+    console.error('❌ [STORAGE] ERREUR CRITIQUE - Sauvegarde locale échouée:', e);
+    // Même en cas d'erreur locale, on continue pour le cloud
+  }
 
-      // Purge agressive
-      const purged = purgeOldHistory(dataToSave, 100);
-      dataToSave = { ...purged, updatedAt: purged.updatedAt || new Date().toISOString() };
+  // 3. Gestion des conflits de synchronisation (non-bloquant, timeout court)
+  if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
+    try {
+      // Timeout pour pas bloquer en offline
+      const conflictCheckPromise = (async () => {
+        const cloudData = await loadFromSupabase(ownerId);
+        if (cloudData) {
+          const localTimestamp = new Date(dataToSave.updatedAt || 0).getTime();
+          const cloudTimestamp = new Date(cloudData.updatedAt || 0).getTime();
 
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-        console.warn('⚠️ [STORAGE] Historique ancien supprimé pour libérer de l\'espace');
-      } catch (e2) {
-        console.error('❌ [STORAGE] Impossible de sauvegarder même après purge');
-        throw new Error('Espace de stockage insuffisant. Veuillez exporter vos données et réinstaller l\'application.');
-      }
-    } else {
-      console.error('❌ [STORAGE] Erreur sauvegarde locale:', e);
+          // Détecter conflit (marge de tolérance : 5 secondes)
+          if (cloudTimestamp > localTimestamp + 5000) {
+            console.warn('⚠️ [STORAGE] Conflit détecté, merge automatique');
+            const merged = mergeGlobalStates(dataToSave, cloudData);
+            dataToSave = { ...merged, updatedAt: merged.updatedAt || new Date().toISOString() };
+          }
+        }
+      })();
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('CONFLICT_CHECK_TIMEOUT')), 3000)
+      );
+
+      await Promise.race([conflictCheckPromise, timeoutPromise]).catch(e => {
+        if (e.message === 'CONFLICT_CHECK_TIMEOUT') {
+          console.warn('⚠️ [STORAGE] Détection conflits timeout (offline?)');
+        } else {
+          console.warn('⚠️ [STORAGE] Erreur détection conflits:', e?.message);
+        }
+      });
+    } catch (e) {
+      console.warn('⚠️ [STORAGE] Erreur détection conflits:', e);
     }
   }
 
-  // 4. Sauvegarder dans le cloud si connecté
+  // 4. Synchronisation cloud (non-bloquant, async)
   if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
-    try {
-      console.log('☁️ [STORAGE] Synchronisation cloud en cours...');
-      const result = await saveToSupabase(ownerId, dataToSave);
-      if (result?.idMapping) changes = result.idMapping;
-    } catch (e) {
-      console.error('❌ [STORAGE] Erreur synchronisation cloud:', e);
-    }
+    (async () => {
+      try {
+        console.log('☁️ [STORAGE] Synchronisation cloud en cours...');
+        const result = await saveToSupabase(ownerId, dataToSave);
+        if (result?.success) {
+          console.log('✅ [STORAGE] Sync cloud réussi');
+          if (result?.idMapping) changes = result.idMapping;
+        } else {
+          console.warn('⚠️ [STORAGE] Sync cloud échouée, mais données locales sauvegardées');
+        }
+      } catch (e) {
+        console.warn('⚠️ [STORAGE] Erreur synchronisation cloud (offline?):', e instanceof Error ? e.message : e);
+      }
+    })();
   }
 
   return changes;
@@ -281,8 +317,8 @@ export const saveData = async (data: GlobalState, ownerId?: string, immediate?: 
 /**
  * Fonction d'exportation RGPD (Portabilité)
  */
-export const exportUserData = () => {
-  const data = localStorage.getItem(STORAGE_KEY);
+export const exportUserData = async () => {
+  const data = await persistentStorage.get(STORAGE_KEY);
   if (!data) return;
 
   const blob = new Blob([data], { type: 'application/json' });
@@ -295,4 +331,3 @@ export const exportUserData = () => {
 
   console.log('📥 [STORAGE] Export RGPD effectué');
 };
-
