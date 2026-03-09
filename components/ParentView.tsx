@@ -259,6 +259,7 @@ const ParentView: React.FC<ParentViewProps> = ({
     onConfirm: () => { }
   });
   const [promptValue, setPromptValue] = useState('');
+  const [showPromptPassword, setShowPromptPassword] = useState(false);
 
   const openConfirm = (title: string, message: string, onConfirm: () => void, type: 'danger' | 'info' | 'success' | 'warning' = 'info') => {
     setConfirmConfig({ isOpen: true, title, message, onConfirm, type });
@@ -266,6 +267,7 @@ const ParentView: React.FC<ParentViewProps> = ({
 
   const openPrompt = (config: Omit<typeof promptConfig, 'isOpen'>) => {
     setPromptValue(config.defaultValue || '');
+    setShowPromptPassword(false);
     setPromptConfig({ ...config, isOpen: true });
   };
 
@@ -1014,7 +1016,10 @@ const ParentView: React.FC<ParentViewProps> = ({
                 <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mb-10 leading-relaxed px-2">{promptConfig.message}</p>
                 {promptConfig.type === 'input' && (
                   <div className="w-full mb-10 relative group/input">
-                    <input autoFocus type="password" value={promptValue} onChange={(e) => setPromptValue(e.target.value)} placeholder={promptConfig.placeholder || '...'} className="w-full p-5 bg-black/5 dark:bg-black/40 border-2 border-white/10 dark:border-white/5 rounded-3xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-slate-900 dark:text-white font-black transition-all text-center placeholder:opacity-30 shadow-inner text-xl tracking-widest" />
+                    <input autoFocus type={showPromptPassword ? 'text' : 'password'} value={promptValue} onChange={(e) => setPromptValue(e.target.value)} placeholder={promptConfig.placeholder || '...'} className="w-full p-5 pr-14 bg-black/5 dark:bg-black/40 border-2 border-white/10 dark:border-white/5 rounded-3xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-slate-900 dark:text-white font-black transition-all text-center placeholder:opacity-30 shadow-inner text-xl tracking-widest" />
+                    <button type="button" onClick={() => setShowPromptPassword(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                      <i className={`fa-solid ${showPromptPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                    </button>
                   </div>
                 )}
                 <div className="flex gap-4 w-full">
@@ -2287,12 +2292,15 @@ const ParentView: React.FC<ParentViewProps> = ({
                   <div className="w-full mb-10 relative group/input">
                     <input
                       autoFocus
-                      type="password"
+                      type={showPromptPassword ? 'text' : 'password'}
                       value={promptValue}
                       onChange={(e) => setPromptValue(e.target.value)}
                       placeholder={promptConfig.placeholder || '...'}
-                      className="w-full p-5 bg-black/5 dark:bg-black/40 border-2 border-white/10 dark:border-white/5 rounded-3xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-slate-900 dark:text-white font-black transition-all text-center placeholder:opacity-30 shadow-inner text-xl tracking-widest"
+                      className="w-full p-5 pr-14 bg-black/5 dark:bg-black/40 border-2 border-white/10 dark:border-white/5 rounded-3xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-slate-900 dark:text-white font-black transition-all text-center placeholder:opacity-30 shadow-inner text-xl tracking-widest"
                     />
+                    <button type="button" onClick={() => setShowPromptPassword(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                      <i className={`fa-solid ${showPromptPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                    </button>
                   </div>
                 )}
 
