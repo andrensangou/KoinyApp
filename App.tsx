@@ -61,8 +61,10 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleOnline = () => {
       setIsOfflineMode(false);
+      // Bloquer les notifications pendant le sync pour éviter les doublons
+      isSyncingFromOnline.current = true;
+      setTimeout(() => { isSyncingFromOnline.current = false; }, 5000);
       // Forcer un sync Supabase dès que la connexion revient
-      // pour envoyer toutes les modifications faites en offline
       setImmediateSave(true);
     };
     const handleOffline = () => setIsOfflineMode(true);
@@ -215,6 +217,12 @@ const App: React.FC = () => {
     }
 
     if (prevChildrenRef.current.length === 0 && data.children.length > 0) {
+      prevChildrenRef.current = data.children;
+      return;
+    }
+
+    // Bloquer les notifications pendant le sync au retour en ligne (évite doublons)
+    if (isSyncingFromOnline.current) {
       prevChildrenRef.current = data.children;
       return;
     }
@@ -414,6 +422,7 @@ const App: React.FC = () => {
   const isReloadingFromRealtime = React.useRef(false);
   const isDirectSupabaseOperation = React.useRef(false);
   const isSavingRef = React.useRef(false);
+  const isSyncingFromOnline = React.useRef(false);
 
   useEffect(() => {
     const runSave = async () => {
@@ -704,7 +713,7 @@ const App: React.FC = () => {
     setData(INITIAL_DATA);
     setOwnerId(undefined);
   };
-  const handleMissionComplete = (id: string) => { updateChild(activeChildId!, (child) => ({ ...child, missions: child.missions.map(m => m.id === id ? { ...m, status: 'PENDING' } : m) })); };
+  const handleMissionComplete = (id: string) => { updateChild(activeChildId!, (child) => ({ ...child, missions: child.missions.map(m => m.id === id ? { ...m, status: 'PENDING', feedback: undefined } : m) })); };
   const handleReject = (childId: string, missionId: string, note?: string) => { updateChild(childId, (child) => ({ ...child, missions: child.missions.map(m => m.id === missionId ? { ...m, status: 'ACTIVE', feedback: note } : m) })); };
   const handleAddMission = async (childId: string, title: string, amount: number) => {
     const supabase = getSupabase();
@@ -985,6 +994,14 @@ const App: React.FC = () => {
   };
   const handleToggleSound = (enabled: boolean) => setData(prev => ({ ...prev, soundEnabled: enabled, updatedAt: new Date().toISOString() }));
   const handleUpdateMaxBalance = (limit: number) => setData(prev => ({ ...prev, maxBalance: limit, updatedAt: new Date().toISOString() }));
+  const handleSetPremium = (enabled: boolean) => {
+    if (enabled) {
+      localStorage.setItem('koiny_premium_active', 'true');
+    } else {
+      localStorage.removeItem('koiny_premium_active');
+    }
+    setData(prev => ({ ...prev, isPremium: enabled }));
+  };
 
   const handleLoginSuccess = async (demoData?: GlobalState) => {
     setLoading(true);
@@ -1103,6 +1120,7 @@ const App: React.FC = () => {
           onUpdatePassword={async (p) => { await updatePassword(p); }} onDeleteAccount={async () => { await deleteAccount(); setView('LANDING'); }}
           onExit={handleLogout} onTutorialComplete={handleParentTutorialComplete} onToggleSound={handleToggleSound} onSetLanguage={setLanguage}
           onUpdateMaxBalance={handleUpdateMaxBalance}
+          onSetPremium={handleSetPremium}
           notificationAction={notificationAction} onClearNotificationAction={() => setNotificationAction(null)}
           onSignOut={handleFullSignOut}
           isOfflineMode={isOfflineMode}

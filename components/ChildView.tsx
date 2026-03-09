@@ -200,7 +200,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
 
           <div className="flex justify-between items-start relative z-10 mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 overflow-hidden shadow-2xl ring-1 ring-white/10">
+              <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/20 overflow-hidden shadow-2xl ring-1 ring-white/10">
                 {renderAvatar(data.avatar, "w-full h-full", data.colorClass)}
               </div>
               <div className="space-y-0.5">
@@ -462,6 +462,12 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                             <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-emerald-500"></span> {t.child.todo}</>
                           )}
                         </div>
+                        {mission.feedback && mission.status === 'ACTIVE' && (
+                          <div className="mt-2 flex items-start gap-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-2.5 py-1.5 rounded-xl">
+                            <span className="text-sm shrink-0">💬</span>
+                            <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 leading-snug">{mission.feedback}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className={`font-black text-sm px-5 py-2.5 rounded-2xl shadow-sm ${mission.status === 'PENDING' ? 'bg-white dark:bg-slate-800 text-indigo-500 dark:text-indigo-400 border border-indigo-50 dark:border-indigo-900/30' : `bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-600 dark:text-${data.colorClass}-400 border border-${data.colorClass}-100 dark:border-${data.colorClass}-900/30`}`}>

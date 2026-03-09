@@ -49,6 +49,7 @@ interface ParentViewProps {
   onDeleteGoal?: (childId: string, goalId: string) => void;
   onArchiveGoal?: (childId: string, goalId: string) => void;
   isOfflineMode?: boolean;
+  onSetPremium?: (enabled: boolean) => void;
 }
 
 type ActionType = 'APPROVE' | 'REJECT' | null;
@@ -128,7 +129,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   onClearHistory, onUpdatePassword, onDeleteAccount,
   onExit, onTutorialComplete, onToggleSound, onSetLanguage, onUpdateMaxBalance,
   notificationAction, onClearNotificationAction, onSignOut, onDeleteGoal, onArchiveGoal,
-  isOfflineMode = false
+  isOfflineMode = false, onSetPremium
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState('');
@@ -1062,9 +1063,9 @@ const ParentView: React.FC<ParentViewProps> = ({
                 return (
                   <button key={child.id}
                     onClick={() => setSelectedChildId(child.id)}
-                    className={`flex items-center gap-2 pl-1 pr-3 py-1 rounded-full transition-all whitespace-nowrap border ${isSelected ? `bg-${child.colorClass}-100 dark:bg-${child.colorClass}-900/30 border-${child.colorClass}-200 dark:border-${child.colorClass}-800` : 'bg-transparent border-transparent opacity-60 grayscale'}`}
+                    className="flex items-center gap-2 transition-all whitespace-nowrap"
                   >
-                    <div className={`w-8 h-8 rounded-full overflow-hidden border-2 ${isSelected ? `border-${child.colorClass}-500` : 'border-slate-200'}`}>
+                    <div className={`w-8 h-8 rounded-full overflow-hidden border-2 ${isSelected ? `border-4 scale-110` : 'border-slate-200 opacity-60 grayscale'}`}>
                       {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
                     </div>
                     {isSelected && <span className="text-xs font-black text-slate-700 dark:text-slate-200 tracking-tight">{child.name}</span>}
@@ -1508,7 +1509,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                   <div key={mission.id} className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-6">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl p-1 overflow-hidden shrink-0">
+                        <div className="w-14 h-14 bg-slate-50 dark:bg-slate-800 rounded-full p-1 overflow-hidden shrink-0">
                           {renderAvatar(activeChild.avatar, "w-full h-full", activeChild.colorClass)}
                         </div>
                         <div>
@@ -1527,7 +1528,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                 {activeChildPendingCount === 0 && (
                   <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                     <i className="fa-solid fa-mug-hot text-4xl mb-4 opacity-50"></i>
-                    <p className="font-bold text-sm text-center">Aucune demande en attente.<br />Tout est à jour !</p>
+                    <p className="font-bold text-sm text-center">{t.parent.noPendingRequests.split('\n').map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}</p>
                   </div>
                 )}
               </div>
@@ -1662,7 +1663,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         {data.children && data.children.map(child => (
                           <div key={child.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100/50 dark:border-slate-700 group hover:shadow-md transition-all">
                             <div className="flex items-center gap-4">
-                              <div className="w-14 h-14 bg-slate-50 dark:bg-slate-700 rounded-2xl p-1 shadow-inner ring-1 ring-slate-100 dark:ring-slate-600 flex items-center justify-center">
+                              <div className="w-14 h-14 bg-slate-50 dark:bg-slate-700 rounded-full p-1 shadow-inner ring-1 ring-slate-100 dark:ring-slate-600 flex items-center justify-center">
                                 {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
                               </div>
                               <div>
@@ -1918,17 +1919,17 @@ const ParentView: React.FC<ParentViewProps> = ({
                           {data.isPremium ? t.parent.messages.premiumActive : t.parent.premium.upgrade}
                         </button>
                         {/* DEV: Toggle Premium for testing */}
+                        {!data.isPremium && (
+                          <button
+                            onClick={() => onSetPremium?.(true)}
+                            className="w-full mt-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold py-3 rounded-2xl text-[10px] uppercase tracking-[0.15em] border border-emerald-200 dark:border-emerald-800 active:scale-95 transition-all"
+                          >
+                            🧪 DEV — Activer Premium
+                          </button>
+                        )}
                         {data.isPremium && (
                           <button
-                            onClick={async () => {
-                              // Supprimer des deux stockages
-                              localStorage.removeItem('koiny_premium_active');
-                              try {
-                                const { Preferences } = await import('@capacitor/preferences');
-                                await Preferences.remove({ key: 'koiny_premium_active' });
-                              } catch (e) { /* web fallback */ }
-                              window.location.reload();
-                            }}
+                            onClick={() => onSetPremium?.(false)}
                             className="w-full mt-3 bg-red-50 dark:bg-red-900/20 text-red-500 font-bold py-3 rounded-2xl text-[10px] uppercase tracking-[0.15em] border border-red-200 dark:border-red-800 active:scale-95 transition-all"
                           >
                             🧪 DEV — Désactiver Premium
@@ -2236,15 +2237,9 @@ const ParentView: React.FC<ParentViewProps> = ({
       <SubscriptionModal
         isOpen={isSubscriptionModalOpen}
         onClose={() => setIsSubscriptionModalOpen(false)}
-        onSubscribed={async () => {
-          // Marquer isPremium dans les deux stockages
-          localStorage.setItem('koiny_premium_active', 'true');
-          try {
-            const { Preferences } = await import('@capacitor/preferences');
-            await Preferences.set({ key: 'koiny_premium_active', value: 'true' });
-          } catch (e) { /* web fallback */ }
+        onSubscribed={() => {
           setIsSubscriptionModalOpen(false);
-          window.location.reload();
+          onSetPremium?.(true);
         }}
         t={t}
         language={language}

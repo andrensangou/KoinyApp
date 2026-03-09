@@ -57,7 +57,18 @@ export const loadData = async (): Promise<{ data: GlobalState, ownerId?: string 
 
   const user = session?.user;
 
-  // 1. Charger depuis Supabase si connecté
+  // 1. Charger le cache local d'abord (pour comparer les timestamps)
+  let localData: GlobalState | null = null;
+  try {
+    const stored = await persistentStorage.get(STORAGE_KEY) || await persistentStorage.get(BACKUP_KEY);
+    if (stored) {
+      localData = JSON.parse(stored);
+    }
+  } catch (e) {
+    console.warn('⚠️ [STORAGE] Erreur lecture cache local:', e);
+  }
+
+  // 2. Charger depuis Supabase si connecté
   if (user) {
     try {
       console.log('☁️ [STORAGE] Tentative chargement cloud pour:', user.id);
@@ -65,9 +76,24 @@ export const loadData = async (): Promise<{ data: GlobalState, ownerId?: string 
       const cloudData = await loadFromSupabase(user.id);
 
       if (cloudData) {
-        console.log('✅ [STORAGE] Données chargées depuis le cloud');
-        await persistentStorage.set(STORAGE_KEY, JSON.stringify(cloudData));
+        // Comparer les timestamps : si local plus récent → garder local et sync vers cloud
+        const localUpdatedAt = localData?.updatedAt ? new Date(localData.updatedAt).getTime() : 0;
+        const cloudUpdatedAt = cloudData?.updatedAt ? new Date(cloudData.updatedAt).getTime() : 0;
 
+        if (localData && localUpdatedAt > cloudUpdatedAt) {
+          console.log('⚡ [STORAGE] Cache local plus récent que le cloud — données offline prioritaires');
+          // Déclencher un sync cloud en arrière-plan
+          saveToSupabase(user.id, localData).catch(e =>
+            console.warn('⚠️ [STORAGE] Sync offline→cloud échouée:', e)
+          );
+          return {
+            data: migrateData(localData),
+            ownerId: user.id
+          };
+        }
+
+        console.log('✅ [STORAGE] Données cloud plus récentes, chargement cloud');
+        await persistentStorage.set(STORAGE_KEY, JSON.stringify(cloudData));
         return {
           data: migrateData(cloudData),
           ownerId: user.id
@@ -78,20 +104,13 @@ export const loadData = async (): Promise<{ data: GlobalState, ownerId?: string 
     }
   }
 
-  // 2. Fallback Storage Natif (Offline ou Invité)
-  try {
-    const stored = await persistentStorage.get(STORAGE_KEY) || await persistentStorage.get(BACKUP_KEY);
-
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      console.log('💾 [STORAGE] Données chargées depuis stockage natif');
-      return {
-        data: migrateData(parsed),
-        ownerId: user?.id || 'local-owner'
-      };
-    }
-  } catch (e) {
-    console.error('❌ [STORAGE] Erreur chargement local:', e);
+  // 3. Fallback Storage Natif (Offline ou Invité)
+  if (localData) {
+    console.log('💾 [STORAGE] Données chargées depuis stockage natif');
+    return {
+      data: migrateData(localData),
+      ownerId: user?.id || 'local-owner'
+    };
   }
 
   console.log('📦 [STORAGE] Aucune donnée trouvée, retour aux données initiales');
@@ -105,10 +124,12 @@ const migrateData = (data: any): GlobalState => {
   if (!data || typeof data !== 'object') return INITIAL_DATA;
 
   const children = Array.isArray(data.children) ? data.children : [];
+  const isPremium = localStorage.getItem('koiny_premium_active') === 'true';
 
   return {
     ...INITIAL_DATA,
     ...data,
+    isPremium: isPremium,
     children: children.map((c: any) => ({
       ...c,
       balance: typeof c.balance === 'number' ? c.balance : 0,
