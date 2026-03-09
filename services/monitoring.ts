@@ -34,9 +34,12 @@ class MonitoringService {
    * Initialise le SDK Sentry
    */
   public initSentry() {
+    const dsn = import.meta.env.VITE_SENTRY_DSN;
+    if (!dsn) return;
     Sentry.init({
-      dsn: "https://examplePublicKey@o0.ingest.sentry.io/0", // Remplacer par le vrai DSN
-      tracesSampleRate: 0.2, // Faible en prod pour réduire la consommation
+      dsn,
+      tracesSampleRate: 0.2,
+      sendDefaultPii: false, // RGPD : pas d'IP ni de données personnelles
     }, SentryReact.init);
   }
 
