@@ -26,6 +26,23 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Mettre à jour le titre et la meta description selon la langue
+  useEffect(() => {
+    const titles: Record<string, string> = {
+      fr: 'Koiny — L\'argent de poche qui éduque vos enfants',
+      en: 'Koiny — The pocket money app that educates your kids',
+      nl: 'Koiny — Het zakgeld dat uw kinderen opvoedt',
+    };
+    const descriptions: Record<string, string> = {
+      fr: 'Missions, épargne et responsabilité pour toute la famille.',
+      en: 'Missions, savings and responsibility for the whole family.',
+      nl: 'Missies, sparen en verantwoordelijkheid voor het hele gezin.',
+    };
+    document.title = titles[language] || titles.fr;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', descriptions[language] || descriptions.fr);
+  }, [language]);
+
   const languages: { code: Language; label: string; flag: string }[] = [
     { code: 'fr', label: 'Français', flag: '🇫🇷' },
     { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },

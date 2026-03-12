@@ -22,7 +22,7 @@ export interface SubscriptionState {
 
 class SubscriptionService {
   private isNative: boolean = false;
-  private isTesting: boolean = true; // Mode test
+  private isTesting: boolean = false; // RevenueCat à configurer
 
   // Product IDs pour App Store
   private MONTHLY_ID = 'com.koiny.premium.monthly';
@@ -102,10 +102,9 @@ class SubscriptionService {
       return true;
     }
 
-    // Production - lancer l'achat via StoreKit
-    // À implémenter avec StoreKit 2 une fois la configuration App Store Complete
-    console.log('[Subscription] StoreKit 2 non configuré - mode test utilisé');
-    return true;
+    // Production - RevenueCat à intégrer
+    console.log('[Subscription] RevenueCat non configuré');
+    return false;
   }
 
   /**

@@ -37,25 +37,29 @@ export const persistentStorage = {
 /**
  * VERSION HYBRIDE - Supporte Preferences et Supabase Cloud Sync
  */
-export const loadData = async (): Promise<{ data: GlobalState, ownerId?: string }> => {
+export const loadData = async (knownUserId?: string): Promise<{ data: GlobalState, ownerId?: string }> => {
   const supabase = getSupabase();
 
-  // Timeout de sécurité pour la session
-  const getSessionWithTimeout = async () => {
-    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('SESSION_TIMEOUT')), 3000));
-    const session = supabase.auth.getSession();
-    return Promise.race([session, timeout]) as any;
-  };
+  let user: { id: string } | null = null;
 
-  let session = null;
-  try {
-    const result = await getSessionWithTimeout();
-    session = result.data?.session;
-  } catch (e) {
-    console.warn('⚠️ [STORAGE] Session timeout or error, proceeding offline');
+  if (knownUserId) {
+    // Session already known (e.g. from OAuth deep link) — skip slow getSession() call
+    user = { id: knownUserId };
+  } else {
+    // Timeout de sécurité pour la session
+    const getSessionWithTimeout = async () => {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('SESSION_TIMEOUT')), 8000));
+      const session = supabase.auth.getSession();
+      return Promise.race([session, timeout]) as any;
+    };
+
+    try {
+      const result = await getSessionWithTimeout();
+      user = result.data?.session?.user ?? null;
+    } catch (e) {
+      console.warn('⚠️ [STORAGE] Session timeout or error, proceeding offline');
+    }
   }
-
-  const user = session?.user;
 
   // 1. Charger le cache local d'abord (pour comparer les timestamps)
   let localData: GlobalState | null = null;
@@ -80,7 +84,12 @@ export const loadData = async (): Promise<{ data: GlobalState, ownerId?: string 
         const localUpdatedAt = localData?.updatedAt ? new Date(localData.updatedAt).getTime() : 0;
         const cloudUpdatedAt = cloudData?.updatedAt ? new Date(cloudData.updatedAt).getTime() : 0;
 
-        if (localData && localUpdatedAt > cloudUpdatedAt) {
+        const localHasChildren = (localData?.children?.length || 0) > 0;
+        const cloudHasChildren = (cloudData?.children?.length || 0) > 0;
+
+        // Local wins only if it has children OR cloud has none
+        // (avoids keeping empty local cache over real cloud data)
+        if (localData && localUpdatedAt > cloudUpdatedAt && (localHasChildren || !cloudHasChildren)) {
           console.log('⚡ [STORAGE] Cache local plus récent que le cloud — données offline prioritaires');
           // Déclencher un sync cloud en arrière-plan
           saveToSupabase(user.id, localData).catch(e =>

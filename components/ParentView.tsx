@@ -1923,23 +1923,6 @@ const ParentView: React.FC<ParentViewProps> = ({
                         <button onClick={() => setIsSubscriptionModalOpen(true)} className="w-full bg-white dark:bg-indigo-500 text-slate-900 dark:text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all hover:bg-slate-50 dark:hover:bg-indigo-600 transition-colors">
                           {data.isPremium ? t.parent.messages.premiumActive : t.parent.premium.upgrade}
                         </button>
-                        {/* DEV: Toggle Premium for testing */}
-                        {!data.isPremium && (
-                          <button
-                            onClick={() => onSetPremium?.(true)}
-                            className="w-full mt-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold py-3 rounded-2xl text-[10px] uppercase tracking-[0.15em] border border-emerald-200 dark:border-emerald-800 active:scale-95 transition-all"
-                          >
-                            🧪 DEV — Activer Premium
-                          </button>
-                        )}
-                        {data.isPremium && (
-                          <button
-                            onClick={() => onSetPremium?.(false)}
-                            className="w-full mt-3 bg-red-50 dark:bg-red-900/20 text-red-500 font-bold py-3 rounded-2xl text-[10px] uppercase tracking-[0.15em] border border-red-200 dark:border-red-800 active:scale-95 transition-all"
-                          >
-                            🧪 DEV — Désactiver Premium
-                          </button>
-                        )}
                       </div>
                     </div>
 

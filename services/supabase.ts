@@ -98,31 +98,43 @@ export const signInWithGoogle = async () => {
             }
         }
 
-        // iOS : Utiliser le flux OAuth via le navigateur
-        if (isNative) {
-            const { data, error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: 'com.koiny.app://callback',
-                    skipBrowserRedirect: true,
-                },
-            });
+        // iOS : Utiliser le SDK natif Google Sign-In (pas de browser, pas de WebProcess freeze)
+        if (isNative && platform === 'ios') {
+            try {
+                const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+                await GoogleAuth.initialize({
+                    clientId: '165597226617-d32lvds9bq8vpvglc6kh9c90s817eqe2.apps.googleusercontent.com',
+                    scopes: ['profile', 'email'],
+                    grantOfflineAccess: true,
+                });
+                const googleUser = await GoogleAuth.signIn();
 
-            if (error) throw error;
-
-            if (data?.url) {
-                console.log('🌐 [GOOGLE iOS] Opening OAuth URL:', data.url.substring(0, 80) + '...');
-                try {
-                    await Browser.open({ url: data.url });
-                } catch (browserError: any) {
-                    console.warn('⚠️ [GOOGLE iOS] Browser.open failed, trying fallback:', browserError.message);
-                    // Fallback : ouvrir dans une nouvelle fenêtre
-                    window.open(data.url, '_blank');
+                if (!googleUser.authentication.idToken) {
+                    throw new Error('No ID token received from Google');
                 }
-            } else {
-                console.error('❌ [GOOGLE iOS] No URL returned from OAuth');
+
+                console.log('🍎 [GOOGLE iOS] Native sign-in OK, exchanging token...');
+                const { data, error } = await supabase.auth.signInWithIdToken({
+                    provider: 'google',
+                    token: googleUser.authentication.idToken,
+                });
+
+                if (error) throw error;
+                console.log('✅ [GOOGLE iOS] Session Supabase créée pour:', data.user?.email);
+                return { data, error: null };
+            } catch (nativeError: any) {
+                console.warn('⚠️ [GOOGLE iOS] Native sign-in failed, falling back to browser:', nativeError.message);
+                // Fallback OAuth browser si le natif échoue
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: 'com.koiny.app://callback', skipBrowserRedirect: true },
+                });
+                if (error) throw error;
+                if (data?.url) {
+                    await Browser.open({ url: data.url });
+                }
+                return { data, error: null };
             }
-            return { data, error: null };
         } else {
             // Web classique
             const { data, error } = await supabase.auth.signInWithOAuth({
@@ -232,7 +244,7 @@ export const ensureUserProfile = async (userId: string, email?: string) => {
             .maybeSingle();
 
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('TIMEOUT_DATABASE')), 5000)
+            setTimeout(() => reject(new Error('TIMEOUT_DATABASE')), 10000)
         );
 
         try {
@@ -276,14 +288,15 @@ export const loadFromSupabase = async (userId: string): Promise<any> => {
         log(`📥 [SUPABASE] Chargement données V2 pour: ${userId}`);
 
         const fetchData = async () => {
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
-            if (!currentUser) throw new Error('No authenticated user');
+            // Use the passed userId directly to avoid a slow getUser() network call
+            // (especially critical right after iOS WebProcess unfreeze post-OAuth)
+            const currentUserId = userId;
 
             // 1. Load Profile
             const { data: profile, error: pError } = await supabase
                 .from('profiles')
                 .select('*')
-                .eq('id', currentUser.id)
+                .eq('id', currentUserId)
                 .maybeSingle();
 
             if (pError) throw pError;
@@ -298,7 +311,7 @@ export const loadFromSupabase = async (userId: string): Promise<any> => {
                     goals(*),
                     transactions(*)
                 `)
-                .eq('user_id', currentUser.id);
+                .eq('user_id', currentUserId);
 
             if (cError) throw cError;
             return { profile, children };
@@ -394,10 +407,12 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
         log(`👶 [SUPABASE] Enfants à sync: ${state.children?.length}`);
 
         // 1. Update Profile
-        const { error: profErr } = await supabase.from('profiles').update({
-            pin_hash: state.parentPin,
-            updated_at: new Date().toISOString()
-        }).eq('id', userId);
+        // Ne jamais écraser pin_hash avec null — le PIN est géré par pinStorage.ts
+        const profilePayload: Record<string, any> = { updated_at: new Date().toISOString() };
+        if (state.parentPin !== null && state.parentPin !== undefined) {
+            profilePayload.pin_hash = state.parentPin;
+        }
+        const { error: profErr } = await supabase.from('profiles').update(profilePayload).eq('id', userId);
 
         if (profErr) {
             console.error('❌ [SUPABASE] Profile sync error:', profErr.message);

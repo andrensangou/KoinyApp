@@ -71,8 +71,16 @@ const LegalModal: React.FC<LegalModalProps> = ({ language }) => {
           >
             {t.common.close}
           </button>
-          <p className="mt-4 text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
-            &copy; {new Date().getFullYear()} Koiny • Tous droits réservés
+          <a
+            href="https://koiny.app/privacy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-3 text-indigo-500 dark:text-indigo-400 text-xs font-bold hover:underline"
+          >
+            {language === 'fr' ? '📄 Politique de confidentialité complète' : language === 'nl' ? '📄 Volledig privacybeleid' : '📄 Full privacy policy'}
+          </a>
+          <p className="mt-2 text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
+            &copy; {new Date().getFullYear()} Koiny — Andre Nsangou
           </p>
         </div>
       </div>

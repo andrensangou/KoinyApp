@@ -30,6 +30,14 @@
 				<string>com.koiny.app</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.googleusercontent.apps.165597226617-d32lvds9bq8vpvglc6kh9c90s817eqe2</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.165597226617-d32lvds9bq8vpvglc6kh9c90s817eqe2</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>

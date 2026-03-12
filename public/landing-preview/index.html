@@ -4,13 +4,19 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Koiny — L'argent de poche qui éduque vos enfants</title>
+    <title>Koiny - L'argent de poche qui éduque vos enfants</title>
     <meta name="description"
         content="Koiny enseigne la valeur de l'argent à vos enfants à travers des missions, des objectifs d'épargne et un espace parent sécurisé." />
     <meta name="theme-color" content="#4f46e5" />
-    <meta property="og:title" content="Koiny — L'argent de poche éducatif" />
+    <meta property="og:title" content="Koiny - L'argent de poche éducatif" />
     <meta property="og:description" content="Missions, épargne & responsabilité pour toute la famille." />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://koiny.app/" />
+    <meta property="og:image" content="https://koiny.app/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Koiny - L'argent de poche éducatif" />
+    <meta name="twitter:description" content="Missions, épargne & responsabilité pour toute la famille." />
+    <link rel="canonical" href="https://koiny.app/" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link rel="apple-touch-icon" href="favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -1287,8 +1293,8 @@
                     <span data-i18n="nav.download">Télécharger</span>
                 </a>
             </div>
-            <button class="nav-hamburger" onclick="document.querySelector('.nav-links').style.display='flex'">
-                <i class="fa-solid fa-bars"></i>
+            <button class="nav-hamburger" aria-label="Menu de navigation" onclick="document.querySelector('.nav-links').style.display='flex'">
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
             </button>
         </div>
     </nav>
@@ -1317,7 +1323,7 @@
                     L'argent de poche qui <span class="accent">éduque vraiment</span>
                 </h1>
                 <p class="hero-sub" data-i18n="hero.sub">Koiny donne à vos enfants la fierté de gagner, l'habitude
-                    d'épargner — et vous gardez le contrôle total.</p>
+                    d'épargner - et vous gardez le contrôle total.</p>
                 <div class="hero-actions">
                     <a href="#download" class="btn-primary">
                         <i class="fa-brands fa-apple"></i>
@@ -1577,7 +1583,7 @@
                 <div class="why-card">
                     <div class="why-icon" style="background:#f0fdf4">🎓</div>
                     <h3 data-i18n="why.w5.title">Pédagogie prouvée</h3>
-                    <p data-i18n="why.w5.desc">Basé sur les principes d'effort-récompense et d'objectif différé — des
+                    <p data-i18n="why.w5.desc">Basé sur les principes d'effort-récompense et d'objectif différé - des
                         méthodes reconnues pour développer la responsabilité.</p>
                 </div>
                 <div class="why-card">
@@ -1648,6 +1654,11 @@
                             data-i18n="price.prem.cta">Essayer 14 jours gratuits</button></a>
                 </div>
             </div>
+            <p style="text-align:center;font-size:.78rem;color:var(--slate-400);margin-top:24px;max-width:600px;margin-left:auto;margin-right:auto;line-height:1.6" data-i18n="price.disclaimer">
+                * L'abonnement Premium se renouvelle automatiquement. Annulable à tout moment via Réglages > Apple ID > Abonnements.
+                L'essai gratuit de 14 jours se convertit automatiquement en abonnement payant sauf annulation préalable.
+                <a href="privacy.html#terms" style="color:var(--indigo);text-decoration:underline" data-i18n="price.termsLink">Conditions complètes</a>
+            </p>
         </div>
     </section>
 
@@ -1665,16 +1676,18 @@
                 </a>
             </div>
             <div class="cta-feats">
-                <div class="cta-feat"><i class="fa-solid fa-check"></i> <span data-i18n="cta.f1">Gratuit à
+                <div class="cta-feat"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="cta.f1">Gratuit à
                         télécharger</span></div>
-                <div class="cta-feat"><i class="fa-solid fa-check"></i> <span data-i18n="cta.f2">Zéro publicité</span>
+                <div class="cta-feat"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="cta.f2">Zéro publicité</span>
                 </div>
-                <div class="cta-feat"><i class="fa-solid fa-check"></i> <span data-i18n="cta.f3">Sans abonnement
+                <div class="cta-feat"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="cta.f3">Sans abonnement
                         obligatoire</span></div>
-                <div class="cta-feat"><i class="fa-solid fa-check"></i> <span data-i18n="cta.f4">Aucune donnée
+                <div class="cta-feat"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="cta.f4">Aucune donnée
                         vendue</span></div>
             </div>
+            <p style="margin-top:12px"><a href="privacy.html" style="color:rgba(255,255,255,.6);font-size:.78rem;text-decoration:underline" data-i18n="cta.privacyLink">🔒 Consulter notre politique de confidentialité</a></p>
             <p class="cta-note" data-i18n="cta.note">Requiert iOS 15.0 ou ultérieur. iPhone & iPad.</p>
+            <p style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:8px" data-i18n="cta.age">Conçu pour les enfants de 6 à 14 ans sous supervision parentale.</p>
         </div>
     </section>
 
@@ -1706,7 +1719,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2026 L'équipe Koiny. <span data-i18n="footer.rights">Tous droits réservés.</span></p>
+            <p>&copy; 2026 Koiny - Andre Nsangou. <span data-i18n="footer.rights">Tous droits réservés.</span></p>
             <div class="footer-bottom-links">
                 <a href="privacy.html" data-i18n="footer.privacyShort">Confidentialité</a>
                 <a href="privacy.html#terms" data-i18n="footer.termsShort">CGU</a>
@@ -1720,7 +1733,7 @@
                 'nav.features': 'Fonctionnalités', 'nav.how': 'Comment ça marche', 'nav.pricing': 'Tarifs', 'nav.download': 'Télécharger',
                 'hero.badge': 'Application éducative · iOS',
                 'hero.title': 'L\'argent de poche qui <span class="accent">éduque vraiment</span>',
-                'hero.sub': 'Koiny donne à vos enfants la fierté de gagner, l\'habitude d\'épargner — et vous gardez le contrôle total.',
+                'hero.sub': 'Koiny donne à vos enfants la fierté de gagner, l\'habitude d\'épargner - et vous gardez le contrôle total.',
                 'hero.cta': 'Télécharger gratuitement', 'hero.see': 'Comment ça marche',
                 'hero.t1': 'PIN parental', 'hero.t2': 'Face ID', 'hero.t3': 'Zéro pub',
                 'hero.fc1a': 'Mission validée', 'hero.fc1b': '+2,00 €', 'hero.fc2a': 'Objectif', 'hero.fc2b': '75% atteint', 'hero.fc3a': 'Solde', 'hero.fc3b': '12,50 €',
@@ -1754,7 +1767,7 @@
                 'why.w2.title': 'Données 100% privées', 'why.w2.desc': 'Vos données restent sur votre iPhone. Aucune donnée vendue, aucun tracking publicitaire.',
                 'why.w3.title': 'Toujours disponible', 'why.w3.desc': 'Les données sont sauvegardées localement en priorité. Même en cas de problème réseau, l\'app continue de fonctionner.',
                 'why.w4.title': 'Zéro publicité', 'why.w4.desc': 'Aucune bannière, aucune notification marketing, aucun tracking. Une expérience pure pour toute la famille.',
-                'why.w5.title': 'Pédagogie prouvée', 'why.w5.desc': 'Basé sur les principes d\'effort-récompense et d\'objectif différé — des méthodes reconnues pour développer la responsabilité.',
+                'why.w5.title': 'Pédagogie prouvée', 'why.w5.desc': 'Basé sur les principes d\'effort-récompense et d\'objectif différé - des méthodes reconnues pour développer la responsabilité.',
                 'why.w6.title': 'Simple à utiliser', 'why.w6.desc': 'Configuré en 3 minutes. Interface claire pour les enfants dès 6 ans, tableau de bord complet pour les parents.',
                 'price.badge': 'Tarifs', 'price.title': 'Simple et <span class="accent">transparent</span>',
                 'price.desc': 'Commencez gratuitement. Passez Premium quand votre famille grandit.',
@@ -1770,17 +1783,22 @@
                 'cta.title': 'Lancez-vous dès aujourd\'hui', 'cta.sub': 'Rejoignez les familles qui utilisent Koiny pour motiver leurs enfants au quotidien.',
                 'cta.f1': 'Gratuit à télécharger', 'cta.f2': 'Zéro publicité', 'cta.f3': 'Sans abonnement obligatoire', 'cta.f4': 'Aucune donnée vendue',
                 'cta.note': 'Requiert iOS 15.0 ou ultérieur. iPhone & iPad.',
+                'cta.privacyLink': '🔒 Consulter notre politique de confidentialité',
+                'cta.age': 'Conçu pour les enfants de 6 à 14 ans sous supervision parentale.',
+                'price.disclaimer': '* L\'abonnement Premium se renouvelle automatiquement. Annulable à tout moment via Réglages > Apple ID > Abonnements. L\'essai gratuit de 14 jours se convertit automatiquement en abonnement payant sauf annulation préalable.',
+                'price.termsLink': 'Conditions complètes',
                 'footer.desc': 'L\'argent de poche virtuel qui motive vos enfants. Un simulateur éducatif sûr et amusant.',
                 'footer.disclaimer': '⚠️ Koiny est un simulateur. Aucune transaction financière réelle n\'est effectuée.',
                 'footer.h1': 'Liens utiles', 'footer.privacy': 'Politique de confidentialité', 'footer.terms': 'Conditions d\'utilisation',
                 'footer.h2': 'Application', 'footer.rights': 'Tous droits réservés.', 'footer.privacyShort': 'Confidentialité', 'footer.termsShort': 'CGU',
-                '_badge': 'fr-fr'
+                '_badge': 'fr-fr',
+                '_title': 'Koiny - L\'argent de poche qui éduque vos enfants'
             },
             en: {
                 'nav.features': 'Features', 'nav.how': 'How it works', 'nav.pricing': 'Pricing', 'nav.download': 'Download',
                 'hero.badge': 'Educational App · iOS',
                 'hero.title': 'Pocket money that <span class="accent">truly educates</span>',
-                'hero.sub': 'Koiny gives your children the pride of earning and the habit of saving — while you keep full control.',
+                'hero.sub': 'Koiny gives your children the pride of earning and the habit of saving - while you keep full control.',
                 'hero.cta': 'Download for free', 'hero.see': 'How it works',
                 'hero.t1': 'Parental PIN', 'hero.t2': 'Face ID', 'hero.t3': 'Zero ads',
                 'hero.fc1a': 'Mission done', 'hero.fc1b': '+€2.00', 'hero.fc2a': 'Goal', 'hero.fc2b': '75% reached', 'hero.fc3a': 'Balance', 'hero.fc3b': '€12.50',
@@ -1814,7 +1832,7 @@
                 'why.w2.title': 'Data 100% private', 'why.w2.desc': 'Your data stays on your iPhone. No data sold, no ad tracking.',
                 'why.w3.title': 'Always available', 'why.w3.desc': 'Data is saved locally first. Even if there\'s a network issue, the app keeps working.',
                 'why.w4.title': 'Zero ads', 'why.w4.desc': 'No banners, no marketing notifications, no tracking. A pure experience for the whole family.',
-                'why.w5.title': 'Proven pedagogy', 'why.w5.desc': 'Based on effort-reward and deferred goal principles — recognised methods for developing responsibility in children.',
+                'why.w5.title': 'Proven pedagogy', 'why.w5.desc': 'Based on effort-reward and deferred goal principles - recognised methods for developing responsibility in children.',
                 'why.w6.title': 'Simple to use', 'why.w6.desc': 'Set up in 3 minutes. Clear interface for children from age 6, full dashboard for parents.',
                 'price.badge': 'Pricing', 'price.title': 'Simple and <span class="accent">transparent</span>',
                 'price.desc': 'Start for free. Upgrade to Premium when your family grows.',
@@ -1830,17 +1848,22 @@
                 'cta.title': 'Get started today', 'cta.sub': 'Join the families using Koiny to motivate their children every day.',
                 'cta.f1': 'Free to download', 'cta.f2': 'Zero ads', 'cta.f3': 'No mandatory subscription', 'cta.f4': 'No data sold',
                 'cta.note': 'Requires iOS 15.0 or later. iPhone & iPad.',
+                'cta.privacyLink': '🔒 View our privacy policy',
+                'cta.age': 'Designed for children aged 6 to 14 under parental supervision.',
+                'price.disclaimer': '* Premium subscription auto-renews. Cancel anytime via Settings > Apple ID > Subscriptions. The 14-day free trial automatically converts to a paid subscription unless cancelled.',
+                'price.termsLink': 'Full terms',
                 'footer.desc': 'Virtual pocket money that motivates your kids. A safe and fun educational simulator.',
                 'footer.disclaimer': '⚠️ Koiny is a simulator. No real financial transactions are made.',
                 'footer.h1': 'Useful links', 'footer.privacy': 'Privacy Policy', 'footer.terms': 'Terms of Use',
                 'footer.h2': 'App', 'footer.rights': 'All rights reserved.', 'footer.privacyShort': 'Privacy', 'footer.termsShort': 'Terms',
-                '_badge': 'en-us'
+                '_badge': 'en-us',
+                '_title': 'Koiny - Pocket money that educates your children'
             },
             nl: {
                 'nav.features': 'Functies', 'nav.how': 'Hoe het werkt', 'nav.pricing': 'Prijzen', 'nav.download': 'Downloaden',
                 'hero.badge': 'Educatieve app · iOS',
                 'hero.title': 'Zakgeld dat <span class="accent">echt opvoedt</span>',
-                'hero.sub': 'Koiny geeft je kinderen de trots van verdienen en de gewoonte van sparen — en jij behoudt de volledige controle.',
+                'hero.sub': 'Koiny geeft je kinderen de trots van verdienen en de gewoonte van sparen - en jij behoudt de volledige controle.',
                 'hero.cta': 'Gratis downloaden', 'hero.see': 'Hoe het werkt',
                 'hero.t1': 'Ouderlijke PIN', 'hero.t2': 'Face ID', 'hero.t3': 'Nul advertenties',
                 'hero.fc1a': 'Missie voltooid', 'hero.fc1b': '+€2,00', 'hero.fc2a': 'Doel', 'hero.fc2b': '75% bereikt', 'hero.fc3a': 'Saldo', 'hero.fc3b': '€12,50',
@@ -1874,7 +1897,7 @@
                 'why.w2.title': 'Gegevens 100% privé', 'why.w2.desc': 'Je gegevens blijven op je iPhone. Geen gegevens verkocht, geen advertentietracking.',
                 'why.w3.title': 'Altijd beschikbaar', 'why.w3.desc': 'Gegevens worden lokaal opgeslagen als prioriteit. Zelfs bij een netwerkprobleem blijft de app werken.',
                 'why.w4.title': 'Nul advertenties', 'why.w4.desc': 'Geen banners, geen marketingmeldingen, geen tracking. Een pure ervaring voor het hele gezin.',
-                'why.w5.title': 'Bewezen pedagogiek', 'why.w5.desc': 'Gebaseerd op inspanning-beloning en uitgesteld doel — erkende methoden om verantwoordelijkheid bij kinderen te ontwikkelen.',
+                'why.w5.title': 'Bewezen pedagogiek', 'why.w5.desc': 'Gebaseerd op inspanning-beloning en uitgesteld doel - erkende methoden om verantwoordelijkheid bij kinderen te ontwikkelen.',
                 'why.w6.title': 'Eenvoudig te gebruiken', 'why.w6.desc': 'In 3 minuten ingesteld. Duidelijke interface voor kinderen vanaf 6 jaar, volledig dashboard voor ouders.',
                 'price.badge': 'Prijzen', 'price.title': 'Eenvoudig en <span class="accent">transparant</span>',
                 'price.desc': 'Begin gratis. Upgrade naar Premium als je gezin groeit.',
@@ -1890,11 +1913,16 @@
                 'cta.title': 'Begin vandaag nog', 'cta.sub': 'Sluit je aan bij de gezinnen die Koiny gebruiken om hun kinderen dagelijks te motiveren.',
                 'cta.f1': 'Gratis te downloaden', 'cta.f2': 'Nul advertenties', 'cta.f3': 'Geen verplicht abonnement', 'cta.f4': 'Geen gegevens verkocht',
                 'cta.note': 'Vereist iOS 15.0 of hoger. iPhone & iPad.',
+                'cta.privacyLink': '🔒 Bekijk ons privacybeleid',
+                'cta.age': 'Ontworpen voor kinderen van 6 tot 14 jaar onder ouderlijk toezicht.',
+                'price.disclaimer': '* Premium-abonnement wordt automatisch verlengd. Op elk moment opzegbaar via Instellingen > Apple ID > Abonnementen. De gratis proefperiode van 14 dagen wordt automatisch omgezet in een betaald abonnement tenzij geännuleerd.',
+                'price.termsLink': 'Volledige voorwaarden',
                 'footer.desc': 'Virtueel zakgeld dat je kinderen motiveert. Een veilige en leuke educatieve simulator.',
                 'footer.disclaimer': '⚠️ Koiny is een simulator. Er worden geen echte financiële transacties uitgevoerd.',
                 'footer.h1': 'Nuttige links', 'footer.privacy': 'Privacybeleid', 'footer.terms': 'Gebruiksvoorwaarden',
                 'footer.h2': 'App', 'footer.rights': 'Alle rechten voorbehouden.', 'footer.privacyShort': 'Privacy', 'footer.termsShort': 'Voorwaarden',
-                '_badge': 'nl'
+                '_badge': 'nl',
+                '_title': 'Koiny - Zakgeld dat je kinderen opvoedt'
             }
         };
 
@@ -1910,6 +1938,7 @@
             document.querySelectorAll('[data-i18n-src]').forEach(img => { img.src = img.getAttribute('data-i18n-src').replace('{lang}', l); });
             document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-lang') === l));
             document.documentElement.lang = l;
+            if (t._title) document.title = t._title;
         }
 
         // Nav scroll effect

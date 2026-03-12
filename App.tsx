@@ -43,6 +43,7 @@ const App: React.FC = () => {
   const prevChildrenRef = React.useRef<ChildProfile[]>([]);
 
   const isInitializing = React.useRef(false);
+  const pendingSessionRef = React.useRef<any>(null);
 
   // Securité : Forcer la fin du chargement après 15s quoi qu'il arrive
   useEffect(() => {
@@ -52,7 +53,7 @@ const App: React.FC = () => {
         setLoading(false);
         isInitializing.current = false;
         SplashScreen.hide();
-      }, 5000);
+      }, 15000);
       return () => clearTimeout(timer);
     }
   }, [loading]);
@@ -101,7 +102,8 @@ const App: React.FC = () => {
     }
 
     if (isInitializing.current) {
-      console.log('⏳ [INIT] Déjà en cours, on attend...');
+      console.log('⏳ [INIT] Déjà en cours, session mise en attente...');
+      if (session) pendingSessionRef.current = session;
       return;
     }
     isInitializing.current = true;
@@ -150,13 +152,15 @@ const App: React.FC = () => {
       const email = session?.user?.email || 'Invité';
       console.log('🔄 [INIT] Chargement pour:', email);
 
-      if (session?.user) {
-        console.log('🔐 [INIT] Vérification du profil...');
-        await ensureUserProfile(session.user.id);
-      }
-
       console.log('📦 [INIT] Chargement des données cloud en arrière-plan...');
-      const result = await loadData();
+      const result = await loadData(session?.user?.id);
+
+      // Profile check AFTER loadData to avoid concurrent auth lock contention
+      if (session?.user) {
+        ensureUserProfile(session.user.id).catch(e =>
+          console.warn('⚠️ [INIT] Profile check failed (non-blocking):', e?.message)
+        );
+      }
 
       const cloudData = result.data || INITIAL_DATA;
       setData({
@@ -191,6 +195,13 @@ const App: React.FC = () => {
       setLoading(false);
       isInitializing.current = false;
       SplashScreen.hide();
+      // Traiter la session en attente (ex: deep link OAuth arrivé pendant l'init)
+      const pending = pendingSessionRef.current;
+      if (pending) {
+        pendingSessionRef.current = null;
+        console.log('🔄 [INIT] Traitement de la session OAuth en attente...');
+        setTimeout(() => initialize(pending), 0);
+      }
     }
   }, []);
 
@@ -327,6 +338,12 @@ const App: React.FC = () => {
     CapApp.addListener('appUrlOpen', async (event: any) => {
       console.log('🔗 [DEEP LINK] Ouvert avec:', event.url);
 
+      // Fermer le browser immédiatement dès le retour du callback OAuth
+      // (évite la page blanche quand iOS intercepte le custom scheme avant le SFSafariViewController)
+      if (event.url.includes('com.koiny.app://callback')) {
+        Browser.close().catch(() => {});
+      }
+
       const supabase = getSupabase();
       if (!supabase) return;
 
@@ -341,8 +358,11 @@ const App: React.FC = () => {
             console.error('❌ [DEEP LINK] Erreur exchangeCodeForSession:', error.message);
           } else {
             console.log('✅ [DEEP LINK] Session PKCE établie pour:', sessionData.session?.user?.email);
-            await Browser.close();
-            if (sessionData.session) await initialize(sessionData.session);
+            if (sessionData.session) {
+              // Attendre que le WebProcess récupère son réseau après le freeze du browser
+              await new Promise(r => setTimeout(r, 2000));
+              await initialize(sessionData.session);
+            }
           }
         } catch (e: any) {
           console.error('❌ [DEEP LINK] Exception PKCE:', e.message);
@@ -368,8 +388,11 @@ const App: React.FC = () => {
                 console.error('❌ [DEEP LINK] Erreur setSession:', error.message);
               } else {
                 console.log('✅ [DEEP LINK] Session implicite établie pour:', sessionData.session?.user?.email);
-                await Browser.close();
-                if (sessionData.session) await initialize(sessionData.session);
+                if (sessionData.session) {
+                  // Attendre que le WebProcess récupère son réseau après le freeze du browser
+                  await new Promise(r => setTimeout(r, 2000));
+                  await initialize(sessionData.session);
+                }
               }
             } catch (e: any) {
               console.error('❌ [DEEP LINK] Exception setSession:', e.message);
@@ -397,7 +420,8 @@ const App: React.FC = () => {
     }
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        // Handles both null (no session) and valid session
         await initialize(session);
       } else if (event === 'SIGNED_OUT') {
         setView('LANDING');
@@ -405,13 +429,6 @@ const App: React.FC = () => {
         setOwnerId(undefined);
       }
     });
-
-    const runInit = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      await initialize(session);
-    };
-
-    runInit();
 
     return () => {
       authListener?.subscription.unsubscribe();
@@ -426,8 +443,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const runSave = async () => {
-      // Bloquer la sauvegarde si on vient de recharger depuis Realtime, opération directe ou déjà en cours
-      if (isSavingRef.current || isReloadingFromRealtime.current || isDirectSupabaseOperation.current) {
+      // Bloquer la sauvegarde si on vient de recharger depuis Realtime, opération directe, en cours d'init ou déjà en cours
+      if (isSavingRef.current || isReloadingFromRealtime.current || isDirectSupabaseOperation.current || isInitializing.current) {
         console.log('🛑 [APP] Save blocked');
         return;
       }
@@ -1012,8 +1029,8 @@ const App: React.FC = () => {
       saveData(demoData, 'demo');
     } else {
       const result = await loadData();
-      setData(result.data || INITIAL_DATA);
-      setOwnerId(result.ownerId);
+    setData(result.data || INITIAL_DATA);
+    setOwnerId(result.ownerId);
     }
     setLoading(false);
     setView('LOGIN');

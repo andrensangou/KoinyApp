@@ -504,6 +504,20 @@
             });
             // Update html lang
             document.documentElement.lang = lang === 'en' ? 'en' : lang === 'nl' ? 'nl' : 'fr';
+            // Update page title and meta description
+            const pageTitles = {
+                fr: 'Koiny — L\'argent de poche virtuel qui motive vos enfants',
+                en: 'Koiny — The virtual pocket money that motivates your kids',
+                nl: 'Koiny — Het virtuele zakgeld dat uw kinderen motiveert',
+            };
+            const pageDescs = {
+                fr: 'Missions, épargne & fun pour toute la famille.',
+                en: 'Missions, savings & fun for the whole family.',
+                nl: 'Missies, sparen & plezier voor het hele gezin.',
+            };
+            document.title = pageTitles[lang] || pageTitles.fr;
+            const metaDesc = document.querySelector('meta[name="description"]');
+            if (metaDesc) metaDesc.setAttribute('content', pageDescs[lang] || pageDescs.fr);
         }
 
         // Smooth scroll
