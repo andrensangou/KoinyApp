@@ -24,6 +24,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Network } from '@capacitor/network';
 
 type ViewState = 'LANDING' | 'AUTH' | 'LOGIN' | 'CHILD' | 'PARENT';
 
@@ -59,7 +60,7 @@ const App: React.FC = () => {
     }
   }, [loading]);
 
-  // Détection connexion via navigator.onLine + events natifs + polling
+  // Détection connexion via navigator.onLine + Capacitor Network + events natifs
   useEffect(() => {
     const handleOnline = () => {
       setIsOfflineMode(false);
@@ -78,16 +79,34 @@ const App: React.FC = () => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // ⭐ Polling pour déterminer si offline (mode avion, perte de connexion progressive, etc)
-    // Certains appareils/navigateurs ne déclenchent pas 'offline' event
-    const pollInterval = setInterval(() => {
-      setIsOfflineMode(!navigator.onLine);
-    }, 3000);
+    // ⭐ Utiliser Capacitor Network sur native (détecte mode avion iOS)
+    const initCapacitorNetworkListener = async () => {
+      if (!Capacitor.isNativePlatform()) return;
+      try {
+        // Vérifier l'état initial via Capacitor
+        const status = await Network.getStatus();
+        setIsOfflineMode(!status.connected);
+
+        // Écouter les changements de connexion
+        const unsubscribe = Network.addListener('networkStatusChange', (status) => {
+          setIsOfflineMode(!status.connected);
+        });
+        return unsubscribe;
+      } catch (error) {
+        console.warn('[Network] Erreur Capacitor Network:', error);
+        return undefined;
+      }
+    };
+
+    let unsubscribeNetwork: (() => void) | undefined;
+    initCapacitorNetworkListener().then(unsub => {
+      unsubscribeNetwork = unsub?.remove;
+    });
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      clearInterval(pollInterval);
+      if (unsubscribeNetwork) unsubscribeNetwork();
     };
   }, []);
 
