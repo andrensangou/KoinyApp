@@ -132,7 +132,13 @@ const t = translations[data.language || 'fr'];
   - Tous les boutons d'achat grisés (opacity-60, cursor-not-allowed)
   - Bouton "Restaurer mes achats" aussi désactivé en offline
   - Traductions: FR/NL/EN
-- **Code:** SubscriptionModal.tsx lines 168-178 (banner), 190 (isDisabled), 196-199 (styling)
+- **Détection offline (App.tsx):**
+  - Event listeners: 'online' et 'offline'
+  - Polling: vérifie `navigator.onLine` toutes les 3s (capture mode avion iOS, etc.)
+  - setIsOfflineMode mis à jour dynamiquement
+- **Code:**
+  - SubscriptionModal.tsx lines 168-178 (banner), 190 (isDisabled), 196-199 (styling)
+  - App.tsx lines 62-90 (detection + polling)
 
 ## Build exclusions
 

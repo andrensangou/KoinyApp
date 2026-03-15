@@ -59,7 +59,7 @@ const App: React.FC = () => {
     }
   }, [loading]);
 
-  // Détection connexion via navigator.onLine + events natifs
+  // Détection connexion via navigator.onLine + events natifs + polling
   useEffect(() => {
     const handleOnline = () => {
       setIsOfflineMode(false);
@@ -78,9 +78,16 @@ const App: React.FC = () => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // ⭐ Polling pour déterminer si offline (mode avion, perte de connexion progressive, etc)
+    // Certains appareils/navigateurs ne déclenchent pas 'offline' event
+    const pollInterval = setInterval(() => {
+      setIsOfflineMode(!navigator.onLine);
+    }, 3000);
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      clearInterval(pollInterval);
     };
   }, []);
 
