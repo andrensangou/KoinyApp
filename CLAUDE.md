@@ -16,6 +16,7 @@ Koiny est une app mobile iOS d'education financiere pour enfants 6-14 ans. Stack
 - Oublier `isDirectSupabaseOperation.current = true` lors d'operations DB directes
 - Utiliser autre chose que `crypto.randomUUID()` pour les nouveaux IDs
 - Modifier `components/ParentView.tsx` (2500+ lignes) sans precaution
+- Hardcoder des clés API ou secrets dans le code source (utiliser `.env`)
 
 ### TOUJOURS
 - `updatedAt: new Date().toISOString()` a chaque modification du state
@@ -23,6 +24,9 @@ Koiny est une app mobile iOS d'education financiere pour enfants 6-14 ans. Stack
 - Passer par `updateChild(childId, updater)` pour modifier un enfant
 - Utiliser `setData(prev => ({ ...prev, updatedAt: ..., ... }))` (immutable update)
 - Tester en mode offline
+- Valider les inputs (longueur, type, NaN check sur parseFloat)
+- Utiliser le logger sécurisé (`services/logger.ts`) au lieu de `console.log` pour les données sensibles
+- Faire `npm run build && npx cap sync ios` après chaque modification avant test Xcode
 
 ## Commandes
 
@@ -34,6 +38,7 @@ npx cap open ios     # Ouvrir Xcode
 ```
 
 Note: le build necessite `NODE_OPTIONS=--max_old_space_size=4096` sur machine 8GB RAM.
+Build prend ~24 minutes sur cette machine.
 
 ## Fichiers cles
 
@@ -51,6 +56,9 @@ Note: le build necessite `NODE_OPTIONS=--max_old_space_size=4096` sur machine 8G
 | `services/notifications.ts` | Notifications locales |
 | `services/realtime.ts` | Supabase Realtime |
 | `services/widgetBridge.ts` | Bridge JS -> iOS Widget |
+| `services/logger.ts` | Logger sécurisé avec anonymisation |
+| `services/security.ts` | PBKDF2 PIN hashing (100k iterations, SHA-512) |
+| `config.ts` | Validation des credentials au startup |
 
 ## Architecture sync
 
@@ -93,53 +101,70 @@ const t = translations[data.language || 'fr'];
 **Produits & Entitlement:**
 - Produits: `com.koiny.premium.monthly` (1,99€/mois) et `com.koiny.premium.yearly` (16,99€/an)
 - Entitlement ID dans RevenueCat: **`'Koiny Premium'`** (maj/espace importants)
+- Clé API dans `.env` (VITE_REVENUECAT_API_KEY)
 
 **Stockage local premium:**
 - localStorage key: `'koiny_premium_active'` (valeur: `'true'` ou absent)
 - Toujours lu par `migrateData(cloudData)` dans `services/storage.ts`
 
-**Points importants (implémentation 15/03/2026):**
-
-**Entitlement ID (14/03):**
-- Changé de `'premium'` à `'Koiny Premium'` (maj/espace CRITIQUES)
-- Tous les checks RevenueCat utilisent cet ID exact
-
-**Fallback Xcode Sandbox (15/03):**
+**Fallback Xcode Sandbox:**
 1. `purchaseSubscription()`: check `activeSubscriptions` si entitlements.active vide
 2. `getSubscriptionStatus()`: retourne aussi `productId` du fallback pour UI
 3. `restorePurchases()`: même fallback pattern que purchase
 
 **État du premium (App.tsx):**
-- Line 129-131: Lire `koiny_premium_active` au démarrage avant setData() pour éviter flash couronne
-- Line 186: Utiliser `setData(prev => ...)` NOT mutation pour isPremium
-- Line 1166: Inclure `updatedAt` dans handleSetPremium pour persister en Supabase
+- Lire `koiny_premium_active` au démarrage avant setData() pour éviter flash couronne
+- Utiliser `setData(prev => ...)` NOT mutation pour isPremium
+- Inclure `updatedAt` dans handleSetPremium pour persister en Supabase
 
-**SubscriptionModal UX (15/03):**
+**SubscriptionModal UX:**
 - Affiche abonnement actif avec badge vert "Actif"
-- Bouton désactivé visuellement pour abonnement actuel (cursor-default, pas de hover)
+- Bouton désactivé visuellement pour abonnement actuel
 - Badge "💰 Économies 30%" pour plan annuel
+- Bouton "Gérer mon abonnement" → ouvre Apple subscriptions management
 - getSubscriptionStatus() retourne `productId` pour matching
 
 **Supabase:**
 - Ne sauvegarde PAS `isPremium` directement
 - Dérivé de localStorage ou RevenueCat à chaque startup
 
-**Offline Mode (15/03 - IMPLEMENTED):**
-- **Comportement:** Modal d'abonnement reste ouvert en offline (voir les plans), mais achats disabled
-- **Implémentation:**
-  - `isOfflineMode` passé depuis ParentView.tsx → SubscriptionModal.tsx
-  - Affiche banneau rouge: "Vous êtes hors ligne. Les achats sont désactivés."
-  - Tous les boutons d'achat grisés (opacity-60, cursor-not-allowed)
-  - Bouton "Restaurer mes achats" aussi désactivé en offline
-  - Traductions: FR/NL/EN
-- **Détection offline (App.tsx - IMPROVED 15/03 v2):**
-  - Event listeners: 'online' et 'offline' (web)
-  - Capacitor Network plugin: détecte mode avion iOS & changements réseau natifs
-  - Fallback navigator.onLine si Capacitor indisponible
-  - setIsOfflineMode mis à jour dynamiquement
-- **Code:**
-  - SubscriptionModal.tsx lines 168-178 (banner), 190 (isDisabled), 196-199 (styling)
-  - App.tsx lines 27 (import Network), 63-108 (Capacitor + events detection)
+**Offline Mode:**
+- Modal reste ouvert en offline (voir les plans), mais achats disabled
+- `isOfflineMode` passé depuis ParentView.tsx → SubscriptionModal.tsx
+- Banneau rouge + boutons grisés (opacity-60, cursor-not-allowed)
+- Détection: Capacitor Network plugin + events 'online'/'offline' + navigator.onLine
+
+## Sécurité
+
+### Points forts
+- PIN hashé PBKDF2 (100k itérations, SHA-512, salt aléatoire 128-bit)
+- Comparaison timing-safe pour les PIN
+- HTTPS forcé pour Supabase (validé dans config.ts)
+- Logger avec anonymisation automatique (userId, email, token)
+- Balance plafonnée à MAX_BALANCE (100€)
+- Session via Capacitor Preferences (pas localStorage pour les tokens)
+
+### Points à surveiller
+- **Premium spoofable:** localStorage `koiny_premium_active` modifiable côté client
+  - Mitigation: Vérifier RLS Supabase + refresh RevenueCat périodique
+- **Clés API:** Doivent être dans `.env`, JAMAIS hardcodées
+- **Input validation:** Toujours valider longueur + isNaN sur parseFloat
+- **Console logs:** Utiliser `services/logger.ts` pour données sensibles
+- **RLS Supabase:** Vérifier que toutes les tables ont des policies activées
+
+## TestFlight
+
+**Workflow de déploiement:**
+1. `npm run build` (~24 min)
+2. `npx cap sync ios`
+3. Xcode: Product > Archive
+4. Organizer: Distribute App > App Store Connect
+5. App Store Connect: TestFlight > Créer groupe externe > Soumettre pour review
+
+**Notes:**
+- Les abonnements en TestFlight sont en mode Sandbox (gratuit pour testeurs)
+- Review Apple pour tests externes: 24-48h
+- Build 1.0.0 (1) uploadé le 15/03/2026
 
 ## Build exclusions
 
