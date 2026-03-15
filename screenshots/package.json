@@ -1,0 +1,35 @@
+{
+  "name": "koiny-screenshots",
+  "version": "1.0.0",
+  "description": "App Store screenshots generator for Koiny",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "export": "node lib/exportScreenshots.js"
+  },
+  "keywords": [
+    "koiny",
+    "app-store",
+    "screenshots"
+  ],
+  "author": "Koiny Team",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "autoprefixer": "^10.4.27",
+    "html-to-image": "^1.11.13",
+    "jszip": "^3.10.1",
+    "next": "^16.1.6",
+    "postcss": "^8.5.8",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3"
+  }
+}

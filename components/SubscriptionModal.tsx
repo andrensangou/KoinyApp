@@ -20,6 +20,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionState>({ isSubscribed: false });
   const [successMessage, setSuccessMessage] = useState<string>('');
+  const [isRestoring, setIsRestoring] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -54,19 +55,36 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     try {
       const success = await subscriptionService.purchaseSubscription(productId);
       if (success) {
-        // Afficher un message de succès
-        setSuccessMessage('✅ Abonnement activé! Merci!');
+        setSuccessMessage('✅');
+        setTimeout(() => {
+          onSubscribed();
+          onClose();
+        }, 2000);
+      } else {
+        // Achat annulé par l'utilisateur — pas d'erreur
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Erreur achat:', error);
+      setIsLoading(false);
+    }
+  };
 
-        // Attendre 2 secondes avant de fermer
+  const handleRestore = async () => {
+    setIsRestoring(true);
+    try {
+      const restored = await subscriptionService.restorePurchases();
+      if (restored) {
+        setSuccessMessage('✅');
         setTimeout(() => {
           onSubscribed();
           onClose();
         }, 2000);
       }
     } catch (error) {
-      console.error('Erreur achat:', error);
-      alert('Erreur lors de l\'achat. Veuillez réessayer.');
-      setIsLoading(false);
+      console.error('Erreur restauration:', error);
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -155,35 +173,75 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </div>
             </div>
           ) : (
-            products.map(product => (
-              <button
-                key={product.id}
-                onClick={() => handlePurchase(product.id)}
-                disabled={isLoading}
-                className="w-full p-4 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 hover:border-indigo-600 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all text-left group"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                      {product.id.includes('monthly') ? t.parent.premium.monthlyTitle : t.parent.premium.yearlyTitle}
-                    </h4>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                      {product.id.includes('monthly') ? t.parent.premium.monthlyDesc : t.parent.premium.yearlyDesc}
-                    </p>
+            products.map(product => {
+              const isCurrentSubscription = subscriptionStatus.productId === product.id;
+              const isDisabled = isLoading || isCurrentSubscription;
+
+              return (
+                <button
+                  key={product.id}
+                  onClick={() => !isCurrentSubscription && handlePurchase(product.id)}
+                  disabled={isDisabled}
+                  className={`w-full p-4 rounded-2xl border-2 transition-all text-left group ${
+                    isCurrentSubscription
+                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20 dark:border-green-600 cursor-default'
+                      : 'border-indigo-200 dark:border-indigo-800 hover:border-indigo-600 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className={`font-bold ${
+                          isCurrentSubscription
+                            ? 'text-green-700 dark:text-green-400'
+                            : 'text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
+                        }`}>
+                          {product.id.includes('monthly') ? t.parent.premium.monthlyTitle : t.parent.premium.yearlyTitle}
+                        </h4>
+                        {isCurrentSubscription && (
+                          <span className="text-xs font-bold px-2 py-1 rounded-full bg-green-500 text-white">
+                            {language === 'fr' ? 'Actif' : (language === 'nl' ? 'Actief' : 'Active')}
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-sm mt-1 ${
+                        isCurrentSubscription
+                          ? 'text-green-600 dark:text-green-300'
+                          : 'text-slate-600 dark:text-slate-400'
+                      }`}>
+                        {product.id.includes('monthly') ? t.parent.premium.monthlyDesc : t.parent.premium.yearlyDesc}
+                      </p>
+                    </div>
+                    <span className={`text-lg font-bold ${
+                      isCurrentSubscription
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-indigo-600 dark:text-indigo-400'
+                    }`}>
+                      {product.price}
+                    </span>
                   </div>
-                  <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                    {product.id.includes('monthly') ? t.parent.premium.monthlyPrice : t.parent.premium.yearlyPrice}
-                  </span>
-                </div>
-                {product.duration === 'year' && (
-                  <div className="mt-2 inline-block bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold px-2 py-1 rounded-full">
-                    {language === 'fr' ? '💰 Économies 30%' : (language === 'nl' ? '💰 Bespaar 30%' : '💰 Save 30%')}
-                  </div>
-                )}
-              </button>
-            ))
+                  {product.duration === 'year' && (
+                    <div className="mt-2 inline-block bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold px-2 py-1 rounded-full">
+                      {language === 'fr' ? '💰 Économies 30%' : (language === 'nl' ? '💰 Bespaar 30%' : '💰 Save 30%')}
+                    </div>
+                  )}
+                </button>
+              );
+            })
           )}
         </div>
+
+        {/* Restore Purchases Button */}
+        <button
+          onClick={handleRestore}
+          disabled={isRestoring}
+          className="w-full py-3 text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline transition-colors mb-4"
+        >
+          {isRestoring ? (
+            <i className="fa-solid fa-spinner animate-spin mr-2"></i>
+          ) : null}
+          {language === 'fr' ? 'Restaurer mes achats' : (language === 'nl' ? 'Mijn aankopen herstellen' : 'Restore my purchases')}
+        </button>
 
         {/* Footer */}
         <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl mb-4">

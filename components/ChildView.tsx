@@ -298,17 +298,23 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                   {data.history && data.history.length > 0 ? data.history.map(entry => {
                     const neg = entry.amount < 0 || isPenalty(entry.title) || isPurchase(entry.title);
                     return (
-                      <div key={entry.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all group">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm shadow-sm transition-transform group-hover:scale-110 ${neg ? 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
+                      <div key={entry.id} className="flex items-start justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all group">
+                        <div className="flex items-start gap-4 flex-1 pr-3">
+                          <div className={`w-10 h-10 rounded-xl flex shrink-0 items-center justify-center text-sm shadow-sm transition-transform group-hover:scale-110 ${neg ? 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
                             <i className={`fa-solid ${getEntryIcon(entry.title)}`}></i>
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <p className="text-sm font-black text-slate-800 dark:text-white tracking-tight">{getTranslatedTitle(entry.title, language)}</p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{entry.date}</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest leading-none mt-0.5">{entry.date}</p>
+                            {entry.note && !isPenalty(entry.title) && (
+                              <div className="mt-2 flex items-start gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1.5 rounded-xl border border-amber-100/50 dark:border-amber-800/30">
+                                <span className="text-xs">💬</span>
+                                <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 leading-snug break-words">{entry.note}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <span className={`font-black text-sm tabular-nums ${neg ? 'text-rose-500' : 'text-emerald-500'}`}>
+                        <span className={`font-black text-sm tabular-nums shrink-0 mt-1 ${neg ? 'text-rose-500' : 'text-emerald-500'}`}>
                           {neg ? '-' : '+'}{Math.abs(entry.amount).toFixed(2)}€
                         </span>
                       </div>

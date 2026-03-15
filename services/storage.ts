@@ -142,7 +142,24 @@ const migrateData = (data: any): GlobalState => {
     children: children.map((c: any) => ({
       ...c,
       balance: typeof c.balance === 'number' ? c.balance : 0,
-      goals: Array.isArray(c.goals) ? c.goals : [],
+      goals: (() => {
+        const goals = Array.isArray(c.goals) ? c.goals : [];
+        // Dédupliquer par nom+montant (signature), préférer les UUIDs
+        const seen = new Map<string, any>();
+        const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        for (const g of goals) {
+          const sig = `${g.name || ''}:${g.target || 0}`;
+          const existing = seen.get(sig);
+          if (!existing) {
+            seen.set(sig, g);
+          } else if (!isUUID(existing.id) && isUUID(g.id)) {
+            // Prefer the UUID version
+            seen.set(sig, g);
+          }
+          // else: already have a UUID version or same ID, skip duplicate
+        }
+        return Array.from(seen.values());
+      })(),
       missions: Array.isArray(c.missions) ? c.missions : [],
       history: Array.isArray(c.history) ? c.history : [],
       tutorialSeen: !!c.tutorialSeen
@@ -199,8 +216,18 @@ const mergeChildProfile = (local: any, cloud: any): any => {
   });
 
   const goalsMap = new Map();
-  [...local.goals, ...cloud.goals].forEach((goal: any) => {
-    goalsMap.set(goal.id, goal);
+  // Dédupliquer les goals par ID ET par nom+montant (anti-doublon cross-ID)
+  const goalSignatureMap = new Map<string, boolean>();
+  [...cloud.goals, ...local.goals].forEach((goal: any) => {
+    const signature = `${goal.name || goal.title || ''}:${goal.target || 0}`;
+    if (!goalsMap.has(goal.id) && !goalSignatureMap.has(signature)) {
+      goalsMap.set(goal.id, goal);
+      goalSignatureMap.set(signature, true);
+    } else if (goalsMap.has(goal.id)) {
+      // Mettre à jour si même ID (garder le plus récent)
+      goalsMap.set(goal.id, goal);
+    }
+    // Si signature déjà vue mais ID différent → doublon, on skip
   });
 
   // Prendre les propriétés du plus récent
@@ -322,22 +349,48 @@ export const saveData = async (data: GlobalState, ownerId?: string, immediate?: 
     }
   }
 
-  // 4. Synchronisation cloud (non-bloquant, async)
+  // 4. Synchronisation cloud (AWAITED pour récupérer les idMappings)
   if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
-    (async () => {
-      try {
-        console.log('☁️ [STORAGE] Synchronisation cloud en cours...');
-        const result = await saveToSupabase(ownerId, dataToSave);
-        if (result?.success) {
-          console.log('✅ [STORAGE] Sync cloud réussi');
-          if (result?.idMapping) changes = result.idMapping;
-        } else {
-          console.warn('⚠️ [STORAGE] Sync cloud échouée, mais données locales sauvegardées');
+    try {
+      console.log('☁️ [STORAGE] Synchronisation cloud en cours...');
+      const syncPromise = saveToSupabase(ownerId, dataToSave);
+      const syncTimeout = new Promise<{ success: boolean, idMapping: Record<string, string> }>((resolve) =>
+        setTimeout(() => resolve({ success: false, idMapping: {} }), 10000)
+      );
+      const result = await Promise.race([syncPromise, syncTimeout]);
+      if (result?.success) {
+        console.log('✅ [STORAGE] Sync cloud réussi');
+        if (result?.idMapping && Object.keys(result.idMapping).length > 0) {
+          changes = result.idMapping;
+          // ✅ Mettre à jour le cache local avec les nouveaux IDs pour éviter les doublons
+          const updatedData = {
+            ...dataToSave,
+            children: dataToSave.children.map(c => ({
+              ...c,
+              id: changes[c.id] || c.id,
+              goals: c.goals.map((g: any) => ({
+                ...g,
+                id: changes[g.id] || g.id
+              })),
+              missions: c.missions.map((m: any) => ({
+                ...m,
+                id: changes[m.id] || m.id
+              })),
+              history: c.history.map((h: any) => ({
+                ...h,
+                id: changes[h.id] || h.id
+              }))
+            }))
+          };
+          await persistentStorage.set(STORAGE_KEY, JSON.stringify(updatedData));
+          console.log('✅ [STORAGE] Cache local mis à jour avec les nouveaux IDs cloud');
         }
-      } catch (e) {
-        console.warn('⚠️ [STORAGE] Erreur synchronisation cloud (offline?):', e instanceof Error ? e.message : e);
+      } else {
+        console.warn('⚠️ [STORAGE] Sync cloud échouée ou timeout, mais données locales sauvegardées');
       }
-    })();
+    } catch (e) {
+      console.warn('⚠️ [STORAGE] Erreur synchronisation cloud (offline?):', e instanceof Error ? e.message : e);
+    }
   }
 
   return changes;

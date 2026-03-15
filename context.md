@@ -1,428 +1,420 @@
-# 🏦 KOINY — Context IA
+# KOINY — Context IA (v3.0 · Mars 2026)
 
-> **Ce fichier est la source de vérité pour tout assistant IA travaillant sur ce projet.**
-> Dernière mise à jour : Mars 2026 · Version 2.0.0
-
----
-
-## 1. Vision Produit
-
-**Koiny** est une application mobile iOS (+ web) d'**éducation financière gamifiée pour familles**. Elle permet aux parents de transformer des tâches quotidiennes en « missions » rémunérées en **argent 100 % virtuel**, enseignant aux enfants (6-14 ans) la corrélation effort / gain et les bases de l'épargne.
-
-### Principes Fondamentaux
-- **Zero Real Money** : Aucun lien bancaire. Simulateur pur, zéro risque financier.
-- **Local-First / Offline-Friendly** : L'UI se met à jour instantanément (optimistic updates), le cloud sync est non-bloquant.
-- **Privacy-First** : Pas de revente de données, RGPD-ready, isolation stricte par famille (RLS Supabase).
-- **Gamification Cognitive** : Confettis, animations de solde, retours haptiques, badges parent.
-
-### Modèle Économique
-- **Freemium** : Gratuit limité (1 enfant, 2 missions, 1 objectif) + **Premium** (1,99€/mois ou 16,99€/an) = enfants illimités, missions illimitées, stats.
-- In-App Purchase via StoreKit 2 (préparé, pas encore actif avec RevenueCat).
+> Source de vérité pour tout assistant IA travaillant sur ce projet.
 
 ---
 
-## 2. Stack Technique
+## RÈGLES CRITIQUES (lire en premier)
 
-| Couche | Technologie | Version |
+**JAMAIS :**
+- Écraser `pin_hash` avec `null` dans Supabase (géré exclusivement par `services/pinStorage.ts`)
+- Bloquer l'UI en attendant un appel réseau (toujours optimistic UI d'abord)
+- Créer enfant/mission sans vérifier l'existence préalable (risque doublons)
+- Oublier `isDirectSupabaseOperation.current = true` lors d'opérations DB directes
+- Modifier `ParentView.tsx` sans précaution (2526 lignes, très dense)
+- Utiliser autre chose que `crypto.randomUUID()` pour les nouveaux IDs
+
+**TOUJOURS :**
+- Mettre à jour `updatedAt: new Date().toISOString()` à chaque modification du state
+- Supporter les 3 langues (fr/nl/en) pour tout nouveau texte dans `i18n.ts`
+- Passer par `updateChild(childId, updater)` pour modifier un enfant (force immediateSave + updatedAt)
+- Utiliser `setData(prev => ({ ...prev, updatedAt: ..., children: ... }))` (immutable update)
+- Tester en mode offline (couper réseau)
+
+---
+
+## Stack
+
+| Couche | Techno | Version |
 |---|---|---|
-| **Langage** | TypeScript (strict) | ^5.2 |
-| **Frontend** | React | ^18.3 |
-| **Build** | Vite | ^7.3 |
-| **Styling** | Tailwind CSS | ^3.4 |
-| **Font** | Poppins (Google Fonts) | — |
-| **Icônes** | FontAwesome 6 (CDN) | 6.4 |
-| **Mobile Runtime** | Capacitor | ^8.0 |
-| **Backend / DB** | Supabase (PostgreSQL, Auth, Realtime, RLS) | ^2.95 |
-| **Auth** | Google OAuth (natif SDK iOS+Android) + Apple Sign-In (natif ASAuth) | — |
-| **Crash Reporting** | Sentry (`@sentry/capacitor` + `@sentry/react`) | ^3.0 / 10.40 |
-| **Charts** | Recharts | ^2.12 |
-| **Virtualisation** | @tanstack/react-virtual | ^3.13 |
-| **Animations** | canvas-confetti + Tailwind keyframes custom | — |
-| **Tests** | Vitest | ^4.0 |
+| Langage | TypeScript strict | ^5.2 |
+| Frontend | React | ^18.3 |
+| Build | Vite | ^7.3 |
+| Styling | Tailwind CSS | ^3.4 |
+| Mobile | Capacitor | ^8.0 |
+| Backend | Supabase (PostgreSQL + Auth + Realtime + RLS) | ^2.95 |
+| Auth | Google OAuth natif + Apple Sign-In natif | — |
+| Crash | Sentry (`@sentry/capacitor` + `@sentry/react`) | ^3.0 |
+| Charts | Recharts | ^2.12 |
+| Virtualisation | @tanstack/react-virtual | ^3.13 |
+| Tests | Vitest | ^4.0 |
 
-### Commandes Principales
 ```bash
-npm run dev        # Serveur Vite (dev web)
-npm run build      # tsc && vite build → dist/
-npx cap sync ios   # Sync build web vers projet Xcode
-npx cap open ios   # Ouvrir dans Xcode
-```
-
-### Variables d'Environnement (`.env`)
-```
-VITE_SUPABASE_URL=https://xxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJxxx...
-VITE_SENTRY_DSN=https://xxx@sentry.io/xxx   # optionnel
-VITE_KIDBANK_SALT=koiny-local-salt-2024      # fallback existant
-VITE_IS_LOCAL=true                           # optionnel, mode debug
+npm run dev        # Dev web
+npm run build      # tsc + vite build → dist/
+npx cap sync ios   # Sync vers Xcode
+npx cap open ios   # Ouvrir Xcode
 ```
 
 ---
 
-## 3. Architecture des Fichiers
+## Fichiers Clés
 
-```
-KoinyLocal/
-├── App.tsx                    # 🧠 Composant racine (~1170 lignes)
-│                              #    - State global (GlobalState)
-│                              #    - Routing (ViewState enum)
-│                              #    - Toute la logique métier (handlers)
-│                              #    - Sync Supabase (optimistic + background)
-│                              #    - Deep linking OAuth, notifs, offline
-├── index.tsx                  # Point d'entrée React + Service Worker
-├── index.html                 # HTML avec CSP stricte, dark mode, PWA meta
-├── index.css                  # Styles de base
-├── types.ts                   # 📦 Interfaces TypeScript centrales
-├── config.ts                  # Config (Supabase URL/Key, validation)
-├── i18n.ts                    # 🌐 Traductions FR/NL/EN (~1063 lignes)
-│
-├── components/                # 🎨 Composants UI
-│   ├── AuthView.tsx           # Écran connexion (Google/Apple/Email)
-│   ├── OnboardingView.tsx     # Onboarding première ouverture
-│   ├── LoginView.tsx          # Sélection profil enfant + accès parent
-│   ├── ChildView.tsx          # Interface enfant (balance, missions, goals)
-│   ├── ParentView.tsx         # 📊 Dashboard parent (~150KB, le plus gros)
-│   │                          #    - Multi-onglets (Enfants, Dashboard, Historique, etc.)
-│   │                          #    - Gestion missions, transactions, goals
-│   │                          #    - Co-parentalité, invitations, PIN
-│   │                          #    - Réglages, premium, export RGPD
-│   ├── LandingView.tsx        # Landing page marketing
-│   ├── SubscriptionModal.tsx  # Modal premium/abonnement
-│   ├── ConfirmDialog.tsx      # Dialog de confirmation réutilisable
-│   ├── AlertBanner.tsx        # Bannière alertes système
-│   ├── BottomNavigation.tsx   # Navigation tabs mobile
-│   ├── ErrorBoundary.tsx      # Error boundary React
-│   ├── HelpModal.tsx          # Guide utilisateur in-app
-│   ├── HistoryChart.tsx       # Graphique Recharts
-│   ├── LegalModal.tsx         # Modal mentions légales
-│   ├── OfflineIndicator.tsx   # Indicateur mode hors-ligne
-│   ├── TutorialOverlay.tsx    # Overlay tutoriel interactif
-│   └── VirtualHistoryList.tsx # Liste virtualisée (react-virtual)
-│
-├── services/                  # ⚙️ Couche Services
-│   ├── supabase.ts            # Client Supabase, Auth (Google/Apple), CRUD V2
-│   │                          #   - loadFromSupabase() : schéma relationnel → GlobalState
-│   │                          #   - saveToSupabase() : GlobalState → tables relationnelles
-│   │                          #   - withRetry() : retry exponentiel réseau
-│   │                          #   - signInWithGoogle/Apple : natif SDK + fallback browser
-│   ├── storage.ts             # Persistance hybride (Preferences + Supabase)
-│   │                          #   - persistentStorage : wrapper Capacitor Preferences
-│   │                          #   - loadData() : cache local → cloud → merge → GlobalState
-│   │                          #   - saveData() : local d'abord, puis cloud async
-│   │                          #   - Gestion conflits avec merge intelligent
-│   │                          #   - Purge auto historique > 300 entrées
-│   │                          #   - Export RGPD (JSON download)
-│   ├── security.ts            # PIN : PBKDF2 100k iterations, SHA-512, timing-safe compare
-│   ├── pinStorage.ts          # Stockage PIN local/appareil (Capacitor Preferences + sync Supabase)
-│   ├── biometric.ts           # Face ID / Touch ID (plugin natif custom KoinyBiometric)
-│   ├── notifications.ts       # Notifications locales (Capacitor + Web fallback)
-│   │                          #   - Channels iOS/Android, regroupement par type
-│   │                          #   - Deep linking sur click → ParentView
-│   ├── realtime.ts            # Supabase Realtime (postgres_changes sur tables famille)
-│   ├── monitoring.ts          # Sentry init + Web Vitals (LCP, FID, CLS)
-│   ├── subscription.ts        # In-App Purchase (StoreKit 2 préparé, mode test)
-│   ├── alertService.ts        # Alertes système (fetch depuis table `app_alerts` + cache)
-│   ├── migration.ts           # Migration JSON legacy → schéma relationnel
-│   ├── logger.ts              # Logger structuré avec anonymisation auto des PII
-│   ├── widgetBridge.ts        # Bridge JS → iOS Widget (via Capacitor Preferences → UserDefaults)
-│   ├── widget.ts              # Wrapper widgetBridge (back-compat)
-│   └── ai.ts                  # Service IA désactivé (avatars = DiceBear uniquement)
-│
-├── constants/
-│   └── icons.ts               # Mapping icon_id → classe FontAwesome
-│
-├── ios/App/                   # 🍎 Projet Xcode natif
-│   ├── App/                   # Target principal (AppDelegate, BiometricPlugin, etc.)
-│   ├── KoinyWidget/           # Widget iOS (affiche balance enfant)
-│   ├── App.xcodeproj/         # Config Xcode
-│   └── CapApp-SPM/            # Swift Package Manager (dépendances Capacitor)
-│
-├── public/                    # Assets statiques
-│   ├── mascot.png             # Mascotte Koiny
-│   ├── sounds/                # Effets sonores (coins.mp3, etc.)
-│   ├── sw.js                  # Service Worker (PWA + notifications)
-│   └── manifest.json          # Web App Manifest
-│
-├── assets/                    # Splash screens, icônes
-├── docs/                      # Documentation technique (audits, guides, rapports)
-├── .audit/                    # Audit de sécurité
-└── dist/                      # Build de production
-```
+| Fichier | Lignes | Rôle |
+|---|---|---|
+| `App.tsx` | 1277 | Racine : GlobalState, ViewState, tous les handlers métier |
+| `components/ParentView.tsx` | 2526 | Dashboard parent (multi-onglets, très dense) |
+| `i18n.ts` | 1104 | Traductions FR/NL/EN |
+| `types.ts` | 155 | Interfaces TypeScript + constantes + données démo |
+| `services/supabase.ts` | 666 | Client Supabase, Auth, CRUD, `loadFromSupabase`, `saveToSupabase` |
+| `services/storage.ts` | 416 | `loadData` / `saveData`, cache hybride Preferences+Supabase |
+| `services/security.ts` | — | PIN PBKDF2 100k iter SHA-512, timing-safe compare |
+| `services/pinStorage.ts` | — | Stockage PIN local + sync Supabase |
+| `services/widgetBridge.ts` | — | Bridge JS → iOS Widget (Preferences → UserDefaults) |
+| `services/notifications.ts` | — | Notifications locales Capacitor + Web |
+| `services/realtime.ts` | — | Supabase Realtime (`postgres_changes`) |
+| `constants/icons.ts` | — | Mapping `icon_id` → classe FontAwesome |
 
 ---
 
-## 4. Modèle de Données
-
-### 4.1 State Global (React)
-Le state **entier de l'application** est un objet `GlobalState` dans `App.tsx` :
+## Types TypeScript (depuis `types.ts`)
 
 ```typescript
-interface GlobalState {
-  children: ChildProfile[];       // Liste des profils enfants
-  parentTutorialSeen: boolean;
-  language: 'fr' | 'nl' | 'en';  // Tri-lingue
-  parentPin: string | null;       // Hash PBKDF2 "salt:hash"
-  ownerId?: string;               // User ID Supabase
-  soundEnabled: boolean;
-  notificationsEnabled?: boolean;
-  parentBadge?: 'NOVICE' | 'MENTOR' | 'EXPERT' | 'FINTECH_GURU';
-  totalApprovedMissions?: number;
-  isPremium?: boolean;
-  maxBalance?: number;            // Limite solde (défaut: 100€, 0 = illimité)
-  updatedAt?: string;             // ISO timestamp pour sync
+type MissionStatus = 'ACTIVE' | 'PENDING' | 'COMPLETED';
+type GoalStatus    = 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+type Language      = 'fr' | 'nl' | 'en';
+type ParentBadge   = 'NOVICE' | 'MENTOR' | 'EXPERT' | 'FINTECH_GURU';
+
+const MAX_BALANCE = 100; // limite stricte 6-14 ans
+const BADGE_THRESHOLDS = { MENTOR: 10, EXPERT: 50, FINTECH_GURU: 200 };
+
+interface Mission {
+  id: string; title: string; reward: number; icon: string;
+  status: MissionStatus; feedback?: string; createdAt: string;
 }
-```
-
-```typescript
+interface Goal {
+  id: string; name: string; target: number; icon: string; status?: GoalStatus;
+}
+interface HistoryEntry {
+  id: string; date: string; title: string; amount: number; note?: string;
+}
 interface ChildProfile {
-  id: string;                     // UUID (Supabase) ou temp ID (offline)
-  name: string;
-  avatar: string;                 // DiceBear seed
-  colorClass: string;             // Tailwind color token (indigo, pink, etc.)
-  balance: number;
-  goals: Goal[];
-  missions: Mission[];
-  history: HistoryEntry[];
-  tutorialSeen: boolean;
-  birthday?: string;
-  giftRequested?: boolean;        // Enfant demande un cadeau
-  missionRequested?: boolean;     // Enfant demande une mission
+  id: string; name: string; avatar: string; colorClass: string;
+  balance: number; goals: Goal[]; missions: Mission[]; history: HistoryEntry[];
+  tutorialSeen: boolean; birthday?: string; lastBirthdayRewardYear?: number;
+  giftRequested?: boolean; missionRequested?: boolean;
+}
+interface GlobalState {
+  children: ChildProfile[]; parentTutorialSeen: boolean; language: Language;
+  parentPin: string | null; ownerId?: string; soundEnabled: boolean;
+  notificationsEnabled?: boolean; lastParentLogin?: string;
+  parentBadge?: ParentBadge; totalApprovedMissions?: number;
+  lastReminderSent?: string; maxBalance?: number; isPremium?: boolean;
+  updatedAt?: string;
 }
 ```
 
-### 4.2 Schéma Supabase (PostgreSQL)
-
-| Table | Clé Primaire | Relations | Rôle |
-|---|---|---|---|
-| `profiles` | `id` (= auth.uid) | → `families` | Parent/co-parent, PIN hash, rôle |
-| `families` | `id` (UUID) | ← `profiles`, ← `children` | Unité familiale, code invitation |
-| `children` | `id` (UUID) | → `user_id` (profiles), ← missions, goals, transactions | Profil enfant |
-| `missions` | `id` (UUID) | → `child_id`, → `created_by` | Tâches avec cycle de vie |
-| `goals` | `id` (UUID) | → `child_id` | Objectifs d'épargne |
-| `transactions` | `id` (UUID) | → `child_id`, → `created_by` | Registre immuable des flux |
-| `app_alerts` | `id` | — | Alertes système (maintenance, etc.) |
-
-### 4.3 Mapping GlobalState ↔ Supabase
-- `loadFromSupabase()` dans `services/supabase.ts` : requête relationnelle avec `.select('*, missions(*), goals(*), transactions(*)')` puis mapping vers `GlobalState`.
-- `saveToSupabase()` : itère les `children[]`, upsert missions/goals, insert/upsert transactions. Gère les IDs temporaires (non-UUID) en les remplaçant par des UUID réels.
-
 ---
 
-## 5. Flux de Navigation
+## Navigation
 
-```
-ViewState = 'LANDING' | 'AUTH' | 'LOGIN' | 'CHILD' | 'PARENT'
-```
-
-```
-Première visite :
-  LANDING → OnboardingView → AUTH (AuthView)
-
-Utilisateur existant (cache) :
-  → Restauration depuis localStorage (dernière vue + child_id) → CHILD ou PARENT
-
-Flux normal :
-  AUTH (Google/Apple/Email) → LOGIN (sélection profil)
-    ├── Clic enfant → CHILD (ChildView)
-    └── Clic parent → PIN → PARENT (ParentView)
-
-Mode démo :
-  AUTH → "Essayer sans compte" → LOGIN avec données démo
-```
-
-### Persistance de la Vue
-- `localStorage.koiny_last_view` : dernière vue active
-- `localStorage.koiny_last_child_id` : dernier enfant sélectionné
-- Au démarrage : restauration instantanée depuis le cache (pas de flash/loading)
-
----
-
-## 6. Architecture de Synchronisation
-
-### Principe : "Local d'abord, Cloud en arrière-plan"
-
-```
-1. Action utilisateur (ex: approuver mission)
-   ↓
-2. Update React State immédiat (optimistic UI)
-   ↓
-3. Sauvegarde locale (Capacitor Preferences + localStorage)
-   ↓
-4. Sync Supabase en arrière-plan (non-bloquant)
-   ↓
-5. Si échec réseau → données déjà sauvées localement → retry au retour online
-```
-
-### Mécanismes Clés
-- **Debounce** : Les sauvegardes cloud sont regroupées (useEffect sur `data`)
-- **Guard `isSaving`** : Empêche les saves concurrents
-- **Guard `isReloadingFromRealtime`** : Empêche les boucles save ↔ realtime
-- **Guard `isDirectSupabaseOperation`** : Pour les opérations qui écrivent directement en DB (add child, delete, purchase goal) sans passer par le save auto
-- **`immediateSave`** : Force un sync immédiat (ex: retour online)
-- **Merge de conflits** : Comparaison des timestamps `updatedAt` local vs cloud, merge intelligent des historiques/missions/goals en cas de divergence
-- **ID Mapping** : Les objets créés offline ont des IDs temporaires (non-UUID) → remplacés par des UUID réels au premier sync réussi
-
-### Realtime (Supabase)
-- Écoute les changement sur `children`, `missions`, `goals`, `transactions` via `postgres_changes`
-- Filtre par `family_id` pour n'écouter que sa propre famille
-- Retry automatique en cas de timeout
-
----
-
-## 7. Sécurité
-
-### PIN Parent
-- **Hachage** : PBKDF2 avec 100 000 itérations, SHA-512, salt aléatoire 128 bits
-- **Format stocké** : `"salt_hex:hash_hex"` 
-- **Comparaison** : timing-safe (protection contre les attaques par timing)
-- **Stockage** : local sur chaque appareil (Capacitor Preferences) + sync Supabase pour backup/co-parenting
-
-### Biométrie
-- Plugin natif custom `KoinyBiometric` (Swift, dans le target App)
-- Face ID / Touch ID pour réinitialiser le PIN ou déverrouiller l'accès parent
-- Fallback mot de passe toujours disponible
-
-### Auth
-- **Google** : SDK natif (`@codetrix-studio/capacitor-google-auth`) sur iOS/Android, OAuth web en fallback
-- **Apple** : `@capacitor-community/apple-sign-in` (natif ASAuthorizationController), OAuth web en fallback
-- **Session** : Persistée via `CapacitorStorageAdapter` (Preferences au lieu de localStorage volatile du WebView)
-- **Deep Linking** : `com.koiny.app://callback` pour PKCE + implicit flow
-- **CSP** : Content Security Policy stricte dans `index.html`
-
-### Données
-- **RLS** : Row Level Security sur toutes les tables Supabase
-- **Logger sécurisé** : Anonymisation automatique des PII (userId, email, pin) en production
-- **RGPD** : Export JSON, suppression complète via RPC `delete_user_data`
-- **Logs supprimés en production** : `config.ts` → `log()` ne sort rien en `PROD`
-
----
-
-## 8. Internationalisation (i18n)
-
-- **3 langues** : Français (FR), Néerlandais (NL), Anglais (EN)
-- Fichier unique `i18n.ts` (~1063 lignes) exportant `translations`
-- Détection auto de la langue du navigateur au premier lancement
-- Persistance dans `localStorage.koiny_language`
-- Structure hiérarchique : `common`, `auth`, `legal`, `login`, `child`, `parent` (avec sous-sections `tabs`, `account`, `history`, `messages`, `notifications.push`, `premium`, `tutorial`, etc.)
-
-### Usage
 ```typescript
-const t = translations[data.language || 'fr'];
-// => t.parent.addMissionTitle, t.child.myBalance, etc.
+type ViewState = 'LANDING' | 'AUTH' | 'LOGIN' | 'CHILD' | 'PARENT';
+
+// Flux normal :
+// AUTH (Google/Apple/Email) → LOGIN → CHILD (enfant) ou PIN → PARENT
+// Mode démo : AUTH → "Essayer sans compte" → LOGIN (données démo)
+// Première visite : LANDING → OnboardingView → AUTH
 ```
 
 ---
 
-## 9. Fonctionnalités Premium (Freemium)
+## Architecture de Synchronisation
 
-### Limites Free
-| Ressource | Limite Free | Premium |
+**Principe : "Optimistic UI → Local → Cloud async"**
+
+```
+Action utilisateur
+  → setData(prev => ...) immédiat            ← TOUJOURS d'abord
+  → localStorage + Capacitor Preferences
+  → saveData(data, ownerId) en arrière-plan  ← non-bloquant
+  → Si échec réseau → retry au retour online
+```
+
+### Guards dans `App.tsx` (refs React, pas de re-render)
+
+```typescript
+isSavingRef.current              // Empêche saves concurrents
+isReloadingFromRealtime.current  // Empêche boucle save ↔ realtime
+isDirectSupabaseOperation.current // Bloque le save auto pendant opérations directes
+isInitializing.current           // Bloque pendant l'init
+isSyncingFromOnline.current      // Bloque les notifs pendant sync au retour online
+```
+
+Le save auto (`useEffect` sur `data`) est bloqué si l'un de ces guards est `true`.
+
+### Pattern opération directe Supabase (ex: supprimer un enfant)
+
+```typescript
+isDirectSupabaseOperation.current = true;
+try {
+  await supabase.from('children').delete().eq('id', childId);
+  setData(prev => ({ ...prev, updatedAt: new Date().toISOString(), children: prev.children.filter(c => c.id !== childId) }));
+} finally {
+  isDirectSupabaseOperation.current = false;
+}
+```
+
+### Force sync immédiat
+
+```typescript
+setImmediateSave(true); // via useState, déclenche le useEffect de save
+// OU via événement DOM :
+window.dispatchEvent(new Event('force-cloud-sync'));
+```
+
+### Modifier un enfant (méthode recommandée)
+
+```typescript
+// updateChild() force immediateSave + updatedAt automatiquement
+updateChild(childId, child => ({ ...child, balance: child.balance + amount }));
+```
+
+---
+
+## localStorage Keys
+
+| Clé | Valeur |
+|---|---|
+| `koiny_local_v1` | JSON du GlobalState (cache principal) |
+| `koiny_local_v1_backup` | Backup avant merge |
+| `koiny_last_view` | Dernière vue (`CHILD`, `PARENT`, etc.) |
+| `koiny_last_child_id` | Dernier enfant sélectionné |
+| `koiny_language` | `'fr'` / `'nl'` / `'en'` |
+| `koiny_premium_active` | `'true'` si premium actif |
+| `koiny_notifications_muted` | `'true'` si notifs muettes |
+| `koiny_milestone_${childId}_${goalId}` | Dernier milestone notifié (50/75/100) |
+
+---
+
+## i18n
+
+```typescript
+// Usage dans n'importe quel fichier :
+const t = translations[data.language || 'fr'];
+// Exemples :
+t.parent.addMissionTitle
+t.child.myBalance
+t.parent.notifications.push.giftRequestTitle
+t.parent.notifications.push.giftRequestBody.replace('{name}', child.name)
+```
+
+Structure : `common | auth | legal | login | child | parent`
+Sous-sections `parent` : `tabs | account | history | messages | notifications.push | premium | tutorial`
+
+---
+
+## Schéma Supabase
+
+| Table | PK | Relations |
+|---|---|---|
+| `profiles` | `id` (= auth.uid) | → `families` |
+| `families` | `id` UUID | ← `profiles`, ← `children` |
+| `children` | `id` UUID | → `user_id`, ← missions, goals, transactions |
+| `missions` | `id` UUID | → `child_id`, → `created_by` |
+| `goals` | `id` UUID | → `child_id` |
+| `transactions` | `id` UUID | → `child_id`, → `created_by` |
+| `app_alerts` | `id` | — (alertes système) |
+
+- `loadFromSupabase()` : `.select('*, missions(*), goals(*), transactions(*)')` → `GlobalState`
+- `saveToSupabase()` : upsert itératif, remplace IDs temporaires (non-UUID) par UUIDs réels
+- IDs temporaires hors-ligne : non-UUID → remplacés au premier sync réussi (mapping retourné par `saveData`)
+
+---
+
+## Règles Métier
+
+| Règle | Détail |
+|---|---|
+| **Solde max** | `maxBalance` (défaut 100, 0 = illimité). Si dépassé : animation shake + vibration + montant réduit au max possible |
+| **Badges parent** | NOVICE → MENTOR (10) → EXPERT (50) → FINTECH_GURU (200) missions approuvées |
+| **Mission cycle** | ACTIVE → PENDING (enfant termine) → COMPLETED (parent valide) ou ACTIVE (rejet + feedback) |
+| **Goal cycle** | ACTIVE → COMPLETED (achat = débit solde) ou ARCHIVED |
+| **Anniversaire** | Bonus +10€ auto (vérifié 1x/an via `lastBirthdayRewardYear`) |
+| **Rappels** | Auto-notif si aucune mission active, max 1 fois tous les 3 jours |
+| **Co-parentalité** | Invitation par code famille, sync Realtime |
+| **Timeout init** | 15s max puis SplashScreen.hide() forcé |
+
+---
+
+## Freemium
+
+| Ressource | Free | Premium |
 |---|---|---|
 | Enfants | 1 | Illimité |
 | Missions actives / enfant | 2 | Illimité |
 | Objectifs / enfant | 1 | Illimité |
 | Statistiques | ❌ | ✅ |
 
-### Gestion
-- `isPremium` dans `GlobalState`
-- Vérifié via `localStorage.koiny_premium_active`
-- `SubscriptionModal.tsx` pour l'UI
-- `services/subscription.ts` pour la logique StoreKit 2 (mode test uniquement pour l'instant)
-- Product IDs : `com.koiny.premium.monthly`, `com.koiny.premium.yearly`
+- `isPremium` dans `GlobalState` + `localStorage.koiny_premium_active`
+- StoreKit 2 : `com.koiny.premium.monthly` / `com.koiny.premium.yearly`
 
 ---
 
-## 10. Notifications
+## RevenueCat & In-App Purchases (IAP)
 
-### Types
-| Type | ID Stable | Description |
-|---|---|---|
-| `GIFT` | 1001 | Enfant demande un cadeau |
-| `MISSION` | 1002 | Enfant demande une mission |
-| `MISSION_COMPLETE` | 1003 | Enfant a terminé une mission |
-| `PARENT_REMINDER` | auto-inc | Rappel si aucune mission active (tous les 3 jours) |
+**Configuration Mars 2026 ✅**
 
-### Implémentation
-- iOS/Android : `@capacitor/local-notifications` avec channel `koiny-gains` (son custom `coins.mp3`)
-- Web : `Notification` API + Service Worker
-- Deep linking sur clic : navigue vers `ParentView` avec `notificationAction`
-- Mute toggle : `localStorage.koiny_notifications_muted`
+### App Store Connect Credentials
+| Paramètre | Valeur |
+|---|---|
+| **Vendor Number** | `941045566` |
+| **Key ID** | `5V95D95F95` |
+| **Issuer ID** | `55ea8465-87ee-4762-b46d-32e2ba64c7a2` |
+| **Bundle ID** | `com.koiny.app` |
+| **API Key Role** | Gestionnaire d'apps |
 
----
+- Fichier `.p8` uploadé dans RevenueCat ✅
+- Credentials validés et synchronisés ✅
 
-## 11. iOS Widget
+### Produits IAP
+**Status: Créés et Enregistrés ✅**
 
-- **KoinyWidget** : Widget WidgetKit affichant le nom, solde et objectif principal du premier enfant
-- **Bridge** : `widgetBridge.ts` écrit dans `Capacitor Preferences` → `AppDelegate` lit `UserDefaults.standard` et copie vers l'App Group partagé
-- Sync automatique à chaque changement de données
+```
+Groupe: Koiny Premium
 
----
+1. com.koiny.premium.monthly
+   - Durée: 1 mois
+   - Prix: 1,99€/mois
+   - Disponibilité: Tous les pays
+   - Langues: FR / NL / EN
+   - Status: ✅ Enregistré dans App Store Connect
 
-## 12. Conventions de Code
-
-### Patterns
-- **Un seul composant racine** (`App.tsx`) gère tout le state et les handlers → passés en props aux vues
-- **Services singleton** : `notifications`, `monitoring`, `realtimeService`, `subscriptionService`, `widgetService`
-- **Pas de state manager externe** (ni Redux, ni Zustand) : tout est dans `useState` + `useCallback` dans `App.tsx`
-- **Opérations Supabase "directes"** : Pour les CUD critiques (create child, delete, purchase), on écrit directement en Supabase PUIS on update le state local → `isDirectSupabaseOperation.current = true` pendant ces opérations pour bloquer le save auto
-
-### Style
-- **Tailwind CSS** avec safelist dynamique pour les couleurs enfant (`bg-${colorClass}-500`)
-- **Dark mode** : `dark:` variants, détecté via `prefers-color-scheme`
-- **Animations custom** définies dans `tailwind.config.js` : fadeInUp, scaleIn, pop, balancePop, shake, overflowPulse, slideUp, slideDown, onboarding*
-- **Font** : Poppins (400-900)
-- **Icônes** : FontAwesome 6 (classes `fa-solid fa-xxx`)
-
-### Nommage
-- Composants : PascalCase (`ParentView.tsx`)
-- Services : camelCase (`storage.ts`)
-- Handlers : `handle` + Action (`handleApprove`, `handleManualTransaction`)
-- Constantes : UPPER_SNAKE (`MAX_BALANCE`, `BADGE_THRESHOLDS`)
-
----
-
-## 13. Configuration Capacitor
-
-```typescript
-// capacitor.config.ts
-appId: 'com.koiny.app'
-appName: 'Koiny'
-webDir: 'dist'
+2. com.koiny.premium.yearly
+   - Durée: 12 mois
+   - Prix: 16,99€/an
+   - Disponibilité: Tous les pays
+   - Langues: FR / NL / EN
+   - Status: ✅ Enregistré dans App Store Connect
 ```
 
-- **Splash Screen** : 3s, fond `#3730A3` (indigo), spinner blanc
-- **Google Auth** : Client IDs séparés iOS (`165597...eqe2`) et web/Android (`165597...1as`)
-- **Scheme** : `capacitor://localhost`
+### RevenueCat Setup
+**Status: Intégré & Prêt pour Sandbox** ✅
+
+- Dashboard : https://app.revenuecat.com
+- Apple Server-to-Server notifications : ✅ Configurées
+- Webhook URL : `https://api.revenuecat.com/v1/incoming-webhook`
+- **SDK** : `@revenuecat/purchases-capacitor@12.2.4` ✅
+- **API Key** : `appl_CdFRyKVUQPCUdodtGAIsnJsEpsT` (dans `services/subscription.ts`)
+- **Entitlement ID** : `Koiny Premium` *(Important : inclut la majuscule et l'espace, changé le 14/03)*
+- **Offering ID** : `default`
+- **Stockage local premium** : Clé `koiny_premium_active` (valeur: `'true'`). Lue au démarrage pour éviter le clignotement de l'UI avant la réponse de RevenueCat.
+- **Essai gratuit (Free Trial)** : Géré 100% par Apple (email auto à J-2). Pas de pop-up custom dans l'app pour éviter la surcharge. Retour passif au mode gratuit si annulation.
+- **Logique Sandbox (iOS Xcode)** : Fallback implémenté dans `services/subscription.ts` (vérifie `activeSubscriptions` si `entitlements.active` est vide) pour contourner les bugs d'Apple en environnement Sandbox. Le modal indique visuellement quel abonnement est actuellement actif.
+- **Complété** ✅:
+  1. ✅ Produits App Store Connect liés (monthly + yearly)
+  2. ✅ Entitlement "Koiny Premium" synchronisé
+  3. ✅ Produits attachés à l'entitlement
+  4. ✅ Localisations FR/NL/EN ajoutées dans App Store Connect
+  5. ✅ SDK RevenueCat installé et intégré dans le code
+  6. ✅ Initialisation automatique au démarrage (App.tsx)
+  7. ✅ Login/Logout RevenueCat synchronisé avec l'auth
+  8. ✅ Bouton "Restaurer les achats" dans SubscriptionModal
+  9. ✅ Offering `default` créé dans RevenueCat avec les packages `$rc_monthly` et `$rc_annual`
+  10. ✅ Compte Apple Sandbox configuré pour les tests
+  11. ✅ Commentaire du parent visible par l'enfant dans l'historique des transactions (`ChildView.tsx`)
+  12. ✅ Fix build Vite : exclusion du dossier `screenshots/` pour éviter le freeze RAM sur `lodash`
+  13. ✅ Test du flux d'achat complet avec Sandbox Apple réussi sur appareil iOS
+- **À faire** ⚙️:
+  - (La configuration de RevenueCat est terminée)
 
 ---
 
-## 14. Règles Métier Importantes
+## Sécurité
 
-| Règle | Détail |
-|---|---|
-| **Solde max** | Défaut 100€, configurable (0 = illimité). Overflow → animation shake + vibration + montant réduit |
-| **Badges parent** | NOVICE → MENTOR (10 missions) → EXPERT (50) → FINTECH_GURU (200) |
-| **Missions** | Cycle : ACTIVE → PENDING (enfant termine) → COMPLETED (parent valide) ou ACTIVE (parent rejette avec feedback) |
-| **Goals** | Cycle : ACTIVE → COMPLETED (achat = retrait du solde) ou ARCHIVED |
-| **Anniversaire** | Bonus automatique de 10€ (vérifié une fois par an via `lastBirthdayRewardYear`) |
-| **Rappels** | Auto-notification tous les 3 jours si un enfant n'a aucune mission active |
-| **Co-parentalité** | Invitation par code famille, sync temps réel via Realtime |
-| **Timeout global** | Si le chargement dépasse 15s → force la fin du loading |
+- **PIN** : PBKDF2 100k iter SHA-512, format `"salt_hex:hash_hex"`, timing-safe compare
+- **Auth** : Google natif (iOS `165597...eqe2`, Android/web `165597...1as`) + Apple natif + Email
+- **Session** : `CapacitorStorageAdapter` (Preferences, pas localStorage WebView volatile)
+- **Deep link** : `com.koiny.app://callback` pour PKCE OAuth
+- **RLS** : Row Level Security sur toutes les tables
+- **RGPD** : Export JSON + RPC `delete_user_data`
+- **PII** : Logger anonymise automatiquement en production
 
 ---
 
-## 15. Points d'Attention pour le Développement
+## iOS Widget
 
-> **⚠️ Ne JAMAIS :**
-> - Écraser `pin_hash` avec `null` dans Supabase (géré séparément par `pinStorage.ts`)
-> - Bloquer l'UI en attendant un appel réseau (toujours local-first)
-> - Créer des doublons d'enfants/missions (vérifier l'existence par nom ou UUID avant insert)
-> - Oublier le guard `isDirectSupabaseOperation` lors d'opérations DB directes
-> - Modifier `ParentView.tsx` sans précaution (150KB, composant très dense)
+- `KoinyWidget` (WidgetKit) : nom, solde, objectif principal du premier enfant
+- Bridge : `services/widgetBridge.ts` → Capacitor Preferences → `AppDelegate` → App Group → UserDefaults
+- Sync auto à chaque `saveData` via `updateWidgetData(children, language)`
 
-> **✅ Toujours :**
-> - Mettre à jour `updatedAt` à chaque modification du state
-> - Supporter les 3 langues (fr/nl/en) pour tout nouveau texte
-> - Tester en mode offline (couper le réseau et vérifier que tout fonctionne)
-> - Utiliser `crypto.randomUUID()` pour les nouveaux IDs
-> - Passer par `updateChild()` pour les modifications d'enfant (force immediateSave + updatedAt)
+---
+
+## Patterns de Code
+
+```typescript
+// Nouveau ID
+const id = crypto.randomUUID();
+
+// Date formatée pour HistoryEntry
+const today = new Date();
+const date = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
+
+// Icônes : classes FontAwesome 6
+// Ex: 'fa-solid fa-broom', 'fa-solid fa-rocket'
+// Liste complète dans constants/icons.ts
+
+// Couleurs enfant : Tailwind tokens
+// Ex: 'indigo', 'pink', 'emerald', 'amber', 'violet'
+// Attention : safelist dynamique dans tailwind.config.js → bg-${colorClass}-500
+
+// Vérifier solde max avant crédit
+const currentMax = data.maxBalance === 0 ? Infinity : (data.maxBalance || MAX_BALANCE);
+const effectiveReward = Math.min(reward, Math.max(0, currentMax - child.balance));
+```
+
+---
+
+## Design & Branding (App Store Screenshots)
+
+### Identité Visuelle
+- **Couleur primaire** : `#3730A3` (indigo-700) — fond header, UI enfant
+- **Couleur secondaire** : `#60A5FA` (blue-400) — gradient de fond des screenshots
+- **Couleur accent** : `#F97316` (orange) — barre de progression, bouton premium
+- **Couleur texte clair** : blanc `#FFFFFF`
+- **Fond cards** : blanc cassé / gris très clair
+- **Police** : Poppins (400–900), bold pour les titres
+- **Icônes** : FontAwesome 6 + emojis monnaie (🪙💰)
+- **Style visuel** : Coloré, fun, enfantin — fond dégradé bleu→indigo
+- **Ton** : Bienveillant, gamifié, familial
+
+### Style des Screenshots Existants (référence)
+- Fond : dégradé bleu clair (`#60A5FA`) → indigo (`#3730A3`)
+- Titre en haut : Poppins Bold blanc, grande taille
+- Sous-titre : Poppins Regular blanc, taille moyenne
+- Mockup iPhone centré, légèrement rogné en bas
+- UI dans le mockup : fond indigo/violet, cards blanches arrondies
+
+### Screenshots App Store
+- **Features à mettre en avant** (dans cet ordre) :
+  1. Portefeuille virtuel enfant — solde "Ma Fortune" avec emojis pièces
+  2. Missions / tâches gamifiées — liste missions avec récompenses en €
+  3. Objectifs d'épargne — barre de progression orange, rêve de l'enfant
+  4. Interface parent de contrôle — dashboard multi-enfants, bilan 7 jours
+  5. Duo parent/enfant — deux interfaces miroir en une seule app
+  6. Slide finale — CTA "Télécharger gratuitement" / freemium
+- **Nombre de slides** : 6
+- **Langues** : FR (priorité), NL, EN — 3 sets distincts
+- **Public cible** : Parents d'enfants 6–14 ans
+- **Tailles d'export Apple** :
+  - 6.9" → 1320×2868
+  - 6.5" → 1284×2778
+  - 6.3" → 1206×2622
+  - 6.1" → 1125×2436
+
+### Prompt Screenshots (à coller dans l'agent)
+```
+Lis d'abord CONTEXT.md (section 16) pour les infos de branding et screenshots.
+Ne pose pas de questions sur des infos déjà présentes dans ce fichier.
+
+Crée des App Store screenshots pour Koiny en suivant exactement le style
+visuel décrit en section 16 (dégradé bleu→indigo, Poppins Bold blanc,
+mockup iPhone centré, cards blanches arrondies).
+
+- Style publicité, pas des captures UI brutes
+- Stack : Next.js + Tailwind + html-to-image
+- Chaque slide vend une seule idée, texte lisible en thumbnail
+- Pas deux slides consécutives avec le même layout
+- Exporte aux 4 tailles Apple définies en section 16
+- Génère 3 sets : FR, NL, EN
+```

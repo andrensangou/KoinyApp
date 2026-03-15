@@ -195,7 +195,11 @@ export const translations = {
       manageFamily: "Ma Famille",
       addChild: "Ajouter un enfant",
       addGoalAction: "Ajouter un objectif",
+      noActiveMissions: "Aucune mission en cours",
+      editMissionTitle: "Modifier la mission",
+      editMissionSave: "Enregistrer",
       editChild: "Modifier le profil",
+      shortcuts: "Raccourcis",
       deleteTitle: "Supprimer le profil ?",
       deleteMessage: "Toutes les données seront perdues. Cette action est irréversible.",
       childName: "Prénom",
@@ -288,7 +292,17 @@ export const translations = {
           missionCompleteTitle: "✅ Mission terminée !",
           missionCompleteBody: "{name} a terminé une mission. À vous de valider !",
           parentReminderTitle: "💡 Idée de mission ?",
-          parentReminderBody: "Vos enfants n'ont plus de défi en cours. Et si vous leur lanciez un petit challenge ?"
+          parentReminderBody: "Vos enfants n'ont plus de défi en cours. Et si vous leur lanciez un petit challenge ?",
+          newMissionTitle: "🎯 Nouvelle mission !",
+          newMissionBody: "Tu as une nouvelle mission à réaliser : {mission}. Fonce gagner {amount}€ !",
+          weeklyReminderTitle: "💰 C'est le jour de l'argent de poche !",
+          weeklyReminderBody: "N'oubliez pas de valider les missions de vos enfants et de leur donner leur argent de poche.",
+          goalMilestone50Title: "🚀 À mi-chemin !",
+          goalMilestone50Body: "{name} a atteint 50% de l'objectif \"{goal}\" ! Continue comme ça !",
+          goalMilestone75Title: "🔥 Presque là !",
+          goalMilestone75Body: "{name} a atteint 75% de l'objectif \"{goal}\" ! Plus que {remaining}€ !",
+          goalMilestone100Title: "🎉 Objectif atteint !",
+          goalMilestone100Body: "{name} a assez d'argent pour \"{goal}\" ! Il peut maintenant le réclamer !"
         }
       },
       tabs: {
@@ -548,7 +562,11 @@ export const translations = {
       manageFamily: "Mijn Gezin",
       addChild: "Kind toevoegen",
       addGoalAction: "Voeg een doel toe",
+      noActiveMissions: "Geen lopende missies",
+      editMissionTitle: "Missie bewerken",
+      editMissionSave: "Opslaan",
       editChild: "Profiel bewerken",
+      shortcuts: "Snelkoppelingen",
       deleteTitle: "Profiel verwijderen?",
       deleteMessage: "Alle gegevens gaan verloren. Deze actie is onomkeerbaar.",
       childName: "Voornaam",
@@ -641,7 +659,17 @@ export const translations = {
           missionCompleteTitle: "✅ Missie voltooid!",
           missionCompleteBody: "{name} heeft een missie voltooid. Tijd om te valideren!",
           parentReminderTitle: "💡 Idee voor een missie?",
-          parentReminderBody: "Je kinderen hebben geen uitdagingen meer. Tijd voor een nieuwe challenge?"
+          parentReminderBody: "Je kinderen hebben geen uitdagingen meer. Tijd voor een nieuwe challenge?",
+          newMissionTitle: "🎯 Nieuwe missie!",
+          newMissionBody: "Je hebt een nieuwe missie: {mission}. Verdien {amount}€!",
+          weeklyReminderTitle: "💰 Het is zakgelddag!",
+          weeklyReminderBody: "Vergeet niet de missies van je kinderen te valideren en hen zakgeld te geven.",
+          goalMilestone50Title: "🚀 Halverwege!",
+          goalMilestone50Body: "{name} heeft 50% van het doel \"{goal}\" bereikt! Ga zo door!",
+          goalMilestone75Title: "🔥 Bijna daar!",
+          goalMilestone75Body: "{name} heeft 75% van het doel \"{goal}\" bereikt! Nog {remaining}€ te gaan!",
+          goalMilestone100Title: "🎉 Doel bereikt!",
+          goalMilestone100Body: "{name} heeft genoeg geld voor \"{goal}\"! Het kan nu worden geclaimd!"
         }
       },
       tabs: {
@@ -901,7 +929,11 @@ export const translations = {
       manageFamily: "My Family",
       addChild: "Add child",
       addGoalAction: "Add goal",
+      noActiveMissions: "No active missions",
+      editMissionTitle: "Edit mission",
+      editMissionSave: "Save",
       editChild: "Edit profile",
+      shortcuts: "Shortcuts",
       deleteTitle: "Delete this profile?",
       deleteMessage: "All data will be lost. This action is irreversible.",
       childName: "First Name",
@@ -994,7 +1026,17 @@ export const translations = {
           missionCompleteTitle: "✅ Mission Complete!",
           missionCompleteBody: "{name} has completed a mission. Time to validate!",
           parentReminderTitle: "💡 Mission Idea?",
-          parentReminderBody: "Your kids have no active challenges. How about giving them a new one?"
+          parentReminderBody: "Your kids have no active challenges. How about giving them a new one?",
+          newMissionTitle: "🎯 New Mission!",
+          newMissionBody: "You have a new mission: {mission}. Go earn {amount}€!",
+          weeklyReminderTitle: "💰 It's pocket money day!",
+          weeklyReminderBody: "Don't forget to validate your children's missions and give them their pocket money.",
+          goalMilestone50Title: "🚀 Halfway there!",
+          goalMilestone50Body: "{name} has reached 50% of the \"{goal}\" goal! Keep it up!",
+          goalMilestone75Title: "🔥 Almost there!",
+          goalMilestone75Body: "{name} has reached 75% of the \"{goal}\" goal! Only {remaining}€ to go!",
+          goalMilestone100Title: "🎉 Goal reached!",
+          goalMilestone100Body: "{name} has enough money for \"{goal}\"! They can now claim it!"
         }
       },
       tabs: {

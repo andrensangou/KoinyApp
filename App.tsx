@@ -18,6 +18,7 @@ import { translations } from './i18n';
 import { monitoring } from './services/monitoring';
 import { widgetService } from './services/widget';
 import { saveParentPinLocally, loadParentPinLocally } from './services/pinStorage';
+import { subscriptionService } from './services/subscription';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
@@ -124,6 +125,11 @@ const App: React.FC = () => {
             parsed.language = savedLang;
           }
 
+          // Priorité au statut premium stocké localement (évite le flash couronne)
+          if (localStorage.getItem('koiny_premium_active') === 'true') {
+            parsed.isPremium = true;
+          }
+
           setData(parsed);
 
           // Si on a une vue en cache (et que ce n'est pas Landing), on restaure direct
@@ -168,6 +174,21 @@ const App: React.FC = () => {
         language: savedLanguage || cloudData.language || 'fr'
       });
       setOwnerId(result.ownerId);
+
+      // Initialiser RevenueCat et vérifier le statut premium
+      try {
+        await subscriptionService.initialize(result.ownerId);
+        if (result.ownerId && result.ownerId !== 'local-owner' && result.ownerId !== 'demo') {
+          await subscriptionService.loginUser(result.ownerId);
+        }
+        const subStatus = await subscriptionService.getSubscriptionStatus();
+        if (subStatus.isSubscribed) {
+          localStorage.setItem('koiny_premium_active', 'true');
+          setData(prev => ({ ...prev, isPremium: true }));
+        }
+      } catch (e) {
+        console.warn('⚠️ [INIT] RevenueCat init failed (non-blocking):', e);
+      }
 
       // Sync widget data on initial load
       if (cloudData.children?.length > 0) {
@@ -298,6 +319,14 @@ const App: React.FC = () => {
 
     checkReminder();
     const interval = setInterval(checkReminder, 24 * 60 * 60 * 1000);
+
+    // 🔔 Notification Habit Test: programmer le rappel hebdomadaire (dimanche 10h)
+    const t = translations[data.language || 'fr'];
+    notifications.scheduleWeeklyReminder(
+      t.parent.notifications.push.weeklyReminderTitle,
+      t.parent.notifications.push.weeklyReminderBody
+    );
+
     return () => clearInterval(interval);
   }, [data.children, data.lastReminderSent, loading]);
 
@@ -321,6 +350,15 @@ const App: React.FC = () => {
         const extra = action.notification.extra;
         if (!extra?.type) return;
 
+        if (extra.type === 'NEW_MISSION' || extra.type === 'GOAL_MILESTONE' || extra.type === 'WEEKLY_POCKET_MONEY') {
+          if (extra.childId) {
+            setActiveChildId(extra.childId);
+            setView('CHILD');
+          }
+          return;
+        }
+
+        // Pour les autres notifications (destinées aux parents)
         // ✅ Toujours aller sur la vue parent d'abord
         setView('PARENT');
         setActiveChildId(null); // S'assurer qu'on n'est pas sur une vue enfant
@@ -583,7 +621,37 @@ const App: React.FC = () => {
       };
     });
 
-    // 2. Sync Supabase ciblé en arrière-plan (non-bloquant, n'interfère pas avec l'auto-save)
+    // 🔔 Notification Habit Test: vérifier les milestones d'objectifs après l'augmentation du solde
+    const newBalance = Number((child.balance + effectiveReward).toFixed(2));
+    if (child.goals && child.goals.length > 0) {
+      child.goals.filter(g => g.status !== 'COMPLETED' && g.status !== 'ARCHIVED').forEach(goal => {
+        const prevPercent = Math.floor((child.balance / goal.target) * 100);
+        const newPercent = Math.floor((newBalance / goal.target) * 100);
+        const milestoneKey = `koiny_milestone_${childId}_${goal.id}`;
+        const lastMilestone = parseInt(localStorage.getItem(milestoneKey) || '0');
+
+        if (newPercent >= 100 && lastMilestone < 100) {
+          notifications.notifyGoalMilestone(childId,
+            t.parent.notifications.push.goalMilestone100Title,
+            t.parent.notifications.push.goalMilestone100Body.replace('{name}', child.name).replace('{goal}', goal.name)
+          );
+          localStorage.setItem(milestoneKey, '100');
+        } else if (newPercent >= 75 && prevPercent < 75 && lastMilestone < 75) {
+          const remaining = (goal.target - newBalance).toFixed(2);
+          notifications.notifyGoalMilestone(childId,
+            t.parent.notifications.push.goalMilestone75Title,
+            t.parent.notifications.push.goalMilestone75Body.replace('{name}', child.name).replace('{goal}', goal.name).replace('{remaining}', remaining)
+          );
+          localStorage.setItem(milestoneKey, '75');
+        } else if (newPercent >= 50 && prevPercent < 50 && lastMilestone < 50) {
+          notifications.notifyGoalMilestone(childId,
+            t.parent.notifications.push.goalMilestone50Title,
+            t.parent.notifications.push.goalMilestone50Body.replace('{name}', child.name).replace('{goal}', goal.name)
+          );
+          localStorage.setItem(milestoneKey, '50');
+        }
+      });
+    }
     if (userId) {
       (async () => {
         try {
@@ -654,6 +722,31 @@ const App: React.FC = () => {
         amount: effectiveAmount
       }, ...child.history]
     }));
+
+    // 🔔 Notification Habit Test: vérifier milestones après un dépôt
+    if (effectiveAmount > 0) {
+      const child = data.children.find(c => c.id === childId);
+      if (child && child.goals && child.goals.length > 0) {
+        const newBal = Number((child.balance + effectiveAmount).toFixed(2));
+        child.goals.filter(g => g.status !== 'COMPLETED' && g.status !== 'ARCHIVED').forEach(goal => {
+          const prevPct = Math.floor((child.balance / goal.target) * 100);
+          const newPct = Math.floor((newBal / goal.target) * 100);
+          const mk = `koiny_milestone_${childId}_${goal.id}`;
+          const last = parseInt(localStorage.getItem(mk) || '0');
+
+          if (newPct >= 100 && last < 100) {
+            notifications.notifyGoalMilestone(childId, t.parent.notifications.push.goalMilestone100Title, t.parent.notifications.push.goalMilestone100Body.replace('{name}', child.name).replace('{goal}', goal.name));
+            localStorage.setItem(mk, '100');
+          } else if (newPct >= 75 && prevPct < 75 && last < 75) {
+            notifications.notifyGoalMilestone(childId, t.parent.notifications.push.goalMilestone75Title, t.parent.notifications.push.goalMilestone75Body.replace('{name}', child.name).replace('{goal}', goal.name).replace('{remaining}', (goal.target - newBal).toFixed(2)));
+            localStorage.setItem(mk, '75');
+          } else if (newPct >= 50 && prevPct < 50 && last < 50) {
+            notifications.notifyGoalMilestone(childId, t.parent.notifications.push.goalMilestone50Title, t.parent.notifications.push.goalMilestone50Body.replace('{name}', child.name).replace('{goal}', goal.name));
+            localStorage.setItem(mk, '50');
+          }
+        });
+      }
+    }
 
     // 2. Operations Supabase en arrière-plan (non-bloquant)
     if (ownerId && ownerId !== 'local-owner') {
@@ -726,6 +819,22 @@ const App: React.FC = () => {
       await supabase.auth.signOut();
     }
 
+    // Déconnecter l'utilisateur de RevenueCat
+    try {
+      await subscriptionService.logoutUser();
+    } catch (e) {
+      console.warn('⚠️ [APP] Erreur logout RevenueCat:', e);
+    }
+
+    // Nettoyer les données locales pour éviter qu'un autre compte les charge
+    try {
+      const { Preferences } = await import('@capacitor/preferences');
+      await Preferences.remove({ key: 'koiny_local_v1' });
+      console.log('✅ [APP] Données locales nettoyées lors de la déconnexion');
+    } catch (e) {
+      console.error('❌ [APP] Erreur nettoyage données locales:', e);
+    }
+
     setView('LANDING');
     setData(INITIAL_DATA);
     setOwnerId(undefined);
@@ -752,6 +861,16 @@ const App: React.FC = () => {
         createdAt: new Date().toISOString()
       }]
     }));
+
+    // 🔔 Notification Habit Test: alerter l'enfant qu'une nouvelle mission est disponible
+    const t = translations[data.language];
+    notifications.notifyNewMission(
+      childId,
+      t.parent.notifications.push.newMissionTitle,
+      t.parent.notifications.push.newMissionBody
+        .replace('{mission}', title)
+        .replace('{amount}', amount.toString())
+    );
 
     // 2. Sync Supabase en arrière-plan (seulement si connecté)
     if (userId) {
@@ -811,6 +930,33 @@ const App: React.FC = () => {
       setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
     }
   };
+
+  const handleEditMission = async (childId: string, missionId: string, updates: { title?: string; reward?: number }) => {
+    // 1. Update local state
+    updateChild(childId, (child) => ({
+      ...child,
+      missions: child.missions.map(m =>
+        m.id === missionId ? { ...m, ...updates } : m
+      )
+    }));
+
+    // 2. Sync Supabase si connecté
+    const userId = (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') ? ownerId : null;
+    if (userId && missionId.includes('-')) {
+      (async () => {
+        try {
+          const supabase = getSupabase();
+          const supabaseUpdates: any = {};
+          if (updates.title) supabaseUpdates.title = updates.title;
+          if (updates.reward !== undefined) supabaseUpdates.amount = updates.reward;
+          await supabase.from('missions').update(supabaseUpdates).eq('id', missionId);
+        } catch (err: any) {
+          console.warn('⚠️ Sync editMission (offline?):', err?.message);
+        }
+      })();
+    }
+  };
+
   const handleChildTutorialComplete = () => { updateChild(activeChildId!, (child) => ({ ...child, tutorialSeen: true })); };
   const handleParentTutorialComplete = () => setData(prev => ({ ...prev, parentTutorialSeen: true, updatedAt: new Date().toISOString() }));
   const handleSetGoalPrimary = (childId: string, goalId: string) => { updateChild(childId, (child) => { const idx = child.goals.findIndex(g => g.id === goalId); if (idx <= 0) return child; const next = [...child.goals]; const [g] = next.splice(idx, 1); next.unshift(g); return { ...child, goals: next }; }); };
@@ -1017,7 +1163,7 @@ const App: React.FC = () => {
     } else {
       localStorage.removeItem('koiny_premium_active');
     }
-    setData(prev => ({ ...prev, isPremium: enabled }));
+    setData(prev => ({ ...prev, isPremium: enabled, updatedAt: new Date().toISOString() }));
   };
 
   const handleLoginSuccess = async (demoData?: GlobalState) => {
@@ -1132,7 +1278,7 @@ const App: React.FC = () => {
       {view === 'PARENT' && (
         <ParentView
           data={data} ownerId={ownerId} language={data.language} onApprove={handleApprove} onReject={handleReject} onAddMission={handleAddMission}
-          onDeleteActiveMission={handleDeleteActiveMission} onManualTransaction={handleManualTransaction} onAddChild={handleAddChild}
+          onDeleteActiveMission={handleDeleteActiveMission} onEditMission={handleEditMission} onManualTransaction={handleManualTransaction} onAddChild={handleAddChild}
           onEditChild={handleEditChild} onDeleteGoal={handleDeleteGoal} onArchiveGoal={handleArchiveGoal} onDeleteChild={handleDeleteChild} onSetPin={handleSetPin} onClearHistory={handleClearHistory}
           onUpdatePassword={async (p) => { await updatePassword(p); }} onDeleteAccount={async () => { await deleteAccount(); setView('LANDING'); }}
           onExit={handleLogout} onTutorialComplete={handleParentTutorialComplete} onToggleSound={handleToggleSound} onSetLanguage={setLanguage}

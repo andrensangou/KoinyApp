@@ -28,6 +28,7 @@ interface ParentViewProps {
   onReject: (childId: string, missionId: string, note?: string) => void;
   onAddMission: (childId: string, title: string, amount: number) => void;
   onDeleteActiveMission: (childId: string, missionId: string) => void;
+  onEditMission: (childId: string, missionId: string, updates: { title?: string; reward?: number }) => void;
   onManualTransaction: (childId: string, amount: number, reason: string) => void;
   onAddChild: (child: Omit<ChildProfile, 'id' | 'missions' | 'history' | 'tutorialSeen' | 'balance'>) => void;
   onEditChild: (childId: string, updates: Partial<ChildProfile>) => void;
@@ -124,7 +125,7 @@ const getTranslatedTitle = (title: string, language: Language) => {
 };
 
 const ParentView: React.FC<ParentViewProps> = ({
-  data, ownerId, language, onApprove, onReject, onAddMission, onDeleteActiveMission,
+  data, ownerId, language, onApprove, onReject, onAddMission, onDeleteActiveMission, onEditMission,
   onManualTransaction, onAddChild, onEditChild, onDeleteChild, onSetPin,
   onClearHistory, onUpdatePassword, onDeleteAccount,
   onExit, onTutorialComplete, onToggleSound, onSetLanguage, onUpdateMaxBalance,
@@ -225,6 +226,11 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('THIS_MONTH');
   const [showHelp, setShowHelp] = useState(false);
   const [goalsFilter, setGoalsFilter] = useState<GoalsFilter>('ALL');
+
+  // Edit Mission Modal state
+  const [editingMission, setEditingMission] = useState<{ id: string; title: string; reward: number } | null>(null);
+  const [editMissionTitle, setEditMissionTitle] = useState('');
+  const [editMissionReward, setEditMissionReward] = useState('');
 
   const [triggerAddGoal, setTriggerAddGoal] = useState(false);
 
@@ -1427,10 +1433,130 @@ const ParentView: React.FC<ParentViewProps> = ({
                 </div>
               </section>
 
+              {/* ===== ACTIVE MISSIONS SECTION ===== */}
+              {activeChild && activeChild.missions && activeChild.missions.filter(m => m.status === 'ACTIVE').length > 0 && (
+                <section className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t.parent.activeMissions}</h2>
+                      <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-black">{activeChild.missions.filter(m => m.status === 'ACTIVE').length}</span>
+                    </div>
+                    <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1 ml-3"></div>
+                  </div>
+                  <div className="space-y-3">
+                    {activeChild.missions.filter(m => m.status === 'ACTIVE').map(mission => (
+                      <div key={mission.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 group hover:shadow-md transition-all">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className={`w-10 h-10 rounded-xl bg-${activeChild.colorClass}-50 dark:bg-${activeChild.colorClass}-900/20 text-${activeChild.colorClass}-500 dark:text-${activeChild.colorClass}-400 flex items-center justify-center text-lg shrink-0`}>
+                            <i className={getIcon(mission.icon, 'fa-solid fa-star')}></i>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{getTranslatedTitle(mission.title, language)}</p>
+                            <p className="text-emerald-500 text-xs font-black">+{mission.reward}€</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => {
+                              setEditingMission({ id: mission.id, title: mission.title, reward: mission.reward });
+                              setEditMissionTitle(mission.title);
+                              setEditMissionReward(mission.reward.toString());
+                            }}
+                            aria-label={t.parent.editMissionTitle}
+                            className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors active:scale-90"
+                          >
+                            <i className="fa-solid fa-pen text-xs"></i>
+                          </button>
+                          <button
+                            onClick={() => openConfirm(
+                              t.parent.deleteMissionConfirm,
+                              mission.title + ' (+' + mission.reward + '€)',
+                              () => selectedChildId && onDeleteActiveMission(selectedChildId, mission.id),
+                              'danger'
+                            )}
+                            aria-label={t.parent.deleteMissionConfirm}
+                            className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 flex items-center justify-center hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors active:scale-90"
+                          >
+                            <i className="fa-solid fa-trash text-xs"></i>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* ===== EDIT MISSION MODAL ===== */}
+              {editingMission && (
+                <div className="fixed inset-0 z-[100] flex items-end justify-center pb-8 pt-12 px-4 sm:items-center" onClick={() => setEditingMission(null)}>
+                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+                  <div className="relative bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-sm p-6 animate-slide-up sm:animate-pop-in border border-slate-200 dark:border-slate-700 max-h-full overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-center mb-5">
+                      <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center">
+                        <i className="fa-solid fa-pen-to-square text-2xl text-indigo-500"></i>
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-black text-center text-slate-800 dark:text-white mb-6 tracking-tight">{t.parent.editMissionTitle}</h3>
+
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{t.parent.formTitleLabel}</label>
+                        <input
+                          type="text"
+                          value={editMissionTitle}
+                          onChange={(e) => setEditMissionTitle(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{t.parent.formAmountLabel}</label>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.5"
+                          min="0.5"
+                          value={editMissionReward}
+                          onChange={(e) => setEditMissionReward(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setEditingMission(null)}
+                        className="flex-1 py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all uppercase tracking-widest text-[10px] active:scale-95"
+                      >
+                        {t.common.cancel}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (selectedChildId && editMissionTitle.trim()) {
+                            const updates: { title?: string; reward?: number } = {};
+                            if (editMissionTitle.trim() !== editingMission.title) updates.title = editMissionTitle.trim();
+                            const newReward = parseFloat(editMissionReward);
+                            if (!isNaN(newReward) && newReward > 0 && newReward !== editingMission.reward) updates.reward = newReward;
+                            if (Object.keys(updates).length > 0) {
+                              onEditMission(selectedChildId, editingMission.id, updates);
+                            }
+                          }
+                          setEditingMission(null);
+                        }}
+                        className="flex-1 py-3.5 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-black rounded-2xl shadow-lg shadow-indigo-200 dark:shadow-none transition-all uppercase tracking-widest text-[10px] active:scale-95 flex items-center justify-center gap-2"
+                      >
+                        <i className="fa-solid fa-check"></i>
+                        {t.parent.editMissionSave}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Quick Actions (QR & Premium) - Added for visibility */}
               <section className="space-y-4 pt-2">
                 <div className="flex items-center gap-2 mb-2 px-1">
-                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Raccourcis</h2>
+                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t.parent.shortcuts}</h2>
                   <div className="h-px bg-slate-200 flex-1"></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

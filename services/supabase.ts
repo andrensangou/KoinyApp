@@ -160,35 +160,78 @@ export const signInWithGoogle = async () => {
 export const signInWithApple = async () => {
     try {
         const isNative = Capacitor.isNativePlatform();
+        const platform = Capacitor.getPlatform();
 
-        if (isNative) {
-            // Native iOS: Use the Apple Sign-In Capacitor plugin
-            const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
+        if (isNative && platform === 'ios') {
+            try {
+                // Native iOS: Use the Apple Sign-In Capacitor plugin
+                const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
 
-            const result = await SignInWithApple.authorize({
-                clientId: 'com.koiny.app',
-                redirectURI: 'https://xmicutzneisrrtqgstro.supabase.co/auth/v1/callback',
-                scopes: 'email name',
-                state: crypto.randomUUID(), // CSRF protection - random per request
-                nonce: crypto.randomUUID(), // Replay attack protection
-            });
+                console.log('🍎 [APPLE] Attempting native Sign in with Apple...');
 
-            if (!result.response?.identityToken) {
-                throw new Error('No identity token received from Apple');
+                // Generate raw nonce and SHA256 hash for Apple
+                const rawNonce = crypto.randomUUID();
+                const encoder = new TextEncoder();
+                const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(rawNonce));
+                const hashedNonce = Array.from(new Uint8Array(hashBuffer))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+
+                console.log('🍎 [APPLE] Nonce generated, hashed for Apple');
+
+                const result = await SignInWithApple.authorize({
+                    clientId: 'com.koiny.app',
+                    redirectURI: 'com.koiny.app://callback',
+                    scopes: 'email name',
+                    state: crypto.randomUUID(),
+                    nonce: hashedNonce, // Apple gets the SHA256 hash
+                });
+
+                console.log('🍎 [APPLE] Response:', result);
+
+                if (!result?.response?.identityToken) {
+                    throw new Error('No identity token received from Apple');
+                }
+
+                console.log('🍎 [APPLE] Identity token received, exchanging with Supabase...');
+
+                // Exchange Apple's identity token with Supabase
+                // Supabase gets the RAW nonce (it will hash it internally to verify)
+                const { data, error } = await supabase.auth.signInWithIdToken({
+                    provider: 'apple',
+                    token: result.response.identityToken,
+                    nonce: rawNonce, // Supabase gets the raw nonce
+                });
+
+                if (error) {
+                    console.error('❌ [APPLE] Supabase token exchange failed:', error);
+                    throw error;
+                }
+
+                console.log('✅ [APPLE] Sign-In successful for:', data.user?.email);
+                return { data, error: null };
+            } catch (nativeError: any) {
+                console.error('❌ [APPLE Native] Error:', nativeError.message);
+                console.log('⚠️ [APPLE] Falling back to OAuth browser...');
+
+                // Fallback to OAuth browser
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'apple',
+                    options: {
+                        redirectTo: 'com.koiny.app://callback',
+                        skipBrowserRedirect: true,
+                    },
+                });
+
+                if (error) throw error;
+                if (data?.url) {
+                    await Browser.open({ url: data.url });
+                }
+                return { data, error: null };
             }
-
-            // Exchange Apple's identity token with Supabase
-            const { data, error } = await supabase.auth.signInWithIdToken({
-                provider: 'apple',
-                token: result.response.identityToken,
-            });
-
-            if (error) throw error;
-
-            log('✅ Apple Sign-In successful');
-            return { data, error: null };
         } else {
             // Web: Use Supabase OAuth redirect
+            console.log('🍎 [APPLE Web] Initiating OAuth flow...');
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'apple',
                 options: {
@@ -200,7 +243,7 @@ export const signInWithApple = async () => {
             return { data, error: null };
         }
     } catch (error: any) {
-        console.error('Error signing in with Apple:', error.message || error);
+        console.error('❌ Error signing in with Apple:', error.message || error);
         return { data: null, error };
     }
 };
@@ -533,28 +576,56 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                 const newGoals = child.goals.filter((g: any) => !isUUID(g.id) && g.target > 0);
                 const existingGoals = child.goals.filter((g: any) => isUUID(g.id) && g.target > 0);
 
-                // ✅ Insert uniquement les nouveaux
+                // ✅ Insert uniquement les nouveaux (avec vérification anti-doublon)
                 if (newGoals.length > 0) {
-                    const goalsToInsert = newGoals.map((g: any) => ({
-                        id: crypto.randomUUID(),
-                        child_id: savedChildId,
-                        title: g.name || 'Objectif',
-                        target_amount: g.target,
-                        current_amount: g.current || 0,
-                        image_url: g.icon || null,
-                        status: g.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE',
-                        is_achieved: g.status === 'COMPLETED'
-                    }));
+                    // Charger les goals existants pour cet enfant afin d'éviter les doublons
+                    const { data: existingDbGoals } = await supabase
+                        .from('goals')
+                        .select('id, title, target_amount')
+                        .eq('child_id', savedChildId);
 
-                    const { error } = await supabase.from('goals').insert(goalsToInsert);
-                    if (error) {
-                        console.error('❌ Goals insert error:', error.message);
-                    } else {
-                        const goalIdMapping: Record<string, string> = {};
-                        newGoals.forEach((g: any, i: number) => {
-                            goalIdMapping[g.id] = goalsToInsert[i].id;
-                        });
-                        Object.assign(idMapping, goalIdMapping);
+                    const goalsToInsert = newGoals
+                        .filter((g: any) => {
+                            // Vérifier si un goal avec le même titre ET montant existe déjà
+                            const isDuplicate = (existingDbGoals || []).some(
+                                (existing: any) => existing.title === (g.name || 'Objectif') && existing.target_amount === g.target
+                            );
+                            if (isDuplicate) {
+                                log(`♻️ [SUPABASE] Goal "${g.name}" already exists for child, skipping insert`);
+                                // Mapper l'ID local vers l'ID existant en DB
+                                const matchingGoal = (existingDbGoals || []).find(
+                                    (existing: any) => existing.title === (g.name || 'Objectif') && existing.target_amount === g.target
+                                );
+                                if (matchingGoal) {
+                                    idMapping[g.id] = matchingGoal.id;
+                                }
+                            }
+                            return !isDuplicate;
+                        })
+                        .map((g: any) => ({
+                            id: crypto.randomUUID(),
+                            child_id: savedChildId,
+                            title: g.name || 'Objectif',
+                            target_amount: g.target,
+                            current_amount: g.current || 0,
+                            image_url: g.icon || null,
+                            status: g.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE',
+                            is_achieved: g.status === 'COMPLETED'
+                        }));
+
+                    if (goalsToInsert.length > 0) {
+                        const { error } = await supabase.from('goals').insert(goalsToInsert);
+                        if (error) {
+                            console.error('❌ Goals insert error:', error.message);
+                        } else {
+                            // Mapper les IDs des goals réellement insérés
+                            const filteredNewGoals = newGoals.filter((g: any) => !idMapping[g.id]);
+                            filteredNewGoals.forEach((g: any, i: number) => {
+                                if (goalsToInsert[i]) {
+                                    idMapping[g.id] = goalsToInsert[i].id;
+                                }
+                            });
+                        }
                     }
                 }
 

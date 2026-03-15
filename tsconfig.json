@@ -29,6 +29,12 @@
     "./**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "screenshots",
+    ".agent",
+    ".agents",
+    ".claude",
+    "docs",
+    "ios"
   ]
 }

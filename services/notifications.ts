@@ -200,6 +200,8 @@ class NotificationService {
             'GIFT': 1001,
             'MISSION': 1002,
             'MISSION_COMPLETE': 1003,
+            'NEW_MISSION': 1004,
+            'GOAL_MILESTONE': 1005,
             'PARENT_REMINDER': this.notificationId++, // Rappels sans limite
             'default': this.notificationId++
         };
@@ -224,6 +226,69 @@ class NotificationService {
      */
     notifyParentReminder(title: string, body: string) {
         this.send(title, body, { type: 'PARENT_REMINDER' });
+    }
+
+    /**
+     * Notify child when a new mission is created by the parent
+     */
+    notifyNewMission(childId: string, title: string, body: string) {
+        this.send(title, body, { childId, type: 'NEW_MISSION' });
+    }
+
+    /**
+     * Notify when a child reaches a savings goal milestone (50%, 75%, 100%)
+     */
+    notifyGoalMilestone(childId: string, title: string, body: string) {
+        this.send(title, body, { childId, type: 'GOAL_MILESTONE' });
+    }
+
+    /**
+     * Schedule a weekly pocket money reminder (every Sunday at 10:00)
+     * Uses native scheduled notifications for persistence even when app is closed
+     */
+    async scheduleWeeklyReminder(title: string, body: string) {
+        if (!this.isNative) {
+            console.log('[Notifications] Weekly reminder only available on native platforms');
+            return;
+        }
+
+        try {
+            // Cancel any existing weekly reminder first
+            try {
+                await LocalNotifications.cancel({ notifications: [{ id: 9999 }] });
+            } catch (_) { }
+
+            // Schedule for next Sunday at 10:00
+            const now = new Date();
+            const nextSunday = new Date(now);
+            nextSunday.setDate(now.getDate() + (7 - now.getDay()) % 7 || 7);
+            nextSunday.setHours(10, 0, 0, 0);
+
+            // If it's already past 10:00 on Sunday, schedule for next week
+            if (nextSunday <= now) {
+                nextSunday.setDate(nextSunday.getDate() + 7);
+            }
+
+            await LocalNotifications.schedule({
+                notifications: [{
+                    id: 9999,
+                    title: title,
+                    body: body,
+                    schedule: {
+                        at: nextSunday,
+                        repeats: true,
+                        every: 'week',
+                        allowWhileIdle: true
+                    },
+                    sound: 'default',
+                    smallIcon: 'ic_stat_icon_config_sample',
+                    iconColor: '#667eea'
+                }]
+            });
+            console.log('[Notifications] ✅ Weekly reminder scheduled for', nextSunday.toISOString());
+        } catch (error) {
+            console.error('[Notifications] Error scheduling weekly reminder:', error);
+        }
     }
 }
 

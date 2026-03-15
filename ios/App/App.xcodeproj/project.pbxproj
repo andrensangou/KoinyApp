@@ -26,6 +26,7 @@
 		65A8A0E32F4B910E00DBB640 /* BiometricPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65A8A0E22F4B910E00DBB640 /* BiometricPlugin.swift */; };
 		65B1F0012F5D000000AABB01 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B1F0002F5D000000AABB01 /* SceneDelegate.swift */; };
 		65C9B0A12F6E100000CC1234 /* KoinyBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C9B0A02F6E100000CC1234 /* KoinyBridgeViewController.swift */; };
+		65F857102F65F17200219050 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 65F8570F2F65F17200219050 /* Products.storekit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,6 +76,7 @@
 		65A8A0E22F4B910E00DBB640 /* BiometricPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricPlugin.swift; sourceTree = "<group>"; };
 		65B1F0002F5D000000AABB01 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		65C9B0A02F6E100000CC1234 /* KoinyBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KoinyBridgeViewController.swift; sourceTree = "<group>"; };
+		65F8570F2F65F17200219050 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -116,6 +118,7 @@
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
+				65F8570F2F65F17200219050 /* Products.storekit */,
 				658196052F4CED700040B828 /* PrivacyInfo.xcprivacy */,
 				65A8A0DF2F4B8EBC00DBB640 /* KoinyWidgetExtension.entitlements */,
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
@@ -285,6 +288,7 @@
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
 				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
+				65F857102F65F17200219050 /* Products.storekit in Resources */,
 				2FAD9763203C412B000D30F8 /* config.xml in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
