@@ -124,15 +124,15 @@ const t = translations[data.language || 'fr'];
 - Ne sauvegarde PAS `isPremium` directement
 - Dérivé de localStorage ou RevenueCat à chaque startup
 
-**Offline Mode - ⚠️ TODO IMPORTANT (15/03):**
-- **Problème actuel:** Modal d'abonnement reste ouvert en offline, boutons cliquables
-- **Comportement:** Achats échouent silencieusement (RevenueCat a besoin de connexion)
-- **Solution nécessaire:**
-  - Désactiver boutons d'achat quand `isOfflineMode = true` (passer depuis ParentView props)
-  - Afficher message "Vous êtes hors ligne. Impossible d'acheter maintenant."
-  - Le modal peut rester ouvert (pour voir les plans), mais achats disabled
-  - Teste en Dev Tools → offline pour valider
-- **Où corriger:** SubscriptionModal.tsx + ParentView.tsx (passer isOfflineMode en props)
+**Offline Mode (15/03 - IMPLEMENTED):**
+- **Comportement:** Modal d'abonnement reste ouvert en offline (voir les plans), mais achats disabled
+- **Implémentation:**
+  - `isOfflineMode` passé depuis ParentView.tsx → SubscriptionModal.tsx
+  - Affiche banneau rouge: "Vous êtes hors ligne. Les achats sont désactivés."
+  - Tous les boutons d'achat grisés (opacity-60, cursor-not-allowed)
+  - Bouton "Restaurer mes achats" aussi désactivé en offline
+  - Traductions: FR/NL/EN
+- **Code:** SubscriptionModal.tsx lines 168-178 (banner), 190 (isDisabled), 196-199 (styling)
 
 ## Build exclusions
 
