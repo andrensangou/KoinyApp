@@ -7,6 +7,7 @@ interface SubscriptionModalProps {
   onSubscribed: () => void;
   t: any;
   language: string;
+  isOfflineMode?: boolean;
 }
 
 export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
@@ -14,7 +15,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   onClose,
   onSubscribed,
   t,
-  language
+  language,
+  isOfflineMode
 }) => {
   const [products, setProducts] = useState<SubscriptionProduct[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -164,6 +166,16 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </p>
         </div>
 
+        {/* Offline Warning */}
+        {isOfflineMode && (
+          <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 mb-6 border border-red-200 dark:border-red-800">
+            <p className="text-center text-sm font-semibold text-red-700 dark:text-red-300">
+              <i className="fa-solid fa-wifi-slash mr-2"></i>
+              {language === 'fr' ? 'Vous êtes hors ligne. Les achats sont désactivés.' : (language === 'nl' ? 'Je bent offline. Aankopen zijn uitgeschakeld.' : 'You are offline. Purchases are disabled.')}
+            </p>
+          </div>
+        )}
+
         {/* Subscription Options */}
         <div className="space-y-3 mb-6">
           {isLoading ? (
@@ -175,15 +187,17 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           ) : (
             products.map(product => {
               const isCurrentSubscription = subscriptionStatus.productId === product.id;
-              const isDisabled = isLoading || isCurrentSubscription;
+              const isDisabled = isLoading || isCurrentSubscription || isOfflineMode;
 
               return (
                 <button
                   key={product.id}
-                  onClick={() => !isCurrentSubscription && handlePurchase(product.id)}
+                  onClick={() => !isCurrentSubscription && !isOfflineMode && handlePurchase(product.id)}
                   disabled={isDisabled}
                   className={`w-full p-4 rounded-2xl border-2 transition-all text-left group ${
-                    isCurrentSubscription
+                    isOfflineMode
+                      ? 'border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-60'
+                      : isCurrentSubscription
                       ? 'border-green-500 bg-green-50 dark:bg-green-900/20 dark:border-green-600 cursor-default'
                       : 'border-indigo-200 dark:border-indigo-800 hover:border-indigo-600 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'
                   }`}
@@ -234,8 +248,12 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         {/* Restore Purchases Button */}
         <button
           onClick={handleRestore}
-          disabled={isRestoring}
-          className="w-full py-3 text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline transition-colors mb-4"
+          disabled={isRestoring || isOfflineMode}
+          className={`w-full py-3 text-sm font-medium transition-colors mb-4 ${
+            isOfflineMode
+              ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed'
+              : 'text-indigo-600 dark:text-indigo-400 hover:underline'
+          }`}
         >
           {isRestoring ? (
             <i className="fa-solid fa-spinner animate-spin mr-2"></i>

@@ -2357,6 +2357,7 @@ const ParentView: React.FC<ParentViewProps> = ({
         }}
         t={t}
         language={language}
+        isOfflineMode={isOfflineMode}
       />
 
       {/* Confirmation Dialog System */}
