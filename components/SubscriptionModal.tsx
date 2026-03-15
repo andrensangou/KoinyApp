@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { subscriptionService, SubscriptionProduct, SubscriptionState } from '../services/subscription';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -69,6 +71,15 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     } catch (error) {
       console.error('Erreur achat:', error);
       setIsLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    const url = 'https://apps.apple.com/account/subscriptions';
+    if (Capacitor.isNativePlatform()) {
+      await Browser.open({ url });
+    } else {
+      window.open(url, '_blank');
     }
   };
 
@@ -260,6 +271,17 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           ) : null}
           {language === 'fr' ? 'Restaurer mes achats' : (language === 'nl' ? 'Mijn aankopen herstellen' : 'Restore my purchases')}
         </button>
+
+        {/* Manage Subscription Button — only when subscribed */}
+        {subscriptionStatus.isSubscribed && (
+          <button
+            onClick={handleManageSubscription}
+            className="w-full py-3 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:underline transition-colors mb-4"
+          >
+            <i className="fa-solid fa-gear mr-2"></i>
+            {language === 'fr' ? 'Gérer mon abonnement' : (language === 'nl' ? 'Mijn abonnement beheren' : 'Manage my subscription')}
+          </button>
+        )}
 
         {/* Footer */}
         <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl mb-4">
