@@ -527,7 +527,10 @@ const ParentView: React.FC<ParentViewProps> = ({
       });
       return;
     }
-    onAddMission(selectedChildId, newTitle, parseFloat(newAmount));
+    const amount = parseFloat(newAmount);
+    if (isNaN(amount) || amount <= 0 || amount > 100) return;
+    if (newTitle.length > 100) return;
+    onAddMission(selectedChildId, newTitle.trim(), amount);
     setNewTitle('');
     setNewAmount('');
   };
@@ -573,6 +576,8 @@ const ParentView: React.FC<ParentViewProps> = ({
     }
 
     const amount = parseFloat(transAmount.replace(',', '.'));
+    if (isNaN(amount) || amount <= 0 || amount > 1000) return;
+    if (transReason && transReason.length > 200) return;
     const currentMax = data.maxBalance === 0 ? Infinity : (data.maxBalance || 100);
 
     // Check limit for deposits
@@ -1532,11 +1537,11 @@ const ParentView: React.FC<ParentViewProps> = ({
                       </button>
                       <button
                         onClick={() => {
-                          if (selectedChildId && editMissionTitle.trim()) {
+                          if (selectedChildId && editMissionTitle.trim() && editMissionTitle.trim().length <= 100) {
                             const updates: { title?: string; reward?: number } = {};
                             if (editMissionTitle.trim() !== editingMission.title) updates.title = editMissionTitle.trim();
                             const newReward = parseFloat(editMissionReward);
-                            if (!isNaN(newReward) && newReward > 0 && newReward !== editingMission.reward) updates.reward = newReward;
+                            if (!isNaN(newReward) && newReward > 0 && newReward <= 100 && newReward !== editingMission.reward) updates.reward = newReward;
                             if (Object.keys(updates).length > 0) {
                               onEditMission(selectedChildId, editingMission.id, updates);
                             }

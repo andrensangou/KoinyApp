@@ -5,9 +5,8 @@
 
 import { Capacitor } from '@capacitor/core';
 import { Purchases, LOG_LEVEL, PURCHASES_ERROR_CODE } from '@revenuecat/purchases-capacitor';
-
-// ⚠️ Remplacer par ta vraie clé API RevenueCat (appl_...)
-const REVENUECAT_API_KEY = 'appl_CdFRyKVUQPCUdodtGAIsnJsEpsT';
+import { REVENUECAT_API_KEY, IS_PRODUCTION } from '../config';
+import { logger } from './logger';
 
 export interface SubscriptionProduct {
   id: string;
@@ -25,10 +24,12 @@ export interface SubscriptionState {
 }
 
 const ENTITLEMENT_ID = 'Koiny Premium'; // L'ID de l'entitlement dans RevenueCat
+const PREMIUM_PRODUCTS = ['com.koiny.premium.monthly', 'com.koiny.premium.yearly'];
 
 class SubscriptionService {
   private isNative: boolean = false;
   private initialized: boolean = false;
+  private initPromise: Promise<void> | null = null;
 
   constructor() {
     this.isNative = Capacitor.isNativePlatform();
@@ -41,12 +42,21 @@ class SubscriptionService {
     if (this.initialized) return;
 
     if (!this.isNative) {
-      console.log('[Subscription] Mode web — RevenueCat non disponible');
+      logger.info('[Subscription] Mode web — RevenueCat non disponible');
       return;
     }
 
+    // Créer la promesse d'init pour que les autres méthodes puissent l'attendre
+    if (!this.initPromise) {
+      this.initPromise = this._doInitialize(userId);
+    }
+
+    return this.initPromise;
+  }
+
+  private async _doInitialize(userId?: string): Promise<void> {
     try {
-      console.log('[Subscription] Initialisation RevenueCat...');
+      logger.info('[Subscription] Initialisation RevenueCat...');
 
       await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
 
@@ -56,27 +66,61 @@ class SubscriptionService {
       });
 
       this.initialized = true;
-      console.log('[Subscription] ✅ RevenueCat initialisé');
+      logger.info('[Subscription] RevenueCat initialisé');
     } catch (error) {
-      console.error('[Subscription] ❌ Erreur initialisation RevenueCat:', error);
+      logger.error('[Subscription] Erreur initialisation RevenueCat', { error });
     }
+  }
+
+  /**
+   * Attend que RevenueCat soit initialisé (max 10s)
+   */
+  private async waitForInit(): Promise<boolean> {
+    if (this.initialized) return true;
+    if (!this.isNative) return false;
+
+    if (this.initPromise) {
+      try {
+        // Attendre l'init avec un timeout de 10s
+        await Promise.race([
+          this.initPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Init timeout')), 10000))
+        ]);
+        return this.initialized;
+      } catch {
+        logger.warn('[Subscription] Timeout attente initialisation');
+        return false;
+      }
+    }
+
+    return false;
   }
 
   /**
    * Récupère les produits d'abonnement disponibles depuis RevenueCat
    */
   async getProducts(): Promise<SubscriptionProduct[]> {
-    if (!this.isNative || !this.initialized) {
-      console.log('[Subscription] Mode dev — produits mockés');
+    if (!this.isNative) {
+      logger.debug('[Subscription] Mode web — produits mockés');
       return this.getMockProducts();
     }
 
+    // Attendre l'init si en cours
+    const ready = await this.waitForInit();
+    if (!ready) {
+      if (!IS_PRODUCTION) {
+        return this.getMockProducts();
+      }
+      logger.warn('[Subscription] RevenueCat non initialisé, pas de produits');
+      return [];
+    }
+
     try {
-      console.log('[Subscription] Récupération des offres RevenueCat...');
+      logger.debug('[Subscription] Récupération des offres RevenueCat...');
       const offerings = await Purchases.getOfferings();
 
       if (!offerings.current || !offerings.current.availablePackages.length) {
-        console.warn('[Subscription] Aucune offre trouvée dans RevenueCat');
+        logger.warn('[Subscription] Aucune offre trouvée dans RevenueCat');
         return [];
       }
 
@@ -88,7 +132,7 @@ class SubscriptionService {
         duration: pkg.packageType === 'ANNUAL' ? 'year' : 'month'
       }));
     } catch (error) {
-      console.error('[Subscription] Erreur récupération offres:', error);
+      logger.error('[Subscription] Erreur récupération offres', { error });
       return [];
     }
   }
@@ -97,18 +141,28 @@ class SubscriptionService {
    * Initie un achat d'abonnement via RevenueCat
    */
   async purchaseSubscription(productId: string): Promise<boolean> {
-    console.log('[Subscription] Achat en cours:', productId);
+    logger.info('[Subscription] Achat en cours', { productId });
 
-    if (!this.isNative || !this.initialized) {
-      console.log('[Subscription] Mode dev — achat simulé');
+    if (!this.isNative) {
+      if (IS_PRODUCTION) {
+        logger.warn('[Subscription] Achat impossible hors native en production');
+        return false;
+      }
+      logger.debug('[Subscription] Mode dev — achat simulé');
       return this.simulatePurchase();
+    }
+
+    const ready = await this.waitForInit();
+    if (!ready) {
+      logger.error('[Subscription] RevenueCat non initialisé pour achat');
+      return false;
     }
 
     try {
       // Récupérer les offres pour trouver le bon package
       const offerings = await Purchases.getOfferings();
       if (!offerings.current) {
-        console.error('[Subscription] Pas d\'offre courante');
+        logger.error('[Subscription] Pas d\'offre courante');
         return false;
       }
 
@@ -117,7 +171,7 @@ class SubscriptionService {
       );
 
       if (!pkg) {
-        console.error('[Subscription] Package non trouvé:', productId);
+        logger.error('[Subscription] Package non trouvé', { productId });
         return false;
       }
 
@@ -126,27 +180,26 @@ class SubscriptionService {
 
       // Vérifier si l'entitlement est actif après l'achat
       // Fallback: vérifier aussi activeSubscriptions (Xcode sandbox peut ne pas remplir entitlements.active)
-      const PREMIUM_PRODUCTS = ['com.koiny.premium.monthly', 'com.koiny.premium.yearly'];
       const isPremium =
         customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined ||
         customerInfo.activeSubscriptions.some(id => PREMIUM_PRODUCTS.includes(id));
 
       if (isPremium) {
-        console.log('[Subscription] ✅ Achat réussi, Premium activé !');
+        logger.info('[Subscription] Achat réussi, Premium activé');
         localStorage.setItem('koiny_premium_active', 'true');
         return true;
       }
 
-      console.warn('[Subscription] Achat terminé mais entitlement non actif');
+      logger.warn('[Subscription] Achat terminé mais entitlement non actif');
       return false;
     } catch (error: any) {
       // L'utilisateur a annulé l'achat
       if (error?.code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR) {
-        console.log('[Subscription] Achat annulé par l\'utilisateur');
+        logger.info('[Subscription] Achat annulé par l\'utilisateur');
         return false;
       }
 
-      console.error('[Subscription] ❌ Erreur achat:', error);
+      logger.error('[Subscription] Erreur achat', { error });
       throw error;
     }
   }
@@ -155,8 +208,13 @@ class SubscriptionService {
    * Vérifie l'état de l'abonnement actuel via RevenueCat
    */
   async getSubscriptionStatus(): Promise<SubscriptionState> {
-    if (!this.isNative || !this.initialized) {
-      // En mode web, vérifier le localStorage
+    if (!this.isNative) {
+      const isPremium = localStorage.getItem('koiny_premium_active') === 'true';
+      return { isSubscribed: isPremium };
+    }
+
+    const ready = await this.waitForInit();
+    if (!ready) {
       const isPremium = localStorage.getItem('koiny_premium_active') === 'true';
       return { isSubscribed: isPremium };
     }
@@ -164,7 +222,6 @@ class SubscriptionService {
     try {
       const { customerInfo } = await Purchases.getCustomerInfo();
       const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
-      const PREMIUM_PRODUCTS = ['com.koiny.premium.monthly', 'com.koiny.premium.yearly'];
       const hasActiveSubscription = customerInfo.activeSubscriptions.some(id => PREMIUM_PRODUCTS.includes(id));
 
       if (entitlement) {
@@ -184,7 +241,7 @@ class SubscriptionService {
       localStorage.removeItem('koiny_premium_active');
       return { isSubscribed: false };
     } catch (error) {
-      console.error('[Subscription] Erreur vérification statut:', error);
+      logger.error('[Subscription] Erreur vérification statut', { error });
       // Fallback localStorage
       const isPremium = localStorage.getItem('koiny_premium_active') === 'true';
       return { isSubscribed: isPremium };
@@ -195,31 +252,36 @@ class SubscriptionService {
    * Restaure les achats précédents via RevenueCat
    */
   async restorePurchases(): Promise<boolean> {
-    console.log('[Subscription] Restauration des achats...');
+    logger.info('[Subscription] Restauration des achats...');
 
-    if (!this.isNative || !this.initialized) {
-      console.log('[Subscription] Restauration non disponible en mode web');
+    if (!this.isNative) {
+      logger.info('[Subscription] Restauration non disponible en mode web');
+      return false;
+    }
+
+    const ready = await this.waitForInit();
+    if (!ready) {
+      logger.warn('[Subscription] RevenueCat non initialisé pour restauration');
       return false;
     }
 
     try {
       const { customerInfo } = await Purchases.restorePurchases();
-      const PREMIUM_PRODUCTS = ['com.koiny.premium.monthly', 'com.koiny.premium.yearly'];
       const isPremium =
         customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined ||
         customerInfo.activeSubscriptions.some(id => PREMIUM_PRODUCTS.includes(id));
 
       if (isPremium) {
         localStorage.setItem('koiny_premium_active', 'true');
-        console.log('[Subscription] ✅ Achats restaurés, Premium actif');
+        logger.info('[Subscription] Achats restaurés, Premium actif');
       } else {
         localStorage.removeItem('koiny_premium_active');
-        console.log('[Subscription] Aucun achat à restaurer');
+        logger.info('[Subscription] Aucun achat à restaurer');
       }
 
       return isPremium;
     } catch (error) {
-      console.error('[Subscription] ❌ Erreur restauration:', error);
+      logger.error('[Subscription] Erreur restauration', { error });
       return false;
     }
   }
@@ -232,7 +294,7 @@ class SubscriptionService {
 
     try {
       await Purchases.logIn({ appUserID: userId });
-      console.log('[Subscription] ✅ Utilisateur identifié dans RevenueCat:', userId);
+      logger.info('[Subscription] Utilisateur identifié dans RevenueCat');
 
       // Vérifier le statut après login
       const status = await this.getSubscriptionStatus();
@@ -240,7 +302,7 @@ class SubscriptionService {
         localStorage.setItem('koiny_premium_active', 'true');
       }
     } catch (error) {
-      console.error('[Subscription] Erreur login RevenueCat:', error);
+      logger.error('[Subscription] Erreur login RevenueCat', { error });
     }
   }
 
@@ -252,9 +314,9 @@ class SubscriptionService {
 
     try {
       await Purchases.logOut();
-      console.log('[Subscription] Utilisateur déconnecté de RevenueCat');
+      logger.info('[Subscription] Utilisateur déconnecté de RevenueCat');
     } catch (error) {
-      console.error('[Subscription] Erreur logout RevenueCat:', error);
+      logger.error('[Subscription] Erreur logout RevenueCat', { error });
     }
   }
 
@@ -280,7 +342,7 @@ class SubscriptionService {
   }
 
   private simulatePurchase(): boolean {
-    console.log('[Subscription] TEST MODE — Abonnement simulé activé');
+    logger.debug('[Subscription] TEST MODE — Abonnement simulé activé');
     localStorage.setItem('koiny_premium_active', 'true');
     return true;
   }

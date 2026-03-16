@@ -21,27 +21,35 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   isOfflineMode
 }) => {
   const [products, setProducts] = useState<SubscriptionProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [purchasingProductId, setPurchasingProductId] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionState>({ isSubscribed: false });
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [isRestoring, setIsRestoring] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
+      setErrorMessage('');
       loadProducts();
       checkSubscriptionStatus();
     }
   }, [isOpen]);
 
-  const loadProducts = async () => {
-    setIsLoading(true);
+  const loadProducts = async (retries = 3) => {
+    setIsLoadingProducts(true);
     try {
       const prods = await subscriptionService.getProducts();
+      if (prods.length === 0 && retries > 0) {
+        // RevenueCat peut être lent au 1er appel — retry après 3s
+        await new Promise(r => setTimeout(r, 3000));
+        return loadProducts(retries - 1);
+      }
       setProducts(prods);
     } catch (error) {
       console.error('Erreur chargement produits:', error);
     } finally {
-      setIsLoading(false);
+      setIsLoadingProducts(false);
     }
   };
 
@@ -55,22 +63,28 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   };
 
   const handlePurchase = async (productId: string) => {
-    setIsLoading(true);
+    if (purchasingProductId) return; // Bloquer double-clic
+    setPurchasingProductId(productId);
+    setErrorMessage('');
     try {
       const success = await subscriptionService.purchaseSubscription(productId);
       if (success) {
+        setSubscriptionStatus({ isSubscribed: true, productId });
         setSuccessMessage('✅');
         setTimeout(() => {
           onSubscribed();
           onClose();
         }, 2000);
-      } else {
-        // Achat annulé par l'utilisateur — pas d'erreur
-        setIsLoading(false);
       }
     } catch (error) {
       console.error('Erreur achat:', error);
-      setIsLoading(false);
+      setErrorMessage(
+        language === 'fr' ? 'Une erreur est survenue. Réessayez.' :
+        language === 'nl' ? 'Er is een fout opgetreden. Probeer opnieuw.' :
+        'An error occurred. Please try again.'
+      );
+    } finally {
+      setPurchasingProductId(null);
     }
   };
 
@@ -85,6 +99,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
   const handleRestore = async () => {
     setIsRestoring(true);
+    setErrorMessage('');
     try {
       const restored = await subscriptionService.restorePurchases();
       if (restored) {
@@ -93,6 +108,10 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           onSubscribed();
           onClose();
         }, 2000);
+      }
+      // Toujours recharger les produits après restore (réveille RevenueCat)
+      if (products.length === 0) {
+        await loadProducts(1);
       }
     } catch (error) {
       console.error('Erreur restauration:', error);
@@ -187,35 +206,64 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </div>
         )}
 
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-3 mb-4 border border-red-200 dark:border-red-800">
+            <p className="text-center text-sm text-red-700 dark:text-red-300">{errorMessage}</p>
+          </div>
+        )}
+
         {/* Subscription Options */}
         <div className="space-y-3 mb-6">
-          {isLoading ? (
+          {isLoadingProducts ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin">
                 <i className="fa-solid fa-spinner text-indigo-600 text-2xl"></i>
               </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">
+                {language === 'fr' ? 'Chargement des offres...' : (language === 'nl' ? 'Aanbiedingen laden...' : 'Loading offers...')}
+              </p>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+                {language === 'fr' ? 'Les offres ne sont pas encore disponibles.' : (language === 'nl' ? 'Aanbiedingen zijn nog niet beschikbaar.' : 'Offers are not yet available.')}
+              </p>
+              <button
+                onClick={() => loadProducts(2)}
+                className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition"
+              >
+                <i className="fa-solid fa-rotate-right mr-2"></i>
+                {language === 'fr' ? 'Réessayer' : (language === 'nl' ? 'Opnieuw proberen' : 'Retry')}
+              </button>
             </div>
           ) : (
             products.map(product => {
               const isCurrentSubscription = subscriptionStatus.productId === product.id;
-              const isDisabled = isLoading || isCurrentSubscription || isOfflineMode;
+              const isThisPurchasing = purchasingProductId === product.id;
+              const isDisabled = !!purchasingProductId || isCurrentSubscription || !!isOfflineMode;
 
               return (
                 <button
                   key={product.id}
-                  onClick={() => !isCurrentSubscription && !isOfflineMode && handlePurchase(product.id)}
+                  onClick={() => !isDisabled && handlePurchase(product.id)}
                   disabled={isDisabled}
                   className={`w-full p-4 rounded-2xl border-2 transition-all text-left group ${
                     isOfflineMode
                       ? 'border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-60'
                       : isCurrentSubscription
                       ? 'border-green-500 bg-green-50 dark:bg-green-900/20 dark:border-green-600 cursor-default'
+                      : isThisPurchasing
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 dark:border-indigo-400'
                       : 'border-indigo-200 dark:border-indigo-800 hover:border-indigo-600 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'
                   }`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="flex items-center gap-2">
+                        {isThisPurchasing && (
+                          <i className="fa-solid fa-spinner animate-spin text-indigo-600 dark:text-indigo-400"></i>
+                        )}
                         <h4 className={`font-bold ${
                           isCurrentSubscription
                             ? 'text-green-700 dark:text-green-400'

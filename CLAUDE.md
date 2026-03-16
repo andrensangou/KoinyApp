@@ -116,6 +116,7 @@ const t = translations[data.language || 'fr'];
 - Lire `koiny_premium_active` au démarrage avant setData() pour éviter flash couronne
 - Utiliser `setData(prev => ...)` NOT mutation pour isPremium
 - Inclure `updatedAt` dans handleSetPremium pour persister en Supabase
+- Refresh périodique: `visibilitychange` + intervalle 6h pour détecter annulations
 
 **SubscriptionModal UX:**
 - Affiche abonnement actif avec badge vert "Actif"
@@ -123,6 +124,15 @@ const t = translations[data.language || 'fr'];
 - Badge "💰 Économies 30%" pour plan annuel
 - Bouton "Gérer mon abonnement" → ouvre Apple subscriptions management
 - getSubscriptionStatus() retourne `productId` pour matching
+- Retry auto (3x3s) si produits vides + bouton "Réessayer"
+- Spinner sur le bouton cliqué pendant achat, double-clic impossible
+- Message d'erreur rouge si achat échoue
+
+**subscription.ts — waitForInit:**
+- `initPromise` permet aux méthodes d'attendre l'init RevenueCat (max 10s)
+- `getProducts()`, `purchaseSubscription()`, `getSubscriptionStatus()`, `restorePurchases()` attendent l'init
+- Sur native, plus de produits mockés — soit on attend l'init, soit liste vide
+- Mocks uniquement en mode web (!isNative) ou dev (!IS_PRODUCTION) si init échoue
 
 **Supabase:**
 - Ne sauvegarde PAS `isPremium` directement
@@ -144,9 +154,18 @@ const t = translations[data.language || 'fr'];
 - Balance plafonnée à MAX_BALANCE (100€)
 - Session via Capacitor Preferences (pas localStorage pour les tokens)
 
+### Corrections appliquées (15-16/03/2026)
+- ✅ Clé RevenueCat déplacée dans `.env` (via `config.ts`)
+- ✅ `simulatePurchase()` bloqué en production (`IS_PRODUCTION` guard)
+- ✅ Validation inputs: `isNaN`, montants max (100€ missions, 1000€ transactions), longueur max (100/200 chars)
+- ✅ `console.log` remplacé par `logger` dans `services/subscription.ts`
+- ✅ Refresh premium périodique: `visibilitychange` (retour premier plan) + intervalle 6h → détecte annulations
+- ✅ Fix: `waitForInit()` — produits ne chargeaient pas car modal ouvert avant init RevenueCat
+- ✅ Fix: SubscriptionModal retry auto + bouton "Réessayer" + spinner achat + anti double-clic
+
 ### Points à surveiller
 - **Premium spoofable:** localStorage `koiny_premium_active` modifiable côté client
-  - Mitigation: Vérifier RLS Supabase + refresh RevenueCat périodique
+  - Mitigation: refresh RevenueCat périodique (6h + foreground) détecte annulations
 - **Clés API:** Doivent être dans `.env`, JAMAIS hardcodées
 - **Input validation:** Toujours valider longueur + isNaN sur parseFloat
 - **Console logs:** Utiliser `services/logger.ts` pour données sensibles
@@ -162,9 +181,23 @@ const t = translations[data.language || 'fr'];
 5. App Store Connect: TestFlight > Créer groupe externe > Soumettre pour review
 
 **Notes:**
-- Les abonnements en TestFlight sont en mode Sandbox (gratuit pour testeurs)
+- Les abonnements en TestFlight sont en mode Sandbox (gratuit pour testeurs, durées accélérées)
 - Review Apple pour tests externes: 24-48h
-- Build 1.0.0 (1) uploadé le 15/03/2026
+- Xcode incrémente automatiquement le build number à chaque archive
+- Builds: (1) 15/03, (2) 15/03, (3) 16/03, (4+) 16/03 après contrat signé
+
+**Contrat "Apps payantes":**
+- Statut: "Actif" (signé le 16/03/2026)
+- Produits IAP: Disponibles (com.koiny.premium.monthly, com.koiny.premium.yearly)
+- RevenueCat: Récupère les produits correctement
+
+**Sentry — Issues connues:**
+- WatchdogTermination (RAM) — iOS tue l'app pour mémoire excessive, à investiguer
+- HTTP 406 sur `app_alerts` — table probablement absente dans Supabase
+- Requêtes profiles Supabase redondantes (3-4x par init)
+
+**Migration possible:**
+- Sentry → Firebase Crashlytics (gratuit illimité, simple à intégrer)
 
 ## Build exclusions
 

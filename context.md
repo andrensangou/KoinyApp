@@ -11,15 +11,19 @@
 - Bloquer l'UI en attendant un appel réseau (toujours optimistic UI d'abord)
 - Créer enfant/mission sans vérifier l'existence préalable (risque doublons)
 - Oublier `isDirectSupabaseOperation.current = true` lors d'opérations DB directes
-- Modifier `ParentView.tsx` sans précaution (2526 lignes, très dense)
+- Modifier `ParentView.tsx` sans précaution (2500+ lignes, très dense)
 - Utiliser autre chose que `crypto.randomUUID()` pour les nouveaux IDs
+- Hardcoder des clés API ou secrets dans le code source (utiliser `.env`)
 
 **TOUJOURS :**
 - Mettre à jour `updatedAt: new Date().toISOString()` à chaque modification du state
 - Supporter les 3 langues (fr/nl/en) pour tout nouveau texte dans `i18n.ts`
 - Passer par `updateChild(childId, updater)` pour modifier un enfant (force immediateSave + updatedAt)
-- Utiliser `setData(prev => ({ ...prev, updatedAt: ..., children: ... }))` (immutable update)
+- Utiliser `setData(prev => ({ ...prev, updatedAt: ..., ... }))` (immutable update)
 - Tester en mode offline (couper réseau)
+- Valider les inputs (longueur, type, NaN check sur parseFloat)
+- Utiliser le logger sécurisé (`services/logger.ts`) au lieu de `console.log` pour les données sensibles
+- Faire `npm run build && npx cap sync ios` après chaque modification avant test Xcode
 
 ---
 
@@ -50,20 +54,23 @@ npx cap open ios   # Ouvrir Xcode
 
 ## Fichiers Clés
 
-| Fichier | Lignes | Rôle |
-|---|---|---|
-| `App.tsx` | 1277 | Racine : GlobalState, ViewState, tous les handlers métier |
-| `components/ParentView.tsx` | 2526 | Dashboard parent (multi-onglets, très dense) |
-| `i18n.ts` | 1104 | Traductions FR/NL/EN |
-| `types.ts` | 155 | Interfaces TypeScript + constantes + données démo |
-| `services/supabase.ts` | 666 | Client Supabase, Auth, CRUD, `loadFromSupabase`, `saveToSupabase` |
-| `services/storage.ts` | 416 | `loadData` / `saveData`, cache hybride Preferences+Supabase |
-| `services/security.ts` | — | PIN PBKDF2 100k iter SHA-512, timing-safe compare |
-| `services/pinStorage.ts` | — | Stockage PIN local + sync Supabase |
-| `services/widgetBridge.ts` | — | Bridge JS → iOS Widget (Preferences → UserDefaults) |
-| `services/notifications.ts` | — | Notifications locales Capacitor + Web |
-| `services/realtime.ts` | — | Supabase Realtime (`postgres_changes`) |
-| `constants/icons.ts` | — | Mapping `icon_id` → classe FontAwesome |
+| Fichier | Rôle |
+|---|---|
+| `App.tsx` | Racine : GlobalState, ViewState, tous les handlers métier |
+| `components/ParentView.tsx` | Dashboard parent (multi-onglets, très dense, 2500+ lignes) |
+| `components/SubscriptionModal.tsx` | Modal abonnement premium |
+| `i18n.ts` | Traductions FR/NL/EN |
+| `types.ts` | Interfaces TypeScript + constantes + données démo |
+| `services/supabase.ts` | Client Supabase, Auth, CRUD, `loadFromSupabase`, `saveToSupabase` |
+| `services/storage.ts` | `loadData` / `saveData`, cache hybride Preferences+Supabase |
+| `services/subscription.ts` | RevenueCat SDK, IAP |
+| `services/security.ts` | PIN PBKDF2 100k iter SHA-512, timing-safe compare |
+| `services/pinStorage.ts` | Stockage PIN local + sync Supabase |
+| `services/widgetBridge.ts` | Bridge JS → iOS Widget (JS Preferences → iOS UserDefaults) |
+| `services/notifications.ts` | Notifications locales Capacitor + Web |
+| `services/realtime.ts` | Supabase Realtime (`postgres_changes`) |
+| `services/logger.ts` | Logger sécurisé avec anonymisation automatique |
+| `config.ts` | Validation des credentials au startup (env vars) |
 
 ---
 
@@ -276,59 +283,63 @@ Groupe: Koiny Premium
 1. com.koiny.premium.monthly
    - Durée: 1 mois
    - Prix: 1,99€/mois
-   - Disponibilité: Tous les pays
-   - Langues: FR / NL / EN
    - Status: ✅ Enregistré dans App Store Connect
 
 2. com.koiny.premium.yearly
    - Durée: 12 mois
    - Prix: 16,99€/an
-   - Disponibilité: Tous les pays
-   - Langues: FR / NL / EN
    - Status: ✅ Enregistré dans App Store Connect
 ```
 
 ### RevenueCat Setup
-**Status: Intégré & Prêt pour Sandbox** ✅
+**Status: Intégré & Prêt pour TestFlight** ✅
 
-- Dashboard : https://app.revenuecat.com
-- Apple Server-to-Server notifications : ✅ Configurées
-- Webhook URL : `https://api.revenuecat.com/v1/incoming-webhook`
-- **SDK** : `@revenuecat/purchases-capacitor@12.2.4` ✅
-- **API Key** : `appl_CdFRyKVUQPCUdodtGAIsnJsEpsT` (dans `services/subscription.ts`)
-- **Entitlement ID** : `Koiny Premium` *(Important : inclut la majuscule et l'espace, changé le 14/03)*
-- **Offering ID** : `default`
-- **Stockage local premium** : Clé `koiny_premium_active` (valeur: `'true'`). Lue au démarrage pour éviter le clignotement de l'UI avant la réponse de RevenueCat.
-- **Essai gratuit (Free Trial)** : Géré 100% par Apple (email auto à J-2). Pas de pop-up custom dans l'app pour éviter la surcharge. Retour passif au mode gratuit si annulation.
-- **Logique Sandbox (iOS Xcode)** : Fallback implémenté dans `services/subscription.ts` (vérifie `activeSubscriptions` si `entitlements.active` est vide) pour contourner les bugs d'Apple en environnement Sandbox. Le modal indique visuellement quel abonnement est actuellement actif.
-- **Complété** ✅:
-  1. ✅ Produits App Store Connect liés (monthly + yearly)
-  2. ✅ Entitlement "Koiny Premium" synchronisé
-  3. ✅ Produits attachés à l'entitlement
-  4. ✅ Localisations FR/NL/EN ajoutées dans App Store Connect
-  5. ✅ SDK RevenueCat installé et intégré dans le code
-  6. ✅ Initialisation automatique au démarrage (App.tsx)
-  7. ✅ Login/Logout RevenueCat synchronisé avec l'auth
-  8. ✅ Bouton "Restaurer les achats" dans SubscriptionModal
-  9. ✅ Offering `default` créé dans RevenueCat avec les packages `$rc_monthly` et `$rc_annual`
-  10. ✅ Compte Apple Sandbox configuré pour les tests
-  11. ✅ Commentaire du parent visible par l'enfant dans l'historique des transactions (`ChildView.tsx`)
-  12. ✅ Fix build Vite : exclusion du dossier `screenshots/` pour éviter le freeze RAM sur `lodash`
-  13. ✅ Test du flux d'achat complet avec Sandbox Apple réussi sur appareil iOS
-- **À faire** ⚙️:
-  - (La configuration de RevenueCat est terminée)
+- **SDK** : `@revenuecat/purchases-capacitor@12.2.4`
+- **Entitlement ID** : **`'Koiny Premium'`** (maj et espace importants)
+- **Stockage local premium** : Clé `koiny_premium_active` (`'true'`). Lue au démarrage pour éviter le clignotement.
+- **Fallback Xcode Sandbox** : 
+  1. `purchaseSubscription()`: check `activeSubscriptions` si entitlements.active vide
+  2. `getSubscriptionStatus()`: retourne aussi `productId` du fallback pour UI
+  3. `restorePurchases()`: même fallback pattern que purchase
+- **Refresh Premium** : `visibilitychange` (retour premier plan) + intervalle 6h pour détecter les annulations.
 
 ---
 
-## Sécurité
+## Sécurité & Validation
 
-- **PIN** : PBKDF2 100k iter SHA-512, format `"salt_hex:hash_hex"`, timing-safe compare
-- **Auth** : Google natif (iOS `165597...eqe2`, Android/web `165597...1as`) + Apple natif + Email
-- **Session** : `CapacitorStorageAdapter` (Preferences, pas localStorage WebView volatile)
-- **Deep link** : `com.koiny.app://callback` pour PKCE OAuth
-- **RLS** : Row Level Security sur toutes les tables
-- **RGPD** : Export JSON + RPC `delete_user_data`
-- **PII** : Logger anonymise automatiquement en production
+### Points forts
+- **PIN** : PBKDF2 100k itérations, SHA-512, sel aléatoire 128-bit.
+- **Auth** : Google natif, Apple natif, Email.
+- **Session** : `Capacitor Preferences` (secure storage) au lieu de localStorage volatil.
+- **Logger** : Anonymisation auto (userId, email, token) via `services/logger.ts`.
+
+### Corrections récentes (15-16/03/2026) ✅
+- **Clé RevenueCat** : Déplacée dans `.env` (via `config.ts`).
+- **Mode Production** : `simulatePurchase()` bloqué par `IS_PRODUCTION`.
+- **Validation Inputs** : `isNaN`, montants max (100€ missions, 1000€ transactions), longueurs max.
+- **Subscription Init** : Fix `waitForInit()` pour éviter l'échec du chargement si le modal s'ouvre trop tôt.
+- **Build optimization** : Exclusion du dossier `screenshots/` pour éviter le freeze RAM via `lodash`.
+
+---
+
+## Déploiement & TestFlight
+
+**Builds récents :**
+- Build 1 (15/03) : Initial upload
+- Build 2 (15/03) : Fix encryption questions
+- Build 3 (16/03) : Fix loading performance & production guards
+
+**Sentry — Issues à surveiller :**
+- `WatchdogTermination` (RAM) : iOS tue l'app pour mémoire excessive (probable fuite ou boucle au démarrage).
+- `HTTP 406 on app_alerts` : Table manquante dans Supabase.
+- Redondance : Requêtes `profiles` Supabase répétées (3-4x par init).
+
+---
+
+## Build exclusions
+
+Dossiers exclus du build (`tsconfig.json`/`vite.config.ts`) :
+`screenshots/`, `.agent/`, `.agents/`, `.claude/`, `docs/`, `ios/`.
 
 ---
 

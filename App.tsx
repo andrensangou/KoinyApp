@@ -252,6 +252,43 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Refresh périodique du statut premium (détecte les annulations)
+  useEffect(() => {
+    if (loading) return;
+
+    const refreshPremiumStatus = async () => {
+      try {
+        const status = await subscriptionService.getSubscriptionStatus();
+        const wasPremium = localStorage.getItem('koiny_premium_active') === 'true';
+        if (status.isSubscribed && !wasPremium) {
+          localStorage.setItem('koiny_premium_active', 'true');
+          setData(prev => ({ ...prev, isPremium: true, updatedAt: new Date().toISOString() }));
+        } else if (!status.isSubscribed && wasPremium) {
+          localStorage.removeItem('koiny_premium_active');
+          setData(prev => ({ ...prev, isPremium: false, updatedAt: new Date().toISOString() }));
+        }
+      } catch (e) {
+        // Silencieux — ne pas bloquer l'app
+      }
+    };
+
+    // Refresh quand l'app revient au premier plan
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshPremiumStatus();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    // Refresh toutes les 6 heures
+    const interval = setInterval(refreshPremiumStatus, 6 * 60 * 60 * 1000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(interval);
+    };
+  }, [loading]);
+
   // Persistance de la vue actuelle
   useEffect(() => {
     if (view !== 'LANDING' && view !== 'AUTH') {

@@ -38,3 +38,6 @@ if (!SUPABASE_ANON_KEY.startsWith('eyJ')) {
 
 // Salt pour le chiffrement local (peut avoir un fallback car non critique)
 export const KIDBANK_SALT = import.meta.env.VITE_KIDBANK_SALT || "koiny-local-salt-2024";
+
+// RevenueCat API Key
+export const REVENUECAT_API_KEY = import.meta.env.VITE_REVENUECAT_API_KEY || '';
