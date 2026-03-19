@@ -3,24 +3,24 @@ import { Language } from './config';
 export const translations: Record<Language, Record<number, { title: string; subtitle: string }>> = {
   fr: {
     1: {
-      title: 'Ma Fortune 💰',
-      subtitle: 'Suivez le solde virtuel de vos enfants en temps réel',
+      title: 'L\'argent de poche intelligent',
+      subtitle: 'Apprenez aux enfants la valeur de l\'argent',
     },
     2: {
-      title: 'Missions Gamifiées 🎯',
-      subtitle: 'Transformez les tâches en récompenses, enseignez le travail et l\'effort',
+      title: 'Tirelire numérique ludique',
+      subtitle: 'Leurs pièces et billets en un clic',
     },
     3: {
-      title: 'Objectifs d\'Épargne 🎁',
-      subtitle: 'Motivez vos enfants à atteindre leurs rêves financiers',
+      title: 'Suivez chaque dépense',
+      subtitle: 'Apprendre à gérer un budget responsable',
     },
     4: {
-      title: 'Dashboard Parent 📊',
-      subtitle: 'Contrôlez et gérez l\'éducation financière de toute votre famille',
+      title: 'Gérez le budget familial',
+      subtitle: 'Tous vos enfants depuis une interface unique',
     },
     5: {
-      title: 'Une App pour Toute la Famille 👨‍👩‍👧‍👦',
-      subtitle: 'Parent et enfant, même app, deux interfaces adaptées',
+      title: 'Sécurité & Contrôle',
+      subtitle: 'Un espace protégé pour chaque transaction',
     },
     6: {
       title: 'Commencez Gratuitement 🚀',
@@ -29,50 +29,50 @@ export const translations: Record<Language, Record<number, { title: string; subt
   },
   nl: {
     1: {
-      title: 'Mijn Vermogen 💰',
-      subtitle: 'Volg het virtuele saldo van uw kinderen in realtime',
+      title: 'Slim zakgeld',
+      subtitle: 'Leer kinderen de waarde van geld',
     },
     2: {
-      title: 'Gamified Taken 🎯',
-      subtitle: 'Zet taken om in beloningen, onderwijs werk en inspanning',
+      title: 'Leuke digitale spaarpot',
+      subtitle: 'Hun munten en biljetten in één klik',
     },
     3: {
-      title: 'Spaarddoelen 🎁',
-      subtitle: 'Motiveer uw kinderen hun financiële dromen na te streven',
+      title: 'Volg elke uitgave',
+      subtitle: 'Leer verantwoord omgaan met een budget',
     },
     4: {
-      title: 'Oudersdashboard 📊',
-      subtitle: 'Controleer en beheer het financiële onderwijs van uw hele gezin',
+      title: 'Beheer het gezinsbudget',
+      subtitle: 'Al je kinderen in één simpele interface',
     },
     5: {
-      title: 'Één App voor het Hele Gezin 👨‍👩‍👧‍👦',
-      subtitle: 'Ouder en kind, dezelfde app, twee aangepaste interfaces',
+      title: 'Veiligheid & Controle',
+      subtitle: 'Een beveiligde plek voor elke transactie',
     },
     6: {
       title: 'Gratis Starten 🚀',
-      subtitle: 'Premium voor €1,99/maand • Geen echte financiële gegevens',
+      subtitle: 'Premium voor €1,99/maand • Geen echte gegevens',
     },
   },
   en: {
     1: {
-      title: 'My Wealth 💰',
-      subtitle: 'Track your kids\' virtual balance in real-time',
+      title: 'Smart pocket money',
+      subtitle: 'Teach children the value of money',
     },
     2: {
-      title: 'Gamified Missions 🎯',
-      subtitle: 'Turn chores into rewards, teach work and effort',
+      title: 'Playful digital piggy bank',
+      subtitle: 'Their coins and bills in one click',
     },
     3: {
-      title: 'Savings Goals 🎁',
-      subtitle: 'Motivate your kids to reach their financial dreams',
+      title: 'Track every expense',
+      subtitle: 'Learn to manage a budget responsibly',
     },
     4: {
-      title: 'Parent Dashboard 📊',
-      subtitle: 'Control and manage your whole family\'s financial education',
+      title: 'Manage family budget',
+      subtitle: 'All your children from a single interface',
     },
     5: {
-      title: 'One App for the Whole Family 👨‍👩‍👧‍👦',
-      subtitle: 'Parent and child, same app, two tailored interfaces',
+      title: 'Security & Control',
+      subtitle: 'A protected space for every transaction',
     },
     6: {
       title: 'Start for Free 🚀',

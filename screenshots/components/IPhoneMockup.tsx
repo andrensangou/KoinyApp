@@ -13,18 +13,15 @@ export default function IPhoneMockup({
   width = 375,
   height = 812,
 }: IPhoneMockupProps) {
-  const aspectRatio = height / width;
-  const maxWidth = 300;
-  const displayHeight = (maxWidth * aspectRatio);
-
+  // On utilise directement width et height passés par le parent
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex items-center justify-center w-full h-full">
       <div
         style={{
-          width: `${maxWidth}px`,
-          height: `${displayHeight}px`,
-          borderRadius: '60px',
-          border: '8px solid #000',
+          width: `${width}px`,
+          height: `${height}px`,
+          borderRadius: `${width * 0.16}px`,
+          border: `${width * 0.02}px solid #000`,
           boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
           overflow: 'hidden',
           position: 'relative',
@@ -38,10 +35,10 @@ export default function IPhoneMockup({
             top: 0,
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '150px',
-            height: '24px',
+            width: `${width * 0.4}px`,
+            height: `${width * 0.08}px`,
             backgroundColor: '#000',
-            borderRadius: '0 0 30px 30px',
+            borderRadius: `0 0 ${width * 0.08}px ${width * 0.08}px`,
             zIndex: 10,
           }}
         />

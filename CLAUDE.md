@@ -199,6 +199,69 @@ const t = translations[data.language || 'fr'];
 **Migration possible:**
 - Sentry → Firebase Crashlytics (gratuit illimité, simple à intégrer)
 
+## UI/UX Design Guidelines
+
+### Ombres (Shadows)
+- **Pattern correct:** `shadow-md shadow-{color}-500/{opacity}` (ex: `shadow-md shadow-indigo-500/25`)
+- **JAMAIS:** `shadow-lg shadow-{color}-200` → crée des halos blancs/pastel trop visibles
+- **JAMAIS:** `bg-white/70` + `shadow-lg` sur des boutons flottants → halo blanc
+
+### Bordures
+- Sur fond coloré/gradient: **pas de** `border border-white/10` sur les boutons (crée des bordures blanches visibles)
+- Sur fond clair: `border border-slate-100 dark:border-slate-800` est ok
+
+### Scroll
+- **JAMAIS** imbriquer deux `overflow-y-auto` → scroll chaîné imprévisible
+- Conteneur externe: `overflow-hidden`, seul le conteneur interne scrolle
+
+### iOS Safe Area & Overscroll
+- `.sticky-safe-top` dans `index.css`: `top: max(60px, env(safe-area-inset-top)) !important` — pour les éléments sticky sous la nav
+- **Overscroll roof**: div fixe `z-[60]` avec `height: env(safe-area-inset-top)` absorbe le bounce iOS en haut:
+  ```tsx
+  <div className={`fixed top-0 left-0 right-0 z-[60] pointer-events-none ${mainView === 'dashboard' ? 'bg-indigo-700 dark:bg-slate-900' : 'bg-white dark:bg-slate-950'}`} style={{ height: 'env(safe-area-inset-top)' }} />
+  ```
+- Mettre **en premier** dans le return (avant la nav), z-index au-dessus de tout
+
+### Hero Visibility / Child Selector Slide
+- Utiliser `scroll` listener + `getBoundingClientRect()` (PAS IntersectionObserver — threshold trop imprécis):
+  ```tsx
+  useEffect(() => {
+    if (mainView !== 'dashboard') { setIsHeroVisible(true); return; }
+    const handleScroll = () => {
+      if (!heroRef.current) return;
+      setIsHeroVisible(heroRef.current.getBoundingClientRect().bottom > 110);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [mainView]);
+  ```
+- Child selector slide: `!isHeroVisible && !data.isPremium ? 'pl-20' : 'pl-6'` — évite l'overlap avec la couronne (64px wide incl. padding)
+
+### Textes i18n inline
+- Pour les textes courts non réutilisables (ex: labels settings), utiliser le pattern inline:
+  `{language === 'fr' ? 'Texte FR' : language === 'nl' ? 'Tekst NL' : 'Text EN'}`
+- Pour les textes réutilisables, ajouter dans `i18n.ts`
+
+### Contact Support
+- Email: `hello@koiny.app`
+- Bouton "Contacter le support" dans ParentView.tsx > Settings > Account (avant "Se déconnecter")
+
+## Splash Screen
+
+- Géré par `@capacitor/splash-screen` (Capacitor, PAS React Native)
+- Config dans `capacitor.config.ts`: backgroundColor `#3730A3`, spinner blanc, 3s
+- Image: `ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png`
+- Pour modifier: remplacer le PNG + `npx cap sync ios`
+
+## Simulator iOS — Screenshots App Store
+
+Pour bloquer l'heure à 9:41 et batterie full dans le Simulator:
+```bash
+UDID=$(xcrun simctl list devices booted | grep -oE '\([A-F0-9\-]+\)' | tr -d '()' | head -1) && \
+xcrun simctl status_bar $UDID override --time 09:41 --batteryState charged --batteryLevel 100
+```
+
 ## Build exclusions
 
 `tsconfig.json` et `vite.config.ts` excluent: `screenshots/`, `.agent/`, `.agents/`, `.claude/`, `docs/`, `ios/`

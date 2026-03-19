@@ -29,7 +29,7 @@ export default function SlideLayout({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        padding: '100px 60px 0',
+        padding: `${height * 0.05}px ${width * 0.1}px 0`,
         fontFamily: 'Poppins, sans-serif',
         position: 'relative',
         overflow: 'hidden',
@@ -41,13 +41,13 @@ export default function SlideLayout({
       <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '80%', height: '80%', background: 'radial-gradient(circle, rgba(167, 139, 250, 0.2) 0%, transparent 70%)', zIndex: 1, filter: 'blur(80px)' }} />
 
       {/* Title and Subtitle */}
-      <div style={{ textAlign: 'center', marginBottom: '80px', zIndex: 10, position: 'relative' }}>
+      <div style={{ textAlign: 'center', marginBottom: `${height * 0.05}px`, zIndex: 10, position: 'relative' }}>
         <h1
           style={{
             color: COLORS.white,
             fontSize: `${width * 0.11}px`,
             fontWeight: 900,
-            margin: '0 0 24px 0',
+            margin: `0 0 ${height * 0.015}px 0`,
             lineHeight: '1.0',
             letterSpacing: '-2px',
             textShadow: '0 10px 30px rgba(0,0,0,0.2)',
@@ -63,7 +63,7 @@ export default function SlideLayout({
             margin: 0,
             opacity: 0.9,
             lineHeight: '1.4',
-            maxWidth: '85%',
+            maxWidth: '90%',
             marginLeft: 'auto',
             marginRight: 'auto',
           }}
@@ -74,7 +74,7 @@ export default function SlideLayout({
 
       {/* iPhone Mockup with children */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', width: '100%', zIndex: 20 }}>
-        <div style={{ transform: 'translateY(80px)', width: '85%' }}>
+        <div style={{ transform: `translateY(${height * 0.04}px)`, width: '85%' }}>
           <IPhoneMockup width={width * 0.85} height={(width * 0.85) * (812/375)}>
             {children}
           </IPhoneMockup>
@@ -87,11 +87,11 @@ export default function SlideLayout({
           position: 'absolute',
           top: '20%',
           right: '-5%',
-          width: '150px',
-          height: '150px',
+          width: `${width * 0.3}px`,
+          height: `${width * 0.3}px`,
           background: 'rgba(255,255,255,0.05)',
           backdropFilter: 'blur(20px)',
-          borderRadius: '40px',
+          borderRadius: `${width * 0.08}px`,
           transform: 'rotate(15deg)',
           zIndex: 5,
         }}
@@ -101,11 +101,11 @@ export default function SlideLayout({
           position: 'absolute',
           bottom: '15%',
           left: '-5%',
-          width: '200px',
-          height: '200px',
+          width: `${width * 0.4}px`,
+          height: `${width * 0.4}px`,
           background: 'rgba(255,255,255,0.03)',
           backdropFilter: 'blur(30px)',
-          borderRadius: '50px',
+          borderRadius: `${width * 0.1}px`,
           transform: 'rotate(-10deg)',
           zIndex: 5,
         }}

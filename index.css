@@ -35,7 +35,6 @@ body {
 }
 
 .safe-mt {
-    margin-top: 60px !important;
     margin-top: max(60px, env(safe-area-inset-top)) !important;
 }
 
@@ -54,6 +53,10 @@ button,
 select,
 a {
     -webkit-tap-highlight-color: transparent;
+}
+
+.sticky-safe-top {
+    top: max(60px, env(safe-area-inset-top)) !important;
 }
 
 .overflow-active {

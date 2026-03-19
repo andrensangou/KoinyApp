@@ -16,7 +16,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     t
 }) => {
     return (
-        <div className="fixed bottom-6 left-4 right-4 h-[4.5rem] bg-slate-900/95 dark:bg-black/90 backdrop-blur-xl rounded-[2rem] shadow-2xl flex items-center justify-between px-2 z-40 border border-white/10 ring-1 ring-black/5">
+        <div className="fixed bottom-6 left-4 right-4 h-[4.5rem] bg-slate-900/95 dark:bg-black/90 backdrop-blur-xl rounded-[2rem] shadow-2xl flex items-center justify-between px-2 z-40 ring-1 ring-black/5">
             <div className="flex-1 flex justify-around items-center pr-8">
                 <NavButton
                     icon="fa-border-all"
@@ -35,7 +35,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             <div className="absolute left-1/2 -translate-x-1/2 -top-6">
                 <button onClick={onAddClick}
                     aria-label="Add Mission"
-                    className="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/40 hover:scale-105 active:scale-95 transition-all border-[6px] border-slate-50 dark:border-[#020617] group"
+                    className="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/40 hover:scale-105 active:scale-95 transition-all border-[4px] border-slate-50 dark:border-[#020617] group"
                 >
                     <i className="fa-solid fa-plus text-white text-2xl group-hover:rotate-90 transition-transform duration-300" aria-hidden="true"></i>
                 </button>

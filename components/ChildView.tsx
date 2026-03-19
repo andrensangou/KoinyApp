@@ -158,8 +158,8 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
   const bgGradient = `from-${data.colorClass}-600 to-${data.colorClass}-400`;
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex justify-center font-sans transition-colors duration-500">
-      <div className="w-full max-w-lg md:max-w-7xl bg-slate-50 dark:bg-slate-900 min-h-screen relative shadow-2xl sm:my-4 sm:rounded-[40px] sm:min-h-[calc(100vh-2rem)] sm:h-fit overflow-hidden pb-20 border border-slate-200 dark:border-slate-800 transition-colors duration-500">
+    <div className="min-h-screen bg-white dark:bg-slate-950 flex justify-center font-sans transition-colors duration-500">
+      <div className="w-full max-w-lg md:max-w-7xl bg-white dark:bg-slate-900 min-h-screen relative shadow-2xl sm:my-4 sm:rounded-[40px] sm:min-h-[calc(100vh-2rem)] sm:h-fit overflow-hidden pb-20 border border-slate-200 dark:border-slate-800 transition-colors duration-500">
 
         {balanceDiff && (
           <div className="fixed inset-0 flex items-center justify-center z-[70] pointer-events-none p-6">
@@ -211,12 +211,12 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
             <div className="flex items-center gap-2">
               <button onClick={() => { setShowHistory(!showHistory); if ("vibrate" in navigator) navigator.vibrate(10); }}
                 aria-label={showHistory ? t.child.historyHeader : t.child.historyHeader}
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all backdrop-blur-xl border ${showHistory ? 'bg-white dark:bg-slate-100 text-slate-800 border-white dark:border-slate-100' : 'bg-white/10 text-white border-white/10 hover:bg-white/20 hover:border-white/20'}`}
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 ${showHistory ? 'bg-white text-slate-800 shadow-md shadow-black/10' : 'bg-white/20 text-white hover:bg-white/30'}`}
               >
                 <i className="fa-solid fa-clock-rotate-left text-lg" aria-hidden="true"></i>
               </button>
 
-              <button onClick={onLogout} aria-label={language === 'fr' ? 'Déconnexion' : language === 'nl' ? 'Uitloggen' : 'Logout'} className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 flex items-center justify-center hover:bg-white/20 hover:border-white/20 transition-all">
+              <button onClick={onLogout} aria-label={language === 'fr' ? 'Déconnexion' : language === 'nl' ? 'Uitloggen' : 'Logout'} className="w-12 h-12 rounded-2xl bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-all active:scale-90">
                 <i className="fa-solid fa-power-off text-lg" aria-hidden="true"></i>
               </button>
             </div>
@@ -284,11 +284,11 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-emerald-500 rounded-2xl p-4 text-center shadow-lg shadow-emerald-100 dark:shadow-none">
+                  <div className="bg-emerald-500 rounded-2xl p-4 text-center shadow-md shadow-emerald-500/25 dark:shadow-none">
                     <p className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">{t.child.totalGains}</p>
                     <p className="text-xl font-black text-white">+{stats.totalGains.toFixed(2)}€</p>
                   </div>
-                  <div className="bg-rose-500 rounded-2xl p-4 text-center shadow-lg shadow-rose-100 dark:shadow-none">
+                  <div className="bg-rose-500 rounded-2xl p-4 text-center shadow-md shadow-rose-500/25 dark:shadow-none">
                     <p className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">{t.child.totalLosses}</p>
                     <p className="text-xl font-black text-white">-{stats.totalLosses.toFixed(2)}€</p>
                   </div>
@@ -423,10 +423,10 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                 )}
               </>
             ) : (
-              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 text-center shadow-lg group hover:scale-[1.02] transition-transform mx-1 max-w-lg mx-auto">
+              <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 text-center shadow-md shadow-slate-900/5 dark:shadow-black/20 group hover:scale-[1.02] transition-transform mx-1 max-w-lg mx-auto">
                 <i className={`fa-solid fa-bullseye text-4xl mb-3 transition-transform ${isGoalNudging ? 'text-emerald-500 animate-bounce' : 'text-slate-200'}`}></i>
-                <p className="text-slate-500 font-bold text-sm mb-4 leading-relaxed">{isGoalNudging ? t.child.nudgeSent : t.child.askParentsGoal}</p>
-                <button onClick={() => { setIsGoalNudging(true); if (onRequestGift) onRequestGift(); setTimeout(() => setIsGoalNudging(false), 3000); }} className="w-full bg-slate-50 text-slate-600 py-3.5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mb-4 leading-relaxed">{isGoalNudging ? t.child.nudgeSent : t.child.askParentsGoal}</p>
+                <button onClick={() => { setIsGoalNudging(true); if (onRequestGift) onRequestGift(); setTimeout(() => setIsGoalNudging(false), 3000); }} className={`w-full bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-600 dark:text-${data.colorClass}-400 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-${data.colorClass}-100 dark:hover:bg-${data.colorClass}-900/30 transition-all active:scale-95 shadow-sm`}>
                   {t.child.addGoalAction}
                 </button>
               </div>
@@ -450,7 +450,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                     key={mission.id}
                     disabled={mission.status === 'PENDING'}
                     onClick={() => handleMissionClick(mission.id)}
-                    className={`w-full p-5 rounded-[2.5rem] shadow-sm border-2 flex items-center justify-between transition-all relative overflow-hidden group transition-colors duration-500 ${mission.status === 'PENDING'
+                    className={`w-full p-5 rounded-[2.5rem] shadow-md shadow-slate-900/5 dark:shadow-black/20 border-2 flex items-center justify-between transition-all relative overflow-hidden group transition-colors duration-500 ${mission.status === 'PENDING'
                       ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-100/50 dark:border-indigo-900/30 cursor-default'
                       : 'bg-white dark:bg-slate-900 border-slate-50 dark:border-slate-800 active:scale-95 hover:border-emerald-100 dark:hover:border-emerald-900 hover:shadow-lg transition-all duration-300'
                       }`}
@@ -490,7 +490,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                     <p className="text-slate-500 font-black text-sm uppercase tracking-widest">{t.child.noMissions}</p>
                     <p className="text-slate-400 text-xs font-medium">{isNudging ? t.child.nudgeSent : t.child.askNewMission}</p>
                   </div>
-                  <button onClick={() => { setIsNudging(true); if (onRequestMission) onRequestMission(); setTimeout(() => setIsNudging(false), 3000); }} className="mt-4 px-8 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95">
+                  <button onClick={() => { setIsNudging(true); if (onRequestMission) onRequestMission(); setTimeout(() => setIsNudging(false), 3000); }} className="mt-4 px-8 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-md shadow-indigo-500/25 hover:bg-indigo-700 transition-all active:scale-95">
                     {t.child.askButton}
                   </button>
                 </div>

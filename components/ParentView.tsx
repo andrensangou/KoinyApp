@@ -278,6 +278,8 @@ const ParentView: React.FC<ParentViewProps> = ({
   };
 
   const missionFormRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const [isHeroVisible, setIsHeroVisible] = useState(true);
   const t = translations[language];
   const activeChild = useMemo(() => data.children ? data.children.find(c => c.id === selectedChildId) : null, [data.children, selectedChildId]);
 
@@ -699,6 +701,22 @@ const ParentView: React.FC<ParentViewProps> = ({
     }
   }, [notificationAction, data.children, onEditChild, onClearNotificationAction, startEditChild]);
 
+  // Scroll listener: detect when hero is scrolled away to slide child selector
+  useEffect(() => {
+    if (mainView !== 'dashboard') {
+      setIsHeroVisible(true);
+      return;
+    }
+    const handleScroll = () => {
+      if (!heroRef.current) return;
+      const { bottom } = heroRef.current.getBoundingClientRect();
+      setIsHeroVisible(bottom > 110);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [mainView]);
+
   const startAddGoal = () => {
     if (activeChild) {
       startEditChild(activeChild, true);
@@ -1053,6 +1071,11 @@ const ParentView: React.FC<ParentViewProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 font-sans pb-10 relative text-slate-900 dark:text-slate-100 transition-colors duration-500">
+      {/* Overscroll roof: absorbs iOS bounce at top */}
+      <div
+        className={`fixed top-0 left-0 right-0 z-[60] pointer-events-none ${mainView === 'dashboard' ? 'bg-indigo-700 dark:bg-slate-900' : 'bg-white dark:bg-slate-950'}`}
+        style={{ height: 'env(safe-area-inset-top)' }}
+      />
       {/* Floating Header Premium */}
       {/* Unified Header for Dashboard & Other Views */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${mainView !== 'dashboard' ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800' : 'pointer-events-none safe-pt'}`}>
@@ -1060,14 +1083,14 @@ const ParentView: React.FC<ParentViewProps> = ({
           {/* Left: Premium Button */}
           {!data.isPremium ? (
             <button onClick={() => setIsSubscriptionModalOpen(true)}
-              className={`flex items-center justify-center bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl w-12 h-12 rounded-2xl shadow-lg border border-white/20 dark:border-white/10 pointer-events-auto active:scale-95 transition-transform group shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl shadow-sm' : ''}`}
+              className={`flex items-center justify-center w-12 h-12 rounded-2xl pointer-events-auto active:scale-95 transition-transform group shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl' : ''}`}
             >
-              <div className={`w-full h-full rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-orange-200 text-white flex items-center justify-center dark:shadow-none shadow-lg group-hover:scale-110 transition-transform ${mainView !== 'dashboard' ? 'text-sm' : 'text-xl'}`}>
+              <div className={`w-full h-full rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-orange-500/30 dark:shadow-orange-500/20 group-hover:scale-110 transition-transform ${mainView !== 'dashboard' ? 'text-sm rounded-lg' : 'text-xl'}`}>
                 <i className="fa-solid fa-crown"></i>
               </div>
             </button>
           ) : (
-            <div className={`shrink-0 w-12 h-12 ${mainView !== 'dashboard' ? 'w-10 h-10' : ''}`}></div>
+            <div className={`shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10' : 'w-12 h-12'}`}></div>
           )}
 
           {/* Center: Child Selector (Compact for non-dashboard) */}
@@ -1101,13 +1124,13 @@ const ParentView: React.FC<ParentViewProps> = ({
             {isOfflineMode && (
               <button
                 onClick={() => setShowOfflineModal(true)}
-                className="flex items-center gap-1 bg-orange-500 text-white px-2 py-1 rounded-xl text-xs font-bold shadow-lg shadow-orange-200 active:scale-95 transition-transform"
+                className="flex items-center gap-1 bg-orange-500 text-white px-2 py-1 rounded-xl text-xs font-bold shadow-md shadow-orange-500/30 active:scale-95 transition-transform"
               >
                 <i className="fa-solid fa-wifi text-[10px]"></i>
                 <span>Offline</span>
               </button>
             )}
-            <button onClick={onExit} aria-label={language === 'fr' ? 'Déconnexion' : 'Logout'} className={`bg-rose-500 text-white flex items-center justify-center rounded-2xl shadow-lg shadow-rose-200 transition-all active:scale-90 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl shadow-sm' : 'w-12 h-12'}`}>
+            <button onClick={onExit} aria-label={language === 'fr' ? 'Déconnexion' : 'Logout'} className={`bg-rose-500 text-white flex items-center justify-center shadow-md shadow-rose-500/30 dark:shadow-rose-500/20 transition-all active:scale-90 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl' : 'w-12 h-12 rounded-2xl'}`}>
               <i className={`fa-solid fa-power-off ${mainView !== 'dashboard' ? 'text-sm' : 'text-lg'}`} aria-hidden="true"></i>
             </button>
           </div>
@@ -1151,8 +1174,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                 {(language === 'fr'
                   ? ['Valider des missions', 'Ajouter des missions', 'Transactions manuelles', 'Éditer les profils enfants']
                   : language === 'nl'
-                  ? ['Missies goedkeuren', 'Missies toevoegen', 'Handmatige transacties', 'Kinderprofielen bewerken']
-                  : ['Approve missions', 'Add missions', 'Manual transactions', 'Edit child profiles']
+                    ? ['Missies goedkeuren', 'Missies toevoegen', 'Handmatige transacties', 'Kinderprofielen bewerken']
+                    : ['Approve missions', 'Add missions', 'Manual transactions', 'Edit child profiles']
                 ).map((item, i) => <li key={i}>• {item}</li>)}
               </ul>
             </div>
@@ -1163,8 +1186,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                 {(language === 'fr'
                   ? ['Créer un nouvel enfant', 'Supprimer un enfant', 'Charger de nouvelles données']
                   : language === 'nl'
-                  ? ['Nieuw kind toevoegen', 'Kind verwijderen', 'Nieuwe gegevens laden']
-                  : ['Create a new child', 'Delete a child', 'Load new data']
+                    ? ['Nieuw kind toevoegen', 'Kind verwijderen', 'Nieuwe gegevens laden']
+                    : ['Create a new child', 'Delete a child', 'Load new data']
                 ).map((item, i) => <li key={i}>• {item}</li>)}
               </ul>
             </div>
@@ -1173,8 +1196,8 @@ const ParentView: React.FC<ParentViewProps> = ({
               {language === 'fr'
                 ? 'Les données se synchroniseront automatiquement quand la connexion revient.'
                 : language === 'nl'
-                ? 'Gegevens synchroniseren automatisch wanneer de verbinding hersteld is.'
-                : 'Data will sync automatically when connection returns.'}
+                  ? 'Gegevens synchroniseren automatisch wanneer de verbinding hersteld is.'
+                  : 'Data will sync automatically when connection returns.'}
             </p>
           </div>
         </div>
@@ -1182,14 +1205,14 @@ const ParentView: React.FC<ParentViewProps> = ({
 
       {/* Hero Section (Dashboard Only) */}
       {mainView === 'dashboard' && (
-        <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-indigo-800 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 pt-32 pb-12 px-6 relative overflow-hidden transition-colors duration-500">
+        <div ref={heroRef} className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-indigo-800 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 pt-28 pb-10 px-6 relative overflow-hidden transition-colors duration-500">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full -mr-64 -mt-64 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-500/20 rounded-full -ml-32 -mb-32 blur-2xl"></div>
 
           <div className="max-w-7xl mx-auto relative z-10">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-8 bg-black/10 dark:bg-black/30 backdrop-blur-md rounded-[2.5rem] p-8 border border-white/10 shadow-2xl">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-8 bg-black/10 dark:bg-black/30 backdrop-blur-md rounded-[2.5rem] p-8 shadow-xl">
               <div className="flex items-center gap-5">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-xl border border-white/20 ring-1 ring-white/10">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-xl ring-1 ring-white/10">
                   <i className="fa-solid fa-chart-pie text-2xl text-white"></i>
                 </div>
                 <div>
@@ -1216,8 +1239,8 @@ const ParentView: React.FC<ParentViewProps> = ({
 
       {/* Standard Child Selector (Dashboard Only) */}
       {mainView === 'dashboard' && (
-        <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 sm:top-24 z-30 pt-4 pb-4 transition-colors duration-500">
-          <div className="max-w-7xl mx-auto px-6 overflow-x-auto no-scrollbar flex gap-4 scroll-smooth">
+        <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky sticky-safe-top z-30 pt-5 pb-4 transition-colors duration-500">
+          <div className={`max-w-7xl mx-auto pr-6 overflow-x-auto no-scrollbar flex gap-3 scroll-smooth items-center transition-all duration-300 ${!isHeroVisible && !data.isPremium ? 'pl-20' : 'pl-6'}`}>
             {data.children && data.children.length > 0 ? data.children.map(child => {
               const childPending = child.missions ? child.missions.filter(m => m.status === 'PENDING').length : 0;
               const childGiftPending = child.giftRequested ? 1 : 0;
@@ -1227,7 +1250,7 @@ const ParentView: React.FC<ParentViewProps> = ({
               return (
                 <button key={child.id}
                   onClick={() => setSelectedChildId(child.id)}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-black text-xs transition-all whitespace-nowrap relative border-2 ${isSelected ? `bg-${child.colorClass}-600 border-${child.colorClass}-600 text-white shadow-xl shadow-${child.colorClass}-200 dark:shadow-none -translate-y-1` : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:border-slate-200 dark:hover:border-slate-700'}`}
+                  className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl font-black text-xs transition-all whitespace-nowrap relative border-2 ${isSelected ? `bg-${child.colorClass}-600 border-${child.colorClass}-600 text-white shadow-lg shadow-${child.colorClass}-500/25 dark:shadow-none -translate-y-0.5` : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:border-slate-200 dark:hover:border-slate-700'}`}
                 >
                   <div className={`w-9 h-9 rounded-full overflow-hidden ${isSelected ? 'ring-2 ring-white/50' : 'opacity-60 dark:opacity-40 grayscale-[50%]'}`}>
                     {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
@@ -1248,11 +1271,11 @@ const ParentView: React.FC<ParentViewProps> = ({
       )}
 
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-8 pb-32">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 pt-6 space-y-6 pb-28">
         {activeChild ? (
           <div className="animate-fade-in-up">
             {mainView === 'dashboard' && <div className="space-y-8">
-              <section className={`relative bg-gradient-to-br from-${activeChild.colorClass}-400 to-${activeChild.colorClass}-700 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-${activeChild.colorClass}-200 overflow-hidden transform transition-all hover:scale-[1.01]`}>
+              <section className={`relative bg-gradient-to-br from-${activeChild.colorClass}-400 to-${activeChild.colorClass}-700 rounded-[2.5rem] p-8 text-white shadow-xl shadow-${activeChild.colorClass}-500/25 overflow-hidden transform transition-all hover:scale-[1.01]`}>
                 {/* SVG Background Pattern */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none">
                   <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="none">
@@ -1272,10 +1295,10 @@ const ParentView: React.FC<ParentViewProps> = ({
                     </div>
                   </div>
                   <div className="flex flex-col gap-3">
-                    <button onClick={() => setTransactionType('DEPOSIT')} aria-label={language === 'fr' ? 'Ajouter de l\'argent' : 'Add money'} className="w-12 h-12 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90 border border-white/10">
+                    <button onClick={() => setTransactionType('DEPOSIT')} aria-label={language === 'fr' ? 'Ajouter de l\'argent' : 'Add money'} className="w-12 h-12 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90">
                       <i className="fa-solid fa-plus text-xl" aria-hidden="true"></i>
                     </button>
-                    <button onClick={() => { setTransactionType('WITHDRAW'); setWithdrawSubtype('PURCHASE'); }} aria-label={language === 'fr' ? 'Retirer de l\'argent' : 'Withdraw money'} className="w-12 h-12 rounded-2xl bg-black/20 hover:bg-black/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90 border border-white/5">
+                    <button onClick={() => { setTransactionType('WITHDRAW'); setWithdrawSubtype('PURCHASE'); }} aria-label={language === 'fr' ? 'Retirer de l\'argent' : 'Withdraw money'} className="w-12 h-12 rounded-2xl bg-black/20 hover:bg-black/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90">
                       <i className="fa-solid fa-minus text-xl" aria-hidden="true"></i>
                     </button>
                   </div>
@@ -1324,17 +1347,17 @@ const ParentView: React.FC<ParentViewProps> = ({
                   </h2>
                   <div className="bg-white p-1 rounded-2xl flex gap-1 shadow-sm border border-slate-100 w-full sm:w-auto">
                     <button onClick={() => setGoalsFilter('ALL')}
-                      className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${goalsFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${goalsFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                       {t.parent.goalsFilter.all}
                     </button>
                     <button onClick={() => setGoalsFilter('READY')}
-                      className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${goalsFilter === 'READY' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${goalsFilter === 'READY' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                       {t.parent.goalsFilter.reached}
                     </button>
                     <button onClick={() => setGoalsFilter('ONGOING')}
-                      className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${goalsFilter === 'ONGOING' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${goalsFilter === 'ONGOING' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                       {t.parent.goalsFilter.progress}
                     </button>
@@ -1430,7 +1453,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         </div>
                       </div>
                     </div>
-                    <button type="submit" className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-slate-200 dark:shadow-none hover:bg-slate-800 dark:hover:bg-slate-100 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
+                    <button type="submit" className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-md shadow-slate-500/20 dark:shadow-none hover:bg-slate-800 dark:hover:bg-slate-100 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
                       <i className="fa-solid fa-paper-plane text-emerald-400 dark:text-emerald-500"></i>
                       {t.parent.addButton} {activeChild.name}
                     </button>
@@ -1495,22 +1518,24 @@ const ParentView: React.FC<ParentViewProps> = ({
               {editingMission && (
                 <div className="fixed inset-0 z-[100] flex items-end justify-center pb-8 pt-12 px-4 sm:items-center" onClick={() => setEditingMission(null)}>
                   <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
-                  <div className="relative bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-sm p-6 animate-slide-up sm:animate-pop-in border border-slate-200 dark:border-slate-700 max-h-full overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex justify-center mb-5">
-                      <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center">
-                        <i className="fa-solid fa-pen-to-square text-2xl text-indigo-500"></i>
+                  <div className="relative bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden animate-slide-up sm:animate-pop-in max-h-full overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                    {/* Header violet */}
+                    <div className="bg-gradient-to-br from-indigo-600 to-violet-600 pt-8 pb-7 px-6 flex flex-col items-center text-center relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                      <div className="w-16 h-16 bg-white/20 rounded-[1.25rem] flex items-center justify-center mb-4 shadow-lg shadow-black/10">
+                        <i className="fa-solid fa-pen-to-square text-2xl text-white"></i>
                       </div>
+                      <h3 className="text-xl font-black text-white uppercase tracking-wider">{t.parent.editMissionTitle}</h3>
                     </div>
-                    <h3 className="text-xl font-black text-center text-slate-800 dark:text-white mb-6 tracking-tight">{t.parent.editMissionTitle}</h3>
 
-                    <div className="space-y-4 mb-6">
+                    <div className="p-6 space-y-4">
                       <div>
                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{t.parent.formTitleLabel}</label>
                         <input
                           type="text"
                           value={editMissionTitle}
                           onChange={(e) => setEditMissionTitle(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-4 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 transition-all text-sm"
                           autoFocus
                         />
                       </div>
@@ -1523,36 +1548,36 @@ const ParentView: React.FC<ParentViewProps> = ({
                           min="0.5"
                           value={editMissionReward}
                           onChange={(e) => setEditMissionReward(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-4 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 transition-all text-sm"
                         />
                       </div>
-                    </div>
 
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => setEditingMission(null)}
-                        className="flex-1 py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all uppercase tracking-widest text-[10px] active:scale-95"
-                      >
-                        {t.common.cancel}
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (selectedChildId && editMissionTitle.trim() && editMissionTitle.trim().length <= 100) {
-                            const updates: { title?: string; reward?: number } = {};
-                            if (editMissionTitle.trim() !== editingMission.title) updates.title = editMissionTitle.trim();
-                            const newReward = parseFloat(editMissionReward);
-                            if (!isNaN(newReward) && newReward > 0 && newReward <= 100 && newReward !== editingMission.reward) updates.reward = newReward;
-                            if (Object.keys(updates).length > 0) {
-                              onEditMission(selectedChildId, editingMission.id, updates);
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          onClick={() => setEditingMission(null)}
+                          className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all uppercase tracking-widest text-[10px] active:scale-95"
+                        >
+                          {t.common.cancel}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (selectedChildId && editMissionTitle.trim() && editMissionTitle.trim().length <= 100) {
+                              const updates: { title?: string; reward?: number } = {};
+                              if (editMissionTitle.trim() !== editingMission.title) updates.title = editMissionTitle.trim();
+                              const newReward = parseFloat(editMissionReward);
+                              if (!isNaN(newReward) && newReward > 0 && newReward <= 100 && newReward !== editingMission.reward) updates.reward = newReward;
+                              if (Object.keys(updates).length > 0) {
+                                onEditMission(selectedChildId, editingMission.id, updates);
+                              }
                             }
-                          }
-                          setEditingMission(null);
-                        }}
-                        className="flex-1 py-3.5 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-black rounded-2xl shadow-lg shadow-indigo-200 dark:shadow-none transition-all uppercase tracking-widest text-[10px] active:scale-95 flex items-center justify-center gap-2"
-                      >
-                        <i className="fa-solid fa-check"></i>
-                        {t.parent.editMissionSave}
-                      </button>
+                            setEditingMission(null);
+                          }}
+                          className="flex-1 py-4 bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-black rounded-2xl shadow-md shadow-indigo-500/25 dark:shadow-none transition-all uppercase tracking-widest text-[10px] active:scale-95 flex items-center justify-center gap-2"
+                        >
+                          <i className="fa-solid fa-check"></i>
+                          {t.parent.editMissionSave}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1568,9 +1593,9 @@ const ParentView: React.FC<ParentViewProps> = ({
                   <button
                     onClick={() => !data.isPremium && (setActiveTab('ACCOUNT'), setMainView('profile'))}
                     disabled={data.isPremium}
-                    className={`p-3 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 text-white text-center py-6 relative overflow-hidden group border transition-all ${data.isPremium
-                      ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-200 border-emerald-400/20 opacity-90 cursor-default'
-                      : 'bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-violet-200 border-white/20 hover:translate-y-[-2px]'
+                    className={`p-3 rounded-2xl shadow-md flex flex-col items-center justify-center gap-2 text-white text-center py-6 relative overflow-hidden group border transition-all ${data.isPremium
+                      ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25 border-emerald-400/20 opacity-90 cursor-default'
+                      : 'bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-violet-500/25 border-violet-400/20 hover:translate-y-[-2px]'
                       }`}
                   >
                     <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl transition-colors ${data.isPremium
@@ -1656,7 +1681,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <button onClick={() => openActionModal(mission.id, 'REJECT')} className="py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 text-slate-500 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm">{t.parent.btnCorrect}</button>
-                      <button onClick={() => openActionModal(mission.id, 'APPROVE')} className="py-3.5 rounded-2xl bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-200 dark:shadow-none hover:bg-emerald-600 transition-colors text-sm">{t.parent.btnValidate}</button>
+                      <button onClick={() => openActionModal(mission.id, 'APPROVE')} className="py-3.5 rounded-2xl bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/25 dark:shadow-none hover:bg-emerald-600 transition-colors text-sm">{t.parent.btnValidate}</button>
                     </div>
                   </div>
                 ))}
@@ -1772,7 +1797,7 @@ const ParentView: React.FC<ParentViewProps> = ({
 
       {
         mainView === 'profile' && (
-          <div className="fixed inset-0 bg-slate-100 dark:bg-slate-950 z-[40] flex flex-col p-4 animate-fade-in pt-24 overflow-y-auto no-scrollbar">
+          <div className="fixed inset-0 bg-slate-100 dark:bg-slate-950 z-[40] flex flex-col p-4 animate-fade-in pt-24 overflow-hidden">
             <div className="w-full max-w-2xl mx-auto rounded-[2.5rem] bg-white dark:bg-slate-900 shadow-none sm:shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-slate-800">
               {/* Header Premium - Hidden in Tab View as TopNav covers it */}
 
@@ -1915,7 +1940,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                           <>
                             <div className="fixed inset-0 z-50" onClick={() => setIsAvatarDropdownOpen(false)}></div>
                             <div className="absolute top-full left-0 right-0 mt-2 p-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-[60] animate-scale-in">
-                              <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-h-[200px] overflow-y-auto no-scrollbar p-1">
+                              <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 max-h-[300px] overflow-y-auto no-scrollbar p-2">
                                 {AVAILABLE_SEEDS.map(seed => (
                                   <button key={seed}
                                     type="button"
@@ -1923,7 +1948,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                                       setFormAvatar(seed);
                                       setIsAvatarDropdownOpen(false);
                                     }}
-                                    className={`aspect-square rounded-full border-2 transition-all overflow-hidden p-0.5 ${formAvatar === seed ? 'border-indigo-500 bg-indigo-50 ring-4 ring-indigo-50' : 'border-slate-50 opacity-60 hover:opacity-100 hover:border-slate-200'}`}
+                                    className={`aspect-square rounded-full transition-all overflow-hidden relative ${formAvatar === seed ? `border-4 border-${formColorClass}-500 scale-110 shadow-md shadow-${formColorClass}-500/30 p-0.5 z-10` : 'border-2 border-slate-100 dark:border-slate-700 opacity-50 hover:opacity-100 hover:scale-105 p-0.5'}`}
                                   >
                                     {renderAvatar(seed, "w-full h-full", seed === formAvatar ? formColorClass : "slate")}
                                   </button>
@@ -1936,22 +1961,27 @@ const ParentView: React.FC<ParentViewProps> = ({
 
                       <div className="space-y-3">
                         <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t.parent.childColor}</label>
-                        <div className="relative group">
-                          <select
-                            value={formColorClass}
-                            onChange={(e) => setFormColorClass(e.target.value)}
-                            className="w-full p-4 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl appearance-none focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700 dark:text-slate-200 shadow-sm pr-12"
-                          >
+                        <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4">
+                          <div className="grid grid-cols-5 gap-3">
                             {AVAILABLE_COLORS.map(color => (
-                              <option key={color} value={color} className={`text-${color}-600 font-bold`}>
-                                {(t.colors as any)[color]}
-                              </option>
+                              <button
+                                key={color}
+                                type="button"
+                                onClick={() => setFormColorClass(color)}
+                                className={`aspect-square rounded-full transition-all duration-200 relative flex items-center justify-center ${
+                                  formColorClass === color
+                                    ? `bg-${color}-500 scale-110 shadow-md shadow-${color}-500/40 ring-4 ring-offset-2 ring-${color}-400`
+                                    : `bg-${color}-400 opacity-50 hover:opacity-90 hover:scale-105`
+                                }`}
+                                title={(t.colors as any)[color]}
+                              >
+                                {formColorClass === color && (
+                                  <i className="fa-solid fa-check text-white text-xs drop-shadow-sm"></i>
+                                )}
+                              </button>
                             ))}
-                          </select>
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center gap-2">
-                            <div className={`w-6 h-6 rounded-full bg-${formColorClass}-500 shadow-sm border border-white`}></div>
-                            <i className="fa-solid fa-chevron-down text-slate-400 text-sm"></i>
                           </div>
+                          <p className="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest mt-3">{(t.colors as any)[formColorClass]}</p>
                         </div>
                       </div>
 
@@ -2209,6 +2239,19 @@ const ParentView: React.FC<ParentViewProps> = ({
                         </div>
                       </button>
 
+                      <button onClick={() => { window.open('mailto:hello@koiny.app', '_blank'); }} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 group transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-100 dark:hover:border-indigo-900/30 text-left">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-800/40 transition-colors">
+                            <i className="fa-solid fa-envelope"></i>
+                          </div>
+                          <div>
+                            <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">{language === 'fr' ? 'Contacter le support' : language === 'nl' ? 'Contact opnemen' : 'Contact Support'}</span>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500">hello@koiny.app</p>
+                          </div>
+                        </div>
+                        <i className="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 group-hover:translate-x-1 transition-transform"></i>
+                      </button>
+
                       <button onClick={async () => {
                         await onSignOut();
                       }} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 group transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 text-left mb-6">
@@ -2252,11 +2295,12 @@ const ParentView: React.FC<ParentViewProps> = ({
         transactionType && activeChild && (
           <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 transition-colors duration-500">
             <div className="fixed inset-0" onClick={() => setTransactionType(null)}></div>
-            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in text-slate-900 dark:text-white relative z-10 border-t border-white/20 dark:border-white/10 transition-colors duration-500">
-              <div className={`pt-8 pb-6 px-8 text-white relative overflow-hidden ${transactionType === 'DEPOSIT' ? 'bg-emerald-500' : (withdrawSubtype === 'PURCHASE' ? 'bg-slate-900' : 'bg-red-600')}`}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in text-slate-900 dark:text-white relative z-10 transition-colors duration-500">
+              <div className={`pt-10 pb-8 px-8 text-white relative overflow-hidden ${transactionType === 'DEPOSIT' ? 'bg-emerald-500' : (withdrawSubtype === 'PURCHASE' ? 'bg-slate-900' : 'bg-red-600')}`}>
+                <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-12 -mb-12 blur-2xl"></div>
                 <div className="relative z-10 flex flex-col items-center text-center">
-                  <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-3 ring-1 ring-white/30">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-[1.25rem] flex items-center justify-center mb-4 shadow-lg shadow-black/10">
                     <i className={`fa-solid ${transactionType === 'DEPOSIT'
                       ? 'fa-coins'
                       : withdrawSubtype === 'PURCHASE'
@@ -2264,16 +2308,16 @@ const ParentView: React.FC<ParentViewProps> = ({
                         : 'fa-gavel'
                       } text-2xl`}></i>
                   </div>
-                  <h3 className="text-lg font-black uppercase tracking-widest">{transactionType === 'DEPOSIT' ? t.parent.transactions.labels.deposit : (withdrawSubtype === 'PURCHASE' ? t.parent.transactions.labels.purchase : t.parent.transactions.labels.penalty)}</h3>
-                  <p className="text-white/70 text-xs font-bold mt-1 uppercase tracking-tighter">{activeChild?.name}</p>
+                  <h3 className="text-xl font-black uppercase tracking-wider">{transactionType === 'DEPOSIT' ? t.parent.transactions.labels.deposit : (withdrawSubtype === 'PURCHASE' ? t.parent.transactions.labels.purchase : t.parent.transactions.labels.penalty)}</h3>
+                  <p className="text-white/60 text-[11px] font-bold mt-2 uppercase tracking-widest">{activeChild?.name}</p>
                 </div>
               </div>
 
               <form onSubmit={handleTransactionSubmit} className="p-8 space-y-6">
                 {transactionType === 'WITHDRAW' && (
-                  <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl mb-2">
-                    <button type="button" onClick={() => setWithdrawSubtype('PURCHASE')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${withdrawSubtype === 'PURCHASE' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><i className="fa-solid fa-cart-shopping"></i> {t.parent.transactions.labels.purchase}</button>
-                    <button type="button" onClick={() => setWithdrawSubtype('PENALTY')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${withdrawSubtype === 'PENALTY' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><i className="fa-solid fa-gavel"></i> {t.parent.transactions.labels.penalty}</button>
+                  <div className="flex p-1.5 bg-slate-100 dark:bg-slate-800/60 rounded-2xl gap-1.5 mb-2">
+                    <button type="button" onClick={() => setWithdrawSubtype('PURCHASE')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${withdrawSubtype === 'PURCHASE' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-md shadow-slate-900/10' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}><i className="fa-solid fa-cart-shopping"></i> {t.parent.transactions.labels.purchase}</button>
+                    <button type="button" onClick={() => setWithdrawSubtype('PENALTY')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${withdrawSubtype === 'PENALTY' ? 'bg-red-500 text-white shadow-md shadow-red-500/30' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}><i className="fa-solid fa-gavel"></i> {t.parent.transactions.labels.penalty}</button>
                   </div>
                 )}
 
@@ -2318,7 +2362,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                 <div className="flex flex-col gap-3 pt-4">
                   <button
                     type="submit"
-                    className={`w-full py-5 text-white font-black uppercase tracking-[0.2em] text-sm rounded-[1.5rem] shadow-xl hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 ${transactionType === 'DEPOSIT' ? 'bg-emerald-500 shadow-emerald-200/50' : (withdrawSubtype === 'PURCHASE' ? 'bg-slate-900 shadow-slate-200/50' : 'bg-red-600 shadow-red-200/50')}`}
+                    className={`w-full py-5 text-white font-black uppercase tracking-[0.2em] text-sm rounded-[1.5rem] transition-all active:scale-95 flex items-center justify-center gap-3 ${transactionType === 'DEPOSIT' ? 'bg-emerald-500 shadow-md shadow-emerald-500/30' : (withdrawSubtype === 'PURCHASE' ? 'bg-slate-900 shadow-md shadow-slate-900/30 dark:shadow-black/40' : 'bg-red-500 shadow-md shadow-red-500/30')}`}
                   >
                     <i className="fa-solid fa-circle-check"></i>
                     {t.common.confirm}
