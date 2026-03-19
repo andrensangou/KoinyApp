@@ -1203,8 +1203,8 @@ const ParentView: React.FC<ParentViewProps> = ({
         </div>
       )}
 
-      {/* Hero Section (Dashboard Only) */}
-      {mainView === 'dashboard' && (
+      {/* Hero Section (Dashboard Only, avec enfants) */}
+      {mainView === 'dashboard' && data.children && data.children.length > 0 && (
         <div ref={heroRef} className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-indigo-800 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 pt-28 pb-10 px-6 relative overflow-hidden transition-colors duration-500">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full -mr-64 -mt-64 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-500/20 rounded-full -ml-32 -mb-32 blur-2xl"></div>
@@ -1237,8 +1237,8 @@ const ParentView: React.FC<ParentViewProps> = ({
         </div>
       )}
 
-      {/* Standard Child Selector (Dashboard Only) */}
-      {mainView === 'dashboard' && (
+      {/* Standard Child Selector (Dashboard Only, avec enfants) */}
+      {mainView === 'dashboard' && data.children && data.children.length > 0 && (
         <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky sticky-safe-top z-30 pt-5 pb-4 transition-colors duration-500">
           <div className={`max-w-7xl mx-auto pr-6 overflow-x-auto no-scrollbar flex gap-3 scroll-smooth items-center transition-all duration-300 ${!isHeroVisible && !data.isPremium ? 'pl-20' : 'pl-6'}`}>
             {data.children && data.children.length > 0 ? data.children.map(child => {

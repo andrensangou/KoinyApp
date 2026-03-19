@@ -238,6 +238,13 @@ const t = translations[data.language || 'fr'];
   ```
 - Child selector slide: `!isHeroVisible && !data.isPremium ? 'pl-20' : 'pl-6'` — évite l'overlap avec la couronne (64px wide incl. padding)
 
+### ChildView (vue enfant) — Règles spécifiques
+- **JAMAIS** `backdrop-blur-xl` sur des boutons superposés à un gradient coloré → crée un halo blanc/glassmorphism
+- **Boutons sur fond gradient**: `bg-white/20` (pas `bg-white/10`, trop transparent)
+- **Conteneurs de sections**: `bg-white dark:bg-slate-800` (PAS `bg-slate-50` → crée des "gaps" gris entre sections)
+- **Ombres cartes stats**: `shadow-md shadow-emerald-500/25` (PAS `shadow-lg shadow-emerald-100`)
+- **Bouton "Choisir un cadeau"**: style basé sur `data.colorClass` de l'enfant, pas une couleur hardcodée
+
 ### Textes i18n inline
 - Pour les textes courts non réutilisables (ex: labels settings), utiliser le pattern inline:
   `{language === 'fr' ? 'Texte FR' : language === 'nl' ? 'Tekst NL' : 'Text EN'}`
