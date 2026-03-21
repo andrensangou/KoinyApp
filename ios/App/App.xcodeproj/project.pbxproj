@@ -39,6 +39,23 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		65D4B2E12F6E300000CC5599 /* Copy Sentry dSYMs */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Sentry dSYMs";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Koiny — Copy Sentry.framework dSYM into the archive\n# Fixes: \"The archive did not include a dSYM for Sentry.framework\"\n# Runs only during Archive (DEPLOYMENT_LOCATION=YES)\nif [ \"$DEPLOYMENT_LOCATION\" != \"YES\" ]; then\n  exit 0\nfi\n\nSENTRY_DSYM=$(find \"$BUILT_PRODUCTS_DIR\" -name \"Sentry.framework.dSYM\" 2>/dev/null | head -1)\n\nif [ -n \"$SENTRY_DSYM\" ]; then\n  cp -rp \"$SENTRY_DSYM\" \"$DWARF_DSYM_FOLDER_PATH/\"\n  echo \"✅ Sentry.framework.dSYM copié dans l'archive\"\nelse\n  # Fallback: cherche dans DerivedData\n  DERIVED=$(echo \"$BUILD_DIR\" | sed 's|/Build/Products.*||')\n  FALLBACK=$(find \"$DERIVED\" -name \"Sentry.framework.dSYM\" 2>/dev/null | head -1)\n  if [ -n \"$FALLBACK\" ]; then\n    cp -rp \"$FALLBACK\" \"$DWARF_DSYM_FOLDER_PATH/\"\n    echo \"✅ Sentry.framework.dSYM copié depuis DerivedData\"\n  else\n    echo \"warning: Sentry.framework.dSYM introuvable — vérifier DEBUG_INFORMATION_FORMAT\"\n  fi\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		65A8A0D92F4B890800DBB640 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -197,6 +214,7 @@
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
 				65A8A0D92F4B890800DBB640 /* Embed Foundation Extensions */,
+				65D4B2E12F6E300000CC5599 /* Copy Sentry dSYMs */,
 			);
 			buildRules = (
 			);
@@ -510,6 +528,7 @@
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = K828G7C5CB;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
