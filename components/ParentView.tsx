@@ -141,6 +141,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [pinError, setPinError] = useState('');
   const [pinState, setPinState] = useState<'idle' | 'validating' | 'error' | 'success'>('idle');
   const pinErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pinValidationIdRef = useRef(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
 
@@ -371,15 +372,18 @@ const ParentView: React.FC<ParentViewProps> = ({
     const cleanVal = val.replace(/[^0-9]/g, '').slice(0, 4);
     setPin(cleanVal);
 
-    // Annule tout timeout d'erreur en cours (évite la race condition)
+    // Annule tout timeout d'erreur en cours
     if (pinErrorTimeoutRef.current) {
       clearTimeout(pinErrorTimeoutRef.current);
       pinErrorTimeoutRef.current = null;
     }
-    // Reset atomique — un seul état, pas deux booleans
     setPinState('idle');
 
     if (cleanVal.length < 4) return;
+
+    // Identifiant unique pour cette validation — ignore les résultats périmés
+    // d'un verifyPin() précédent encore en cours (PBKDF2 ~300ms sur iPhone)
+    const validationId = ++pinValidationIdRef.current;
 
     // Vérifier le PIN local en priorité, sinon le PIN de Supabase
     const effectivePin = localPin || data.parentPin;
@@ -397,6 +401,9 @@ const ParentView: React.FC<ParentViewProps> = ({
         isMatch = (cleanVal === storedPin);
       }
 
+      // Si une nouvelle validation a démarré entre-temps, ignorer ce résultat
+      if (pinValidationIdRef.current !== validationId) return;
+
       if (isMatch) {
         setPinState('success');
         setTimeout(() => {
@@ -405,7 +412,6 @@ const ParentView: React.FC<ParentViewProps> = ({
           setPinState('idle');
         }, 200);
       } else {
-        // Délai pour que l'animation shake soit visible sans flash
         pinErrorTimeoutRef.current = setTimeout(() => setPinState('error'), 150);
       }
     }
