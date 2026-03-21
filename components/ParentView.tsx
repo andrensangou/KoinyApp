@@ -139,8 +139,8 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [pinError, setPinError] = useState('');
-  const [isPinValidating, setIsPinValidating] = useState(false);
-  const [isPinWrong, setIsPinWrong] = useState(false);
+  const [pinState, setPinState] = useState<'idle' | 'validating' | 'error' | 'success'>('idle');
+  const pinErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
 
@@ -370,8 +370,14 @@ const ParentView: React.FC<ParentViewProps> = ({
   const handlePinInput = async (val: string) => {
     const cleanVal = val.replace(/[^0-9]/g, '').slice(0, 4);
     setPin(cleanVal);
-    // Reset error state on each new digit
-    setIsPinWrong(false);
+
+    // Annule tout timeout d'erreur en cours (évite la race condition)
+    if (pinErrorTimeoutRef.current) {
+      clearTimeout(pinErrorTimeoutRef.current);
+      pinErrorTimeoutRef.current = null;
+    }
+    // Reset atomique — un seul état, pas deux booleans
+    setPinState('idle');
 
     if (cleanVal.length < 4) return;
 
@@ -380,7 +386,7 @@ const ParentView: React.FC<ParentViewProps> = ({
     const storedPin = effectivePin ? String(effectivePin).trim() : null;
 
     if (storedPin) {
-      setIsPinValidating(true);
+      setPinState('validating');
       let isMatch = false;
 
       // Si le PIN stocké contient un ":", c'est un hash PBKDF2 sécurisé
@@ -391,17 +397,16 @@ const ParentView: React.FC<ParentViewProps> = ({
         isMatch = (cleanVal === storedPin);
       }
 
-      setIsPinValidating(false);
-
       if (isMatch) {
+        setPinState('success');
         setTimeout(() => {
           setIsAuthenticated(true);
           setPin('');
-          setIsPinWrong(false);
+          setPinState('idle');
         }, 200);
       } else {
-        // Délai minimum pour éviter le flash visuel
-        setTimeout(() => setIsPinWrong(true), 100);
+        // Délai pour que l'animation shake soit visible sans flash
+        pinErrorTimeoutRef.current = setTimeout(() => setPinState('error'), 150);
       }
     }
   };
@@ -1022,7 +1027,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                 </div>
               )}
 
-              {isPinWrong && !isPinValidating && (
+              {pinState === 'error' && (
                 <div className="flex flex-col items-center gap-5 animate-shake">
                   <div className="bg-red-500/10 px-6 py-3 rounded-full border border-red-500/20">
                     <p className="text-red-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
