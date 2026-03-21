@@ -19,6 +19,7 @@ import { notifications } from '../services/notifications';
 import { getIcon } from '../constants/icons';
 import { checkBiometricAvailability, authenticateWithBiometric, getBiometricLabel, getBiometricIcon } from '../services/biometric';
 import { Capacitor } from '@capacitor/core';
+import { useModal } from '../hooks/useModal';
 
 interface ParentViewProps {
   data: GlobalState;
@@ -138,6 +139,8 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [pinError, setPinError] = useState('');
+  const [isPinValidating, setIsPinValidating] = useState(false);
+  const [isPinWrong, setIsPinWrong] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
 
@@ -279,6 +282,7 @@ const ParentView: React.FC<ParentViewProps> = ({
 
   const missionFormRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
+  const childSelectorScrollRef = useRef<HTMLDivElement>(null);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
   const t = translations[language];
   const activeChild = useMemo(() => data.children ? data.children.find(c => c.id === selectedChildId) : null, [data.children, selectedChildId]);
@@ -366,11 +370,17 @@ const ParentView: React.FC<ParentViewProps> = ({
   const handlePinInput = async (val: string) => {
     const cleanVal = val.replace(/[^0-9]/g, '').slice(0, 4);
     setPin(cleanVal);
+    // Reset error state on each new digit
+    setIsPinWrong(false);
+
+    if (cleanVal.length < 4) return;
+
     // Vérifier le PIN local en priorité, sinon le PIN de Supabase
     const effectivePin = localPin || data.parentPin;
     const storedPin = effectivePin ? String(effectivePin).trim() : null;
 
     if (storedPin) {
+      setIsPinValidating(true);
       let isMatch = false;
 
       // Si le PIN stocké contient un ":", c'est un hash PBKDF2 sécurisé
@@ -381,11 +391,17 @@ const ParentView: React.FC<ParentViewProps> = ({
         isMatch = (cleanVal === storedPin);
       }
 
+      setIsPinValidating(false);
+
       if (isMatch) {
         setTimeout(() => {
           setIsAuthenticated(true);
           setPin('');
+          setIsPinWrong(false);
         }, 200);
+      } else {
+        // Délai minimum pour éviter le flash visuel
+        setTimeout(() => setIsPinWrong(true), 100);
       }
     }
   };
@@ -505,6 +521,10 @@ const ParentView: React.FC<ParentViewProps> = ({
     label: string;
     icon: string;
   } | null>(null);
+
+  // Lock body scroll when any inline modal is open
+  const _anyInlineModalOpen = showOfflineModal || !!editingMission || !!transactionType || !!selectedMissionId || promptConfig.isOpen || !!(biometricChoice?.isOpen);
+  useModal(_anyInlineModalOpen);
 
   const handleResetPin = async () => {
     // Demo Mode — skip security
@@ -716,6 +736,16 @@ const ParentView: React.FC<ParentViewProps> = ({
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, [mainView]);
+
+  // Auto-centre l'enfant actif dans le sélecteur horizontal
+  useEffect(() => {
+    const container = childSelectorScrollRef.current;
+    if (!container || !selectedChildId) return;
+    const activeBtn = container.querySelector<HTMLElement>('[data-active="true"]');
+    if (!activeBtn) return;
+    const scrollTarget = activeBtn.offsetLeft - container.offsetWidth / 2 + activeBtn.offsetWidth / 2;
+    container.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' });
+  }, [selectedChildId]);
 
   const startAddGoal = () => {
     if (activeChild) {
@@ -992,7 +1022,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                 </div>
               )}
 
-              {pin.length === 4 && pin !== String(data.parentPin).trim() && (
+              {isPinWrong && !isPinValidating && (
                 <div className="flex flex-col items-center gap-5 animate-shake">
                   <div className="bg-red-500/10 px-6 py-3 rounded-full border border-red-500/20">
                     <p className="text-red-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
@@ -1240,32 +1270,38 @@ const ParentView: React.FC<ParentViewProps> = ({
       {/* Standard Child Selector (Dashboard Only, avec enfants) */}
       {mainView === 'dashboard' && data.children && data.children.length > 0 && (
         <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky sticky-safe-top z-30 pt-5 pb-4 transition-colors duration-500">
-          <div className={`max-w-7xl mx-auto pr-6 overflow-x-auto no-scrollbar flex gap-3 scroll-smooth items-center transition-all duration-300 ${!isHeroVisible && !data.isPremium ? 'pl-20' : 'pl-6'}`}>
-            {data.children && data.children.length > 0 ? data.children.map(child => {
-              const childPending = child.missions ? child.missions.filter(m => m.status === 'PENDING').length : 0;
-              const childGiftPending = child.giftRequested ? 1 : 0;
-              const childMissionPending = child.missionRequested ? 1 : 0;
-              const totalIconPending = childPending + childGiftPending + childMissionPending;
-              const isSelected = selectedChildId === child.id;
-              return (
-                <button key={child.id}
-                  onClick={() => setSelectedChildId(child.id)}
-                  className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl font-black text-xs transition-all whitespace-nowrap relative border-2 ${isSelected ? `bg-${child.colorClass}-600 border-${child.colorClass}-600 text-white shadow-lg shadow-${child.colorClass}-500/25 dark:shadow-none -translate-y-0.5` : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:border-slate-200 dark:hover:border-slate-700'}`}
-                >
-                  <div className={`w-9 h-9 rounded-full overflow-hidden ${isSelected ? 'ring-2 ring-white/50' : 'opacity-60 dark:opacity-40 grayscale-[50%]'}`}>
-                    {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
-                  </div>
-                  <span className="tracking-tight">{child.name}</span>
-                  {totalIconPending > 0 && (
-                    <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-black shadow-sm ${isSelected ? 'bg-white text-red-500' : 'bg-red-500 text-white dark:border dark:border-slate-900'}`}>
-                      {totalIconPending}
-                    </span>
-                  )}
-                </button>
-              );
-            }) : (
-              <p className="text-slate-400 text-xs font-bold italic py-2">{t.parent.dashboard.emptyProfilesHint}</p>
-            )}
+          <div className="relative">
+            <div
+              ref={childSelectorScrollRef}
+              className={`max-w-7xl mx-auto overflow-x-auto no-scrollbar flex gap-3 items-center transition-all duration-300 snap-x snap-mandatory ${!isHeroVisible && !data.isPremium ? 'pl-20' : 'pl-6'} pr-20`}
+            >
+              {data.children.map(child => {
+                const childPending = child.missions ? child.missions.filter(m => m.status === 'PENDING').length : 0;
+                const childGiftPending = child.giftRequested ? 1 : 0;
+                const childMissionPending = child.missionRequested ? 1 : 0;
+                const totalIconPending = childPending + childGiftPending + childMissionPending;
+                const isSelected = selectedChildId === child.id;
+                return (
+                  <button key={child.id}
+                    data-active={isSelected ? 'true' : 'false'}
+                    onClick={() => setSelectedChildId(child.id)}
+                    className={`snap-start shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl font-black text-xs transition-all whitespace-nowrap relative border-2 min-w-[120px] ${isSelected ? `bg-${child.colorClass}-600 border-${child.colorClass}-600 text-white shadow-md shadow-${child.colorClass}-500/25 dark:shadow-none -translate-y-0.5` : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:border-slate-200 dark:hover:border-slate-700'}`}
+                  >
+                    <div className={`w-9 h-9 rounded-full overflow-hidden shrink-0 ${isSelected ? 'ring-2 ring-white/50' : 'opacity-60 dark:opacity-40 grayscale-[50%]'}`}>
+                      {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
+                    </div>
+                    <span className="tracking-tight">{child.name}</span>
+                    {totalIconPending > 0 && (
+                      <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-black shadow-sm shrink-0 ${isSelected ? 'bg-white text-red-500' : 'bg-red-500 text-white dark:border dark:border-slate-900'}`}>
+                        {totalIconPending}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {/* Gradient indicateur : d'autres enfants à droite */}
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white/80 dark:from-slate-950/80 to-transparent" />
           </div>
         </div>
       )}
@@ -1695,8 +1731,8 @@ const ParentView: React.FC<ParentViewProps> = ({
               </div>
             </section>}
 
-            {mainView === 'history' && <section className="pt-28 pb-32 space-y-4">
-              <div className="px-4">
+            {mainView === 'history' && <section className="pt-28 pb-32">
+              <div className="sticky z-10 px-4 pb-3 pt-1 bg-white dark:bg-slate-950" style={{ top: 'calc(max(60px, env(safe-area-inset-top)) + 52px)' }}>
                 <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 items-center">
                   <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shrink-0">
                     <button onClick={() => setHistoryView('LIST')} aria-label={language === 'fr' ? 'Vue liste' : 'List view'} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'LIST' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-list" aria-hidden="true"></i></button>
@@ -1716,7 +1752,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                 </div>
               </div>
 
-              <div className="bg-transparent overflow-hidden min-h-[400px]">
+              <div className="bg-transparent overflow-hidden min-h-[400px] mt-3">
                 {historyView === 'LIST' ? (
                   <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-400 font-bold">Chargement...</div>}>
                     <VirtualHistoryList

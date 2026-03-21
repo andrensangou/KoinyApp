@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Language } from '../types';
+import { useModal } from '../hooks/useModal';
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface HelpModalProps {
 }
 
 const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
+  useModal(isOpen);
   if (!isOpen) return null;
 
   const t = {

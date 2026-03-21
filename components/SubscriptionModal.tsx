@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { subscriptionService, SubscriptionProduct, SubscriptionState } from '../services/subscription';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { useModal } from '../hooks/useModal';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -27,6 +28,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [isRestoring, setIsRestoring] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  useModal(isOpen);
 
   useEffect(() => {
     if (isOpen) {
@@ -143,8 +146,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end">
-      <div className="w-full bg-white dark:bg-slate-900 rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end" onClick={onClose}>
+      <div className="w-full bg-white dark:bg-slate-900 rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div className="flex justify-between items-center mb-6">

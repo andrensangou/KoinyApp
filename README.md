@@ -103,12 +103,12 @@ npm install --legacy-peer-deps
 ```
 
 ### 3. Variables d'Environnement
-Créer le fichier `.env` à la racine :
+Créer le fichier `.env` à la racine (voir `.env.example`) :
 ```env
 VITE_SUPABASE_URL=votre_url_supabase
 VITE_SUPABASE_ANON_KEY=votre_cle_anon_publique
+VITE_REVENUECAT_API_KEY=votre_cle_revenuecat
 ```
-*(Note: L'API Key publique de RevenueCat est gérée dans le service `subscription.ts`).*
 
 ### 4. Build de Développement (Mode Web Local)
 Développer les vues React directement dans le navigateur Safari/Chrome sans lancer l'émulateur lourd :

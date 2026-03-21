@@ -1,4 +1,4 @@
-# KOINY — Context IA (v3.0 · Mars 2026)
+# KOINY — Context IA (v3.1 · Mars 2026)
 
 > Source de vérité pour tout assistant IA travaillant sur ce projet.
 
@@ -256,6 +256,17 @@ Sous-sections `parent` : `tabs | account | history | messages | notifications.pu
 - `isPremium` dans `GlobalState` + `localStorage.koiny_premium_active`
 - StoreKit 2 : `com.koiny.premium.monthly` / `com.koiny.premium.yearly`
 
+### Détails Intégration RevenueCat
+- **Entitlement ID** : **`'Koiny Premium'`** (maj/espace importants)
+- **Stockage local** : localStorage key `'koiny_premium_active'` (`'true'` ou absent)
+- **Fallback Xcode Sandbox** : 
+  1. `purchaseSubscription()`: check `activeSubscriptions` si entitlements.active vide
+  2. `getSubscriptionStatus()`: retourne aussi `productId` du fallback pour UI
+  3. `restorePurchases()`: même fallback pattern que purchase
+- **État du premium (App.tsx)** : Lire `koiny_premium_active` au démarrage pour éviter flash couronne. Refresh périodique (`visibilitychange` + intervalle 6h).
+- **Offline Mode** : Modal reste ouvert (plans visibles), mais achats désactivés (opacity-60, cursor-not-allowed). 
+- **subscription.ts — waitForInit** : `initPromise` attend l'init RevenueCat (max 10s) avant toute opération.
+
 ---
 
 ## RevenueCat & In-App Purchases (IAP)
@@ -324,15 +335,20 @@ Groupe: Koiny Premium
 
 ## Déploiement & TestFlight
 
-**Builds récents :**
-- Build 1 (15/03) : Initial upload
-- Build 2 (15/03) : Fix encryption questions
-- Build 3 (16/03) : Fix loading performance & production guards
+**Workflow de déploiement :**
+1. `npm run build` (~24 min sur machine 8GB)
+2. `npx cap sync ios`
+3. Xcode : Product > Archive
+4. Organizer : Distribute App > App Store ASC
+5. ASC : TestFlight > Créer groupe externe > Soumettre pour review Apple (24-48h)
 
 **Sentry — Issues à surveiller :**
 - `WatchdogTermination` (RAM) : iOS tue l'app pour mémoire excessive (probable fuite ou boucle au démarrage).
 - `HTTP 406 on app_alerts` : Table manquante dans Supabase.
 - Redondance : Requêtes `profiles` Supabase répétées (3-4x par init).
+
+**Migration possible :**
+- Sentry → Firebase Crashlytics (gratuit illimité, simple à intégrer via Capacitor).
 
 ---
 
@@ -373,6 +389,55 @@ const date = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth
 const currentMax = data.maxBalance === 0 ? Infinity : (data.maxBalance || MAX_BALANCE);
 const effectiveReward = Math.min(reward, Math.max(0, currentMax - child.balance));
 ```
+
+---
+
+## UI/UX Design Guidelines
+
+### Ombres (Shadows)
+- **Pattern correct** : `shadow-md shadow-{color}-500/{opacity}` (ex: `shadow-md shadow-indigo-500/25`)
+- **ÉVITER** : `shadow-lg shadow-{color}-200` (halos blancs/pastel trop visibles)
+- **ÉVITER** : `bg-white/70` + `shadow-lg` sur boutons flottants → halo blanc
+
+### Bordures
+- Sur fond coloré/gradient : **pas de** `border border-white/10` (bordures blanches trop visibles)
+- Sur fond clair : `border border-slate-100 dark:border-slate-800` est ok
+
+### Scroll
+- **JAMAIS** imbriquer deux `overflow-y-auto` (scroll chaîné imprévisible)
+- Conteneur externe : `overflow-hidden`, seul le conteneur interne scrolle
+
+### iOS Safe Area & Overscroll
+- `.sticky-safe-top` dans `index.css` : `top: max(60px, env(safe-area-inset-top)) !important`
+- **Overscroll roof** : div fixe `z-[60]` avec `height: env(safe-area-inset-top)` absorbe le bounce iOS :
+  ```tsx
+  <div className={`fixed top-0 left-0 right-0 z-[60] pointer-events-none ${mainView === 'dashboard' ? 'bg-indigo-700 dark:bg-slate-900' : 'bg-white dark:bg-slate-950'}`} style={{ height: 'env(safe-area-inset-top)' }} />
+  ```
+
+### Hero Visibility / Child Selector Slide
+- Utiliser `scroll` listener + `getBoundingClientRect()` (PAS IntersectionObserver)
+- Pattern de calcul : `setIsHeroVisible(heroRef.current.getBoundingClientRect().bottom > 110)`
+- Child selector slide : `!isHeroVisible && !data.isPremium ? 'pl-20' : 'pl-6'` (évite l'overlap couronne)
+
+### Textes i18n inline
+- Pour les textes courts non réutilisables, utiliser :
+  `{language === 'fr' ? 'Texte FR' : language === 'nl' ? 'Tekst NL' : 'Text EN'}`
+
+---
+
+## Splash Screen
+- Géré par `@capacitor/splash-screen` (pas React Native)
+- Config `capacitor.config.ts` : backgroundColor `#3730A3`, spinner blanc, 3s
+- Image : `ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png`
+
+---
+
+## Simulator iOS — Screenshots App Store
+- Bloquer l'heure à 9:41 et batterie full :
+  ```bash
+  UDID=$(xcrun simctl list devices booted | grep -oE '\([A-F0-9\-]+\)' | tr -d '()' | head -1) && \
+  xcrun simctl status_bar $UDID override --time 09:41 --batteryState charged --batteryLevel 100
+  ```
 
 ---
 
@@ -429,3 +494,10 @@ mockup iPhone centré, cards blanches arrondies).
 - Exporte aux 4 tailles Apple définies en section 16
 - Génère 3 sets : FR, NL, EN
 ```
+
+---
+
+## Contact Support
+- Email : `hello@koiny.app`
+- Emplacement : Bouton "Contacter le support" dans `ParentView.tsx` > Settings > Account (avant "Se déconnecter").
+- Logique : Utilise un lien `mailto` avec les informations de l'utilisateur (UID) en sujet/corps pour faciliter le support.

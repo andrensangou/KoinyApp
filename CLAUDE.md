@@ -163,13 +163,48 @@ const t = translations[data.language || 'fr'];
 - ✅ Fix: `waitForInit()` — produits ne chargeaient pas car modal ouvert avant init RevenueCat
 - ✅ Fix: SubscriptionModal retry auto + bouton "Réessayer" + spinner achat + anti double-clic
 
+### Corrections appliquées (20/03/2026 — session 3)
+- ✅ **`services/pinStorage.ts` — anonymisation logs**: `console.log(userId)` remplacé par `logger.debug(logger.anonymize(userId))` — userId ne s'affiche plus en clair dans les logs Xcode
+- ✅ **`handleFullSignOut` — réactivité bouton**: navigation vers `AUTH` immédiate (optimistic) avant les appels réseau. `getUser()` (réseau) remplacé par `getSession()` (cache local). Supprime le besoin de double-clic
+- ✅ **`handleFullSignOut` — vue correcte**: navigue vers `AUTH` (page de connexion) au lieu de `LANDING` (page marketing)
+
+### Corrections appliquées (20/03/2026 — session 2)
+- ✅ **`hooks/useModal.ts` créé**: hook centralisé iOS-compatible — `position: fixed` + `top: -${scrollY}px` + `width: 100%` sur le body (simple `overflow: hidden` insuffisant sur iOS quand le clavier apparaît). Sauvegarde et restaure la position de scroll. Compteur global pour les modals imbriqués (pas de déverrouillage prématuré).
+- ✅ **ConfirmDialog.tsx**: `useModal(isOpen)` ajouté AVANT le `if (!isOpen) return null` (respect Rules of Hooks)
+- ✅ **HelpModal.tsx**: idem — `useModal(isOpen)` avant early return
+- ✅ **SubscriptionModal.tsx**: `useModal(isOpen)` + backdrop click (tap en dehors du sheet → ferme le modal)
+- ✅ **ParentView.tsx**: `useModal(_anyInlineModalOpen)` couvrant tous les modals inline (offline, editingMission, transactionType, selectedMissionId, promptConfig, biometricChoice)
+
+### Corrections appliquées (21/03/2026)
+- ✅ **PIN flash "Code erroné"**: `handlePinInput` dans ParentView.tsx — ajout de `isPinValidating` et `isPinWrong` states. L'erreur inline `pin !== data.parentPin` (comparaison plain-text vs hash PBKDF2 → toujours `true`) remplacée par `isPinWrong && !isPinValidating`. Error reset immédiat à chaque digit. Erreur affichée uniquement après `verifyPin()` résolu `false`, avec 100ms délai minimum.
+- ✅ **Déconnexion — navigation optimiste**: `handleFullSignOut` utilise `getSession()` (cache local) au lieu de `getUser()` (réseau) + `setView('AUTH')` immédiat avant les appels async.
+- ✅ **pinStorage.ts — logs anonymisés**: tous les `console.log(userId)` remplacés par `logger.debug(logger.anonymize(userId))`.
+
+### Corrections appliquées (20/03/2026)
+- ✅ **PIN hashé à la création**: `handleSetPin` dans App.tsx appelle `hashPin()` (PBKDF2) avant tout stockage — avant: PIN "1234" stocké en clair dans state, Preferences et `pin_hash` Supabase
+- ✅ **deleteAccount() — révocation Google**: `GoogleAuth.signOut()` appelé avant `supabase.auth.signOut()` → empêche reconnexion silencieuse via token Google encore actif
+- ✅ **deleteAccount() — reset state complet**: `onDeleteAccount` efface `koiny_last_view`, `koiny_last_child_id`, appelle `setData(INITIAL_DATA)` + `setOwnerId(undefined)` immédiatement (sans attendre event `SIGNED_OUT`)
+- ✅ **initialize() — routing compte frais**: si session valide mais 0 enfants → `setView('PARENT')` directement (skip LOGIN) → élimine le double-tap après suppression + reconnexion
+- ✅ **Onglet Historique — header sticky**: filtre bar (vue liste/graphique + CE MOIS/TOUT + corbeille) maintenant `sticky z-10` avec `top: calc(max(60px, env(safe-area-inset-top)) + 52px)` → reste fixe pendant scroll
+- ✅ **Sélecteur enfants — 3+ enfants**: `snap-x snap-mandatory`, `pr-20` (évite overlap bouton power), `min-w-[120px]` par pill, gradient indicateur droit, auto-scroll vers enfant actif (`childSelectorScrollRef` + useEffect)
+
+### Corrections appliquées (19/03/2026)
+- ✅ **Supabase RLS `profiles`**: RLS activée, policies redondantes supprimées (garder "Simple Access" uniquement)
+- ✅ **Supabase fonctions search_path**: `SET search_path = public` ajouté sur 5 fonctions (`remove_co_parent`, `update_child_balance`, `update_updated_at_column`, `check_goal_achievement`, `calculate_child_total`)
+- ✅ **`delete_user_data` RPC créée**: supprime transactions → missions → goals → children → profiles → auth.users (SECURITY DEFINER). Avant: fonction inexistante → compte non supprimé → reconnexion possible après "suppression"
+- ✅ **`deleteAccount()`**: propagation de l'erreur + nettoyage `localStorage.removeItem('koiny_premium_active')`
+- ✅ **Google Sign In perf**: `googleAuthInitialized` flag module-level → `GoogleAuth.initialize()` appelé une seule fois au lieu de chaque sign-in
+- ✅ **Email redirect deep link**: `emailRedirectTo` utilise `com.koiny.app://callback` sur native au lieu de `window.location.origin`
+- ✅ **Supabase URL Configuration**: Site URL → `https://koiny.app/`, Redirect URLs → `com.koiny.app://callback` + `com.koiny.app://**`
+
 ### Points à surveiller
 - **Premium spoofable:** localStorage `koiny_premium_active` modifiable côté client
   - Mitigation: refresh RevenueCat périodique (6h + foreground) détecte annulations
 - **Clés API:** Doivent être dans `.env`, JAMAIS hardcodées
 - **Input validation:** Toujours valider longueur + isNaN sur parseFloat
 - **Console logs:** Utiliser `services/logger.ts` pour données sensibles
-- **RLS Supabase:** Vérifier que toutes les tables ont des policies activées
+- **SMTP Supabase:** Service intégré Supabase non adapté à la production — configurer Resend avant launch public
+- **PIN reset pour users OAuth (Apple/Google):** Utilise encore `signInWithPassword` dans ParentView.tsx → à migrer vers OTP email quand Resend est configuré
 
 ## TestFlight
 
@@ -193,7 +228,7 @@ const t = translations[data.language || 'fr'];
 
 **Sentry — Issues connues:**
 - WatchdogTermination (RAM) — iOS tue l'app pour mémoire excessive, à investiguer
-- HTTP 406 sur `app_alerts` — table probablement absente dans Supabase
+- HTTP 406 sur `app_alerts` — table créée (19/03), devrait être résolu
 - Requêtes profiles Supabase redondantes (3-4x par init)
 
 **Migration possible:**

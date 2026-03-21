@@ -1,4 +1,5 @@
 import React from 'react';
+import { useModal } from '../hooks/useModal';
 
 interface ConfirmDialogProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     confirmLabel = 'Confirmer',
     cancelLabel = 'Annuler'
 }) => {
+    useModal(isOpen);
     if (!isOpen) return null;
 
     const getTypeStyles = () => {

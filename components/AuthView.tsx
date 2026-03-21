@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { translations } from '../i18n';
 import { Language, GlobalState, getDemoData } from '../types';
 import { getSupabase, signInWithGoogle, signInWithApple } from '../services/supabase';
@@ -56,17 +57,23 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
         onLoginSuccess();
       }
       else if (authMode === 'SIGNUP') {
+        const redirectTo = Capacitor.isNativePlatform()
+          ? 'com.koiny.app://callback'
+          : window.location.origin;
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin }
+          options: { emailRedirectTo: redirectTo }
         });
         if (error) throw error;
         setEmailSent(true);
       }
       else if (authMode === 'FORGOT') {
+        const redirectTo = Capacitor.isNativePlatform()
+          ? 'com.koiny.app://callback'
+          : window.location.origin + '/reset-password';
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + '/reset-password',
+          redirectTo,
         });
         if (error) throw error;
         setEmailSent(true);

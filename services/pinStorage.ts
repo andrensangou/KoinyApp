@@ -12,8 +12,8 @@
  */
 
 import { Preferences } from '@capacitor/preferences';
-
 import { getSupabase } from './supabase';
+import { logger } from './logger';
 
 const PIN_STORAGE_KEY = 'koiny_parent_pin_v2';
 
@@ -28,7 +28,7 @@ export const saveParentPinLocally = async (userId: string, pinHash: string): Pro
         // 1. Sauvegarde locale (rapide, offline)
         const key = `${PIN_STORAGE_KEY}_${userId}`;
         await Preferences.set({ key, value: pinHash });
-        console.log('✅ [PIN_STORAGE] PIN sauvegardé localement pour:', userId);
+        logger.debug('[PIN_STORAGE] PIN sauvegardé localement pour:', logger.anonymize(userId));
 
         // 2. Sync vers Supabase (pour co-parenting et backup)
         const supabase = getSupabase();
@@ -37,8 +37,8 @@ export const saveParentPinLocally = async (userId: string, pinHash: string): Pro
             .update({ pin_hash: pinHash })
             .eq('id', userId);
 
-        if (error) console.error('❌ [PIN_STORAGE] Erreur sync Supabase:', error.message);
-        else console.log('✅ [PIN_STORAGE] PIN synced sur Supabase');
+        if (error) logger.error('[PIN_STORAGE] Erreur sync Supabase:', error.message);
+        else logger.debug('[PIN_STORAGE] PIN synced sur Supabase');
 
     } catch (error) {
         console.error('❌ [PIN_STORAGE] Erreur sauvegarde PIN:', error);
@@ -58,12 +58,12 @@ export const loadParentPinLocally = async (userId: string): Promise<string | nul
         const { value } = await Preferences.get({ key });
 
         if (value) {
-            console.log('✅ [PIN_STORAGE] PIN chargé localement pour:', userId);
+            logger.debug('[PIN_STORAGE] PIN chargé localement pour:', logger.anonymize(userId));
             return value;
         }
 
         // Fallback : chercher sur Supabase (nouveau appareil ou co-parent)
-        console.log('🔍 [PIN_STORAGE] Pas de PIN local, tentative Supabase...');
+        logger.debug('[PIN_STORAGE] Pas de PIN local, tentative Supabase...');
         const supabase = getSupabase();
         const { data } = await supabase
             .from('profiles')
@@ -74,11 +74,11 @@ export const loadParentPinLocally = async (userId: string): Promise<string | nul
         if (data?.pin_hash) {
             // Sauvegarder localement pour les prochaines fois
             await Preferences.set({ key, value: data.pin_hash });
-            console.log('✅ [PIN_STORAGE] PIN récupéré depuis Supabase et mis en cache local');
+            logger.debug('[PIN_STORAGE] PIN récupéré depuis Supabase et mis en cache local');
             return data.pin_hash;
         }
 
-        console.log('⚠️ [PIN_STORAGE] Aucun PIN trouvé ni local ni Supabase pour:', userId);
+        logger.debug('[PIN_STORAGE] Aucun PIN trouvé ni local ni Supabase pour:', logger.anonymize(userId));
         return null;
 
     } catch (error) {
@@ -96,7 +96,7 @@ export const deleteParentPinLocally = async (userId: string): Promise<void> => {
     try {
         const key = `${PIN_STORAGE_KEY}_${userId}`;
         await Preferences.remove({ key });
-        console.log('✅ [PIN_STORAGE] PIN supprimé localement pour:', userId);
+        logger.debug('[PIN_STORAGE] PIN supprimé localement pour:', logger.anonymize(userId));
     } catch (error) {
         console.error('❌ [PIN_STORAGE] Erreur suppression PIN:', error);
         throw error;

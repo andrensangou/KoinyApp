@@ -65,6 +65,8 @@ export const getSupabase = () => {
 /**
  * Sign in with Google OAuth
  */
+let googleAuthInitialized = false;
+
 export const signInWithGoogle = async () => {
     try {
         const isNative = Capacitor.isNativePlatform();
@@ -74,11 +76,14 @@ export const signInWithGoogle = async () => {
         if (isNative && platform === 'android') {
             try {
                 const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
-                await GoogleAuth.initialize({
-                    clientId: '165597226617-2uhqfl4khjnfdi41jd84uv8j6tmka1as.apps.googleusercontent.com',
-                    scopes: ['profile', 'email'],
-                    grantOfflineAccess: true,
-                });
+                if (!googleAuthInitialized) {
+                    await GoogleAuth.initialize({
+                        clientId: '165597226617-2uhqfl4khjnfdi41jd84uv8j6tmka1as.apps.googleusercontent.com',
+                        scopes: ['profile', 'email'],
+                        grantOfflineAccess: true,
+                    });
+                    googleAuthInitialized = true;
+                }
                 const googleUser = await GoogleAuth.signIn();
 
                 if (!googleUser.authentication.idToken) {
@@ -102,11 +107,14 @@ export const signInWithGoogle = async () => {
         if (isNative && platform === 'ios') {
             try {
                 const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
-                await GoogleAuth.initialize({
-                    clientId: '165597226617-d32lvds9bq8vpvglc6kh9c90s817eqe2.apps.googleusercontent.com',
-                    scopes: ['profile', 'email'],
-                    grantOfflineAccess: true,
-                });
+                if (!googleAuthInitialized) {
+                    await GoogleAuth.initialize({
+                        clientId: '165597226617-d32lvds9bq8vpvglc6kh9c90s817eqe2.apps.googleusercontent.com',
+                        scopes: ['profile', 'email'],
+                        grantOfflineAccess: true,
+                    });
+                    googleAuthInitialized = true;
+                }
                 const googleUser = await GoogleAuth.signIn();
 
                 if (!googleUser.authentication.idToken) {
@@ -267,10 +275,29 @@ export const deleteAccount = async () => {
         if (!user) throw new Error('No user logged in');
 
         const { error } = await supabase.rpc('delete_user_data');
-        if (error) console.warn('Cleanup RPC failed:', error.message);
+        if (error) throw new Error(`Account deletion failed: ${error.message}`);
 
-        const { error: signOutError } = await supabase.auth.signOut();
-        return { error: signOutError };
+        // Nettoyer tout le cache local (Preferences + localStorage)
+        await Preferences.remove({ key: 'koiny_local_v1' });
+        await Preferences.remove({ key: 'koiny_local_v1_backup' });
+        await Preferences.remove({ key: `koiny_parent_pin_v2_${user.id}` });
+        localStorage.removeItem('koiny_local_v1');
+        localStorage.removeItem('koiny_local_v1_backup');
+        localStorage.removeItem('koiny_premium_active');
+
+        // Révoquer la session Google native (évite la reconnexion silencieuse)
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+                await GoogleAuth.signOut();
+            } catch (_) {
+                // Ignore si Google Auth n'était pas initialisé (connexion Apple ou email)
+            }
+        }
+
+        // Le compte auth est déjà supprimé par la RPC — signOut nettoie la session locale
+        await supabase.auth.signOut();
+        return { error: null };
     } catch (error: any) {
         return { error };
     }

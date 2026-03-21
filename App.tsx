@@ -18,6 +18,7 @@ import { translations } from './i18n';
 import { monitoring } from './services/monitoring';
 import { widgetService } from './services/widget';
 import { saveParentPinLocally, loadParentPinLocally } from './services/pinStorage';
+import { hashPin } from './services/security';
 import { subscriptionService } from './services/subscription';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -225,7 +226,9 @@ const App: React.FC = () => {
       // ✅ FIX DU FLASH : Ne pas écraser la vue si on a déjà restauré (CHILD ou PARENT)
       if (!cachedView || cachedView === 'LANDING') {
         if (session) {
-          setView('LOGIN');
+          const hasChildren = (cloudData.children?.length ?? 0) > 0;
+          // Compte frais (pas d'enfants) → aller directement à PARENT, pas besoin du sélecteur LOGIN
+          setView(hasChildren ? 'LOGIN' : 'PARENT');
         } else {
           const hasLocalChildren = result.data?.children?.length > 0;
           if (hasLocalChildren) setView('LOGIN');
@@ -866,14 +869,18 @@ const App: React.FC = () => {
   const handleFullSignOut = async () => {
     const supabase = getSupabase();
 
-    // Supprimer le PIN local avant de se déconnecter
+    // Naviguer immédiatement — le cleanup se fait en arrière-plan
+    setData(INITIAL_DATA);
+    setOwnerId(undefined);
+    setView('AUTH');
+
     if (supabase) {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
+        // getSession() est caché localement — pas d'appel réseau
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
           const { deleteParentPinLocally } = await import('./services/pinStorage');
-          await deleteParentPinLocally(user.id);
-          console.log('✅ [APP] PIN local supprimé lors de la déconnexion');
+          await deleteParentPinLocally(session.user.id);
         }
       } catch (error) {
         console.error('❌ [APP] Erreur suppression PIN local:', error);
@@ -1201,8 +1208,19 @@ const App: React.FC = () => {
     }
   };
   const handleSetPin = async (pin: string) => {
-    // Sauvegarder dans le state global (pour Supabase si owner)
-    setData(prev => ({ ...prev, parentPin: pin, updatedAt: new Date().toISOString() }));
+    // Hash le PIN avant tout stockage (PBKDF2 100k iterations SHA-512)
+    let pinToStore = pin;
+    if (pin && pin.length >= 4) {
+      try {
+        pinToStore = await hashPin(pin);
+      } catch (error) {
+        console.error('❌ [APP] Erreur hachage PIN:', error);
+        throw error;
+      }
+    }
+
+    // Sauvegarder le HASH dans le state global (pour Supabase si owner)
+    setData(prev => ({ ...prev, parentPin: pinToStore, updatedAt: new Date().toISOString() }));
 
     // Sauvegarder LOCALEMENT sur cet appareil (pour co-parents)
     const supabase = getSupabase();
@@ -1210,8 +1228,8 @@ const App: React.FC = () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await saveParentPinLocally(user.id, pin);
-          console.log('✅ [APP] PIN sauvegardé localement pour:', user.id);
+          await saveParentPinLocally(user.id, pinToStore);
+          console.log('✅ [APP] PIN haché et sauvegardé localement pour:', user.id);
         }
       } catch (error) {
         console.error('❌ [APP] Erreur sauvegarde PIN local:', error);
@@ -1343,7 +1361,7 @@ const App: React.FC = () => {
           data={data} ownerId={ownerId} language={data.language} onApprove={handleApprove} onReject={handleReject} onAddMission={handleAddMission}
           onDeleteActiveMission={handleDeleteActiveMission} onEditMission={handleEditMission} onManualTransaction={handleManualTransaction} onAddChild={handleAddChild}
           onEditChild={handleEditChild} onDeleteGoal={handleDeleteGoal} onArchiveGoal={handleArchiveGoal} onDeleteChild={handleDeleteChild} onSetPin={handleSetPin} onClearHistory={handleClearHistory}
-          onUpdatePassword={async (p) => { await updatePassword(p); }} onDeleteAccount={async () => { await deleteAccount(); setView('LANDING'); }}
+          onUpdatePassword={async (p) => { await updatePassword(p); }} onDeleteAccount={async () => { await deleteAccount(); localStorage.removeItem('koiny_last_view'); localStorage.removeItem('koiny_last_child_id'); setData(INITIAL_DATA); setOwnerId(undefined); setView('LANDING'); }}
           onExit={handleLogout} onTutorialComplete={handleParentTutorialComplete} onToggleSound={handleToggleSound} onSetLanguage={setLanguage}
           onUpdateMaxBalance={handleUpdateMaxBalance}
           onSetPremium={handleSetPremium}
