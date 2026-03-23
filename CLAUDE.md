@@ -207,6 +207,21 @@ const t = translations[data.language || 'fr'];
 - **SMTP Supabase:** Service intégré Supabase non adapté à la production — configurer Resend avant launch public
 - **PIN reset pour users OAuth (Apple/Google):** Utilise encore `signInWithPassword` dans ParentView.tsx → à migrer vers OTP email quand Resend est configuré
 
+## Git — Workflow branches
+
+- `main` = code stable déployé sur TestFlight/App Store — ne jamais pusher du code non testé
+- `feature/xxx` = nouvelle fonctionnalité en cours
+- `fix/xxx` = bug fix isolé
+
+```bash
+git checkout -b feature/nom   # créer branche
+git checkout main             # revenir au stable
+git merge feature/nom         # merger quand prêt
+git push origin main
+```
+
+Branche actuelle active : `feature/next`
+
 ## TestFlight
 
 **Workflow de déploiement:**
