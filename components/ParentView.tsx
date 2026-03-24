@@ -53,6 +53,8 @@ interface ParentViewProps {
   onArchiveGoal?: (childId: string, goalId: string) => void;
   isOfflineMode?: boolean;
   onSetPremium?: (enabled: boolean) => void;
+  isCoParent?: boolean;
+  coParentPermissions?: string[];
 }
 
 type ActionType = 'APPROVE' | 'REJECT' | null;
@@ -132,7 +134,8 @@ const ParentView: React.FC<ParentViewProps> = ({
   onClearHistory, onUpdatePassword, onDeleteAccount,
   onExit, onTutorialComplete, onToggleSound, onSetLanguage, onUpdateMaxBalance,
   notificationAction, onClearNotificationAction, onSignOut, onDeleteGoal, onArchiveGoal,
-  isOfflineMode = false, onSetPremium
+  isOfflineMode = false, onSetPremium,
+  isCoParent = false, coParentPermissions = []
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState('');
@@ -1120,6 +1123,15 @@ const ParentView: React.FC<ParentViewProps> = ({
         style={{ height: 'env(safe-area-inset-top)' }}
       />
       {/* Floating Header Premium */}
+      {/* Co-parent badge */}
+      {isCoParent && (
+        <div className="fixed top-0 left-1/2 -translate-x-1/2 z-[55] safe-pt pointer-events-none">
+          <div className="mt-1 px-3 py-1 bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-md">
+            Co-parent
+          </div>
+        </div>
+      )}
+
       {/* Unified Header for Dashboard & Other Views */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${mainView !== 'dashboard' ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800' : 'pointer-events-none safe-pt'}`}>
         <div className={`max-w-7xl mx-auto px-4 ${mainView !== 'dashboard' ? 'py-2 safe-pt pb-2' : 'py-4'} flex justify-between items-center gap-4`}>
@@ -1883,6 +1895,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                                 </p>
                               </div>
                             </div>
+                            {!isCoParent && (
                             <div className="flex gap-2">
                               <button onClick={() => startEditChild(child)} aria-label={`${language === 'fr' ? 'Modifier' : 'Edit'} ${child.name}`} className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-500 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors shadow-sm active:scale-90">
                                 <i className="fa-solid fa-pen text-xs" aria-hidden="true"></i>
@@ -1891,13 +1904,16 @@ const ParentView: React.FC<ParentViewProps> = ({
                                 <i className="fa-solid fa-trash text-xs" aria-hidden="true"></i>
                               </button>
                             </div>
+                            )}
                           </div>
                         ))}
                       </div>
+                      {!isCoParent && (
                       <button onClick={startAddChild} className="w-full py-6 border-2 border-dashed border-slate-200 dark:border-slate-600 bg-white/50 dark:bg-slate-800/50 rounded-3xl text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.2em] text-[10px] hover:border-indigo-300 dark:hover:border-indigo-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-3 group active:scale-[0.98]">
                         <i className="fa-solid fa-user-plus text-lg opacity-40 group-hover:opacity-100 transition-opacity"></i>
                         {t.parent.addChild}
                       </button>
+                      )}
                     </div>
                   ) : (
                     <form onSubmit={saveChildForm} className="space-y-6 text-slate-900 dark:text-white animate-fade-in-up">
@@ -2301,6 +2317,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         <i className="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 group-hover:translate-x-1 transition-transform"></i>
                       </button>
 
+                      {!isCoParent && (
                       <button onClick={() => setIsCoParentInviteOpen(true)} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 group transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-100 dark:hover:border-indigo-900/30 text-left">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-800/40 transition-colors">
@@ -2313,6 +2330,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         </div>
                         <i className="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 group-hover:translate-x-1 transition-transform"></i>
                       </button>
+                      )}
 
                       <button onClick={async () => {
                         await onSignOut();

@@ -548,6 +548,17 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
             }
 
             // Sync Missions
+            // Get child's family_id for mission linkage
+            let childFamilyId: string | null = null;
+            if (isUUID(savedChildId)) {
+                const { data: childFamilyRow } = await supabase
+                    .from('children')
+                    .select('family_id')
+                    .eq('id', savedChildId)
+                    .maybeSingle();
+                childFamilyId = childFamilyRow?.family_id || null;
+            }
+
             if (child.missions?.length > 0) {
                 const missionsToUpsert = child.missions
                     .filter((m: any) => m.status !== 'COMPLETED')
@@ -562,6 +573,7 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                         return {
                             id: isUUID(m.id) ? m.id : crypto.randomUUID(),
                             child_id: savedChildId,
+                            family_id: childFamilyId,
                             title: m.title,
                             amount: m.reward,
                             status: dbStatus,
@@ -733,6 +745,76 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
     } finally {
         isSaving = false;
     }
+};
+
+// ─── Co-Parent Detection ──────────────────────────────────────────────
+
+export const checkIfCoParent = async (): Promise<{ isCoParent: boolean; familyId?: string; permissions?: string[] }> => {
+  const supabase = getSupabase();
+  if (!supabase) return { isCoParent: false };
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user?.id) return { isCoParent: false };
+
+  const { data } = await supabase
+    .from('co_parents')
+    .select('family_id, permissions')
+    .eq('user_id', session.user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (data) {
+    return { isCoParent: true, familyId: data.family_id, permissions: data.permissions || [] };
+  }
+  return { isCoParent: false };
+};
+
+export const mapCoParentDataToChildren = (familyData: CoParentFamilyData): any[] => {
+  const { children, missions, goals } = familyData;
+
+  // Group missions and goals by child_id
+  const missionsByChild = new Map<string, any[]>();
+  const goalsByChild = new Map<string, any[]>();
+
+  for (const m of missions) {
+    const list = missionsByChild.get(m.child_id) || [];
+    list.push({
+      id: m.id,
+      title: m.title,
+      reward: m.amount,
+      icon: m.icon_id || 'icon_star',
+      status: m.status === 'available' ? 'ACTIVE' : m.status === 'pending' ? 'PENDING' : m.status === 'validated' ? 'COMPLETED' : 'ACTIVE',
+      createdAt: m.created_at,
+    });
+    missionsByChild.set(m.child_id, list);
+  }
+
+  for (const g of goals) {
+    const list = goalsByChild.get(g.child_id) || [];
+    list.push({
+      id: g.id,
+      name: g.title,
+      target: g.target_amount,
+      current: g.current_amount || 0,
+      icon: g.image_url || 'fa-star',
+      status: g.status === 'COMPLETED' || g.status === 'completed' ? 'COMPLETED' : g.status === 'ARCHIVED' || g.status === 'archived' ? 'ARCHIVED' : 'ACTIVE',
+    });
+    goalsByChild.set(g.child_id, list);
+  }
+
+  return children.map(c => ({
+    id: c.id,
+    name: c.name,
+    avatar: c.avatar_id || 'avatar_1',
+    colorClass: c.theme_color || 'indigo',
+    balance: c.balance,
+    missions: missionsByChild.get(c.id) || [],
+    goals: goalsByChild.get(c.id) || [],
+    history: [],
+    tutorialSeen: true,
+    giftRequested: c.gift_requested || false,
+    missionRequested: c.mission_requested || false,
+  }));
 };
 
 // ─── Co-Parent Invitations ────────────────────────────────────────────

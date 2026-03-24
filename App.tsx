@@ -11,7 +11,7 @@ import AlertBanner from './components/AlertBanner';
 import { GlobalState, INITIAL_DATA, HistoryEntry, ChildProfile, Language, Goal, BADGE_THRESHOLDS, ParentBadge, MAX_BALANCE } from './types';
 import { loadData, saveData } from './services/storage';
 import { updateWidgetData } from './services/widgetBridge';
-import { getSupabase, updatePassword, deleteAccount, ensureUserProfile, acceptCoParentInvitation } from './services/supabase';
+import { getSupabase, updatePassword, deleteAccount, ensureUserProfile, acceptCoParentInvitation, checkIfCoParent, loadCoParentFamilyData, mapCoParentDataToChildren, checkCoParentPermission } from './services/supabase';
 import { alertService, AppAlert } from './services/alertService';
 import { notifications } from './services/notifications';
 import { translations } from './i18n';
@@ -42,6 +42,9 @@ const App: React.FC = () => {
   const [notificationAction, setNotificationAction] = useState<{ type: string; childId: string } | null>(null);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [currentAlert, setCurrentAlert] = useState<AppAlert | null>(null);
+  const [isCoParent, setIsCoParent] = useState(false);
+  const [coParentFamilyId, setCoParentFamilyId] = useState<string | null>(null);
+  const [coParentPermissions, setCoParentPermissions] = useState<string[]>([]);
 
   const prevChildrenRef = React.useRef<ChildProfile[]>([]);
 
@@ -201,6 +204,28 @@ const App: React.FC = () => {
         language: savedLanguage || cloudData.language || 'fr'
       });
       setOwnerId(result.ownerId);
+
+      // Vérifier si l'utilisateur est co-parent
+      if (session?.user) {
+        try {
+          const coParentStatus = await checkIfCoParent();
+          if (coParentStatus.isCoParent && coParentStatus.familyId) {
+            console.log('👥 [INIT] Co-parent détecté, chargement famille...');
+            setIsCoParent(true);
+            setCoParentFamilyId(coParentStatus.familyId);
+            setCoParentPermissions(coParentStatus.permissions || []);
+
+            const familyData = await loadCoParentFamilyData();
+            if (!familyData.error) {
+              const mappedChildren = mapCoParentDataToChildren(familyData);
+              setData(prev => ({ ...prev, children: mappedChildren, updatedAt: new Date().toISOString() }));
+              console.log(`👥 [INIT] ${mappedChildren.length} enfant(s) co-parent chargé(s)`);
+            }
+          }
+        } catch (e: any) {
+          console.warn('⚠️ [INIT] Co-parent check failed (non-blocking):', e?.message);
+        }
+      }
 
       // Initialiser RevenueCat et vérifier le statut premium
       try {
@@ -464,6 +489,20 @@ const App: React.FC = () => {
             console.log('👥 [DEEP LINK] Invitation co-parent détectée');
             const result = await acceptCoParentInvitation(token);
             if (result.success) {
+              // Load co-parent family data immediately
+              setIsCoParent(true);
+              setCoParentFamilyId(result.family_id || null);
+              try {
+                const familyData = await loadCoParentFamilyData();
+                if (!familyData.error) {
+                  const mappedChildren = mapCoParentDataToChildren(familyData);
+                  setData(prev => ({ ...prev, children: mappedChildren, updatedAt: new Date().toISOString() }));
+                  setCoParentPermissions(['read_balance', 'create_mission', 'approve_expense']);
+                  setView(mappedChildren.length > 0 ? 'LOGIN' : 'PARENT');
+                }
+              } catch (e: any) {
+                console.warn('⚠️ [DEEP LINK] Failed to load family data:', e?.message);
+              }
               alert(data.language === 'fr' ? 'Invitation acceptée ! Vous êtes maintenant co-parent.' : data.language === 'nl' ? 'Uitnodiging geaccepteerd! U bent nu co-ouder.' : 'Invitation accepted! You are now a co-parent.');
             } else {
               const messages: Record<string, Record<string, string>> = {
@@ -584,6 +623,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const runSave = async () => {
+      // Bloquer la sauvegarde si co-parent (les writes se font via isDirectSupabaseOperation)
+      if (isCoParent) return;
+
       // Bloquer la sauvegarde si on vient de recharger depuis Realtime, opération directe, en cours d'init ou déjà en cours
       if (isSavingRef.current || isReloadingFromRealtime.current || isDirectSupabaseOperation.current || isInitializing.current) {
         console.log('🛑 [APP] Save blocked');
@@ -662,7 +704,27 @@ const App: React.FC = () => {
     setImmediateSave(true);
   };
 
+  // Helper to reload co-parent family data after an action
+  const reloadCoParentData = async () => {
+    if (!isCoParent) return;
+    try {
+      const familyData = await loadCoParentFamilyData();
+      if (!familyData.error) {
+        const mappedChildren = mapCoParentDataToChildren(familyData);
+        setData(prev => ({ ...prev, children: mappedChildren, updatedAt: new Date().toISOString() }));
+      }
+    } catch (e: any) {
+      console.warn('⚠️ [CO-PARENT] Reload failed:', e?.message);
+    }
+  };
+
   const handleApprove = async (childId: string, missionId: string, note?: string) => {
+    // Co-parent permission check
+    if (isCoParent && coParentFamilyId) {
+      const perm = await checkCoParentPermission(coParentFamilyId, 'approve_expense');
+      if (!perm.authorized) { alert(data.language === 'fr' ? 'Permission refusée' : 'Permission denied'); return; }
+    }
+
     monitoring.track('BUSINESS', 'MISSION_APPROVED', 1, { childId });
 
     const supabase = getSupabase();
@@ -773,6 +835,8 @@ const App: React.FC = () => {
             description: mission.title + titleSuffix,
             created_by: userId
           });
+          // Reload co-parent data to get fresh state from owner's DB
+          await reloadCoParentData();
         } catch (err: any) {
           console.warn('⚠️ Sync Supabase (offline?):', err?.message);
           // Détecter si c'est une erreur réseau
@@ -786,6 +850,12 @@ const App: React.FC = () => {
   };
 
   const handleManualTransaction = async (childId: string, amount: number, reason: string) => {
+    // Co-parent permission check
+    if (isCoParent && coParentFamilyId) {
+      const perm = await checkCoParentPermission(coParentFamilyId, 'approve_expense');
+      if (!perm.authorized) { alert(data.language === 'fr' ? 'Permission refusée' : 'Permission denied'); return; }
+    }
+
     let effectiveAmount = amount;
     let finalReason = reason;
 
@@ -949,6 +1019,12 @@ const App: React.FC = () => {
   const handleMissionComplete = (id: string) => { updateChild(activeChildId!, (child) => ({ ...child, missions: child.missions.map(m => m.id === id ? { ...m, status: 'PENDING', feedback: undefined } : m) })); };
   const handleReject = (childId: string, missionId: string, note?: string) => { updateChild(childId, (child) => ({ ...child, missions: child.missions.map(m => m.id === missionId ? { ...m, status: 'ACTIVE', feedback: note } : m) })); };
   const handleAddMission = async (childId: string, title: string, amount: number) => {
+    // Co-parent permission check
+    if (isCoParent && coParentFamilyId) {
+      const perm = await checkCoParentPermission(coParentFamilyId, 'create_mission');
+      if (!perm.authorized) { alert(data.language === 'fr' ? 'Permission refusée' : 'Permission denied'); return; }
+    }
+
     const supabase = getSupabase();
     // ⭐ ownerId est déjà en cache React — zéro appel réseau (fonctionne offline)
     const userId = (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') ? ownerId : null;
@@ -984,11 +1060,19 @@ const App: React.FC = () => {
       isDirectSupabaseOperation.current = true;
       (async () => {
         try {
+          // Get child's family_id for mission linkage
+          const { data: childRow } = await supabase
+            .from('children')
+            .select('family_id')
+            .eq('id', childId)
+            .maybeSingle();
+
           const { error } = await supabase
             .from('missions')
             .insert({
               id: missionId,
               child_id: childId,
+              family_id: childRow?.family_id || null,
               title: title,
               amount: amount,
               icon_id: 'icon_star',
@@ -1001,6 +1085,7 @@ const App: React.FC = () => {
             .from('children')
             .update({ mission_requested: false })
             .eq('id', childId);
+          await reloadCoParentData();
         } catch (err: any) {
           console.warn('⚠️ Sync addMission (offline?):', err?.message);
           // Détecter si c'est une erreur réseau
@@ -1405,6 +1490,8 @@ const App: React.FC = () => {
           notificationAction={notificationAction} onClearNotificationAction={() => setNotificationAction(null)}
           onSignOut={handleFullSignOut}
           isOfflineMode={isOfflineMode}
+          isCoParent={isCoParent}
+          coParentPermissions={coParentPermissions}
         />
       )}
 
