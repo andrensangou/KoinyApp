@@ -339,6 +339,15 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           <p className="text-[10px] text-slate-500 dark:text-slate-400 text-center leading-relaxed">
             {t?.parent?.premium?.footerNote}
           </p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-2">
+            <a href="https://koiny.app/privacy.html#terms" target="_blank" rel="noopener noreferrer" className="text-indigo-500 underline">
+              {language === 'fr' ? "Conditions d'utilisation" : language === 'nl' ? 'Gebruiksvoorwaarden' : 'Terms of Use'}
+            </a>
+            {' · '}
+            <a href="https://koiny.app/privacy.html" target="_blank" rel="noopener noreferrer" className="text-indigo-500 underline">
+              {language === 'fr' ? 'Politique de confidentialité' : language === 'nl' ? 'Privacybeleid' : 'Privacy Policy'}
+            </a>
+          </p>
         </div>
       </div>
     </div>
