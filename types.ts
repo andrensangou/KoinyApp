@@ -1,7 +1,90 @@
 
 export type MissionStatus = 'ACTIVE' | 'PENDING' | 'COMPLETED';
 export type GoalStatus = 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked';
+export type InvitationErrorCode =
+  | 'TOKEN_INVALID'
+  | 'TOKEN_EXPIRED'
+  | 'TOKEN_ALREADY_USED'
+  | 'SELF_INVITATION'
+  | 'ALREADY_CO_PARENT'
+  | 'NOT_AUTHENTICATED';
 export type Language = 'fr' | 'nl' | 'en';
+
+export interface CoParentInvitation {
+  id: string;
+  owner_id: string;
+  family_id: string;
+  token: string;
+  status: InvitationStatus;
+  accepted_by?: string;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface AcceptInvitationResult {
+  success: boolean;
+  family_id?: string;
+  co_parent_id?: string;
+  error?: InvitationErrorCode;
+}
+
+export type CoParentPermission = 'read_balance' | 'create_mission' | 'edit_mission' | 'approve_expense';
+
+export interface CheckPermissionResult {
+  authorized: boolean;
+  reason: 'OK' | 'OWNER' | 'LINK_NOT_FOUND' | 'PERMISSION_DENIED' | 'NOT_AUTHENTICATED';
+}
+
+export interface RevokeCoParentResult {
+  success: boolean;
+  revoked_at?: string;
+  error?: 'NOT_AUTHENTICATED' | 'NOT_OWNER_OR_NOT_FOUND';
+}
+
+export interface CoParentChildData {
+  id: string;
+  name: string;
+  balance: number;
+  avatar_id: string;
+  theme_color: string;
+  mission_requested: boolean;
+  gift_requested: boolean;
+}
+
+export interface CoParentMissionData {
+  id: string;
+  child_id: string;
+  title: string;
+  description?: string;
+  amount: number;
+  icon_id: string;
+  status: string;
+  recurrence: string;
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface CoParentGoalData {
+  id: string;
+  child_id: string;
+  title: string;
+  target_amount: number;
+  current_amount: number;
+  image_url?: string;
+  status: string;
+  created_at: string;
+}
+
+export interface CoParentFamilyData {
+  family_id: string;
+  owner_id: string; // anonymized (last 4 chars)
+  children: CoParentChildData[];
+  missions: CoParentMissionData[];
+  goals: CoParentGoalData[];
+  loaded_at: string;
+  error?: 'ACCESS_DENIED' | 'PERMISSION_DENIED' | 'NOT_AUTHENTICATED';
+}
 
 export type ParentBadge = 'NOVICE' | 'MENTOR' | 'EXPERT' | 'FINTECH_GURU';
 

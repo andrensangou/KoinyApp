@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, log } from '../config';
-import { GoalStatus } from '../types';
+import { GoalStatus, CoParentInvitation, AcceptInvitationResult, CoParentPermission, CheckPermissionResult, CoParentFamilyData, RevokeCoParentResult } from '../types';
 import { ICON_MAP } from '../constants/icons';
 import { Preferences } from '@capacitor/preferences';
 
@@ -733,4 +733,166 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
     } finally {
         isSaving = false;
     }
+};
+
+// ─── Co-Parent Invitations ────────────────────────────────────────────
+
+export const generateCoParentInvitation = async (
+  ownerId: string,
+  familyId: string
+): Promise<{ token: string; expires_at: string; qr_payload: string }> => {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Supabase not initialized');
+
+  // 1. Vérifier si un token pending + non expiré existe déjà
+  const { data: existing } = await supabase
+    .from('co_parent_invitations')
+    .select('token, expires_at')
+    .eq('owner_id', ownerId)
+    .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
+    .limit(1)
+    .single();
+
+  if (existing) {
+    return {
+      token: existing.token,
+      expires_at: existing.expires_at,
+      qr_payload: `https://xmicutzneisrrtqgstro.supabase.co/functions/v1/invite-redirect?token=${existing.token}`
+    };
+  }
+
+  // 2. Générer un token hex sécurisé de 32 caractères
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  const token = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+
+  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+
+  // 3. Insérer la nouvelle invitation
+  const { error } = await supabase
+    .from('co_parent_invitations')
+    .insert({
+      id: crypto.randomUUID(),
+      owner_id: ownerId,
+      family_id: familyId,
+      token,
+      status: 'pending',
+      expires_at: expiresAt
+    });
+
+  if (error) throw error;
+
+  return {
+    token,
+    expires_at: expiresAt,
+    qr_payload: `https://xmicutzneisrrtqgstro.supabase.co/functions/v1/invite-redirect?token=${token}`
+  };
+};
+
+export const acceptCoParentInvitation = async (
+  token: string
+): Promise<AcceptInvitationResult> => {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Supabase not initialized');
+
+  const { data, error } = await supabase.rpc('accept_co_parent_invitation', {
+    p_token: token
+  });
+
+  if (error) throw error;
+  return data as AcceptInvitationResult;
+};
+
+export const checkCoParentPermission = async (
+  familyId: string,
+  action: CoParentPermission
+): Promise<CheckPermissionResult> => {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Supabase not initialized');
+
+  const { data, error } = await supabase.rpc('check_co_parent_permission', {
+    p_family_id: familyId,
+    p_action: action
+  });
+
+  if (error) throw error;
+  return data as CheckPermissionResult;
+};
+
+export const updateCoParentPermissions = async (
+  coParentId: string,
+  permissions: CoParentPermission[]
+): Promise<void> => {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Supabase not initialized');
+
+  const { error } = await supabase
+    .from('co_parents')
+    .update({ permissions })
+    .eq('id', coParentId);
+
+  if (error) throw error;
+};
+
+export const loadCoParentFamilyData = async (): Promise<CoParentFamilyData> => {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Supabase not initialized');
+
+  const { data, error } = await supabase.rpc('load_co_parent_family_data');
+
+  if (error) throw error;
+  return data as CoParentFamilyData;
+};
+
+export const revokeCoParentAccess = async (
+  coParentRowId: string
+): Promise<RevokeCoParentResult> => {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Supabase not initialized');
+
+  const { data, error } = await supabase.rpc('revoke_co_parent_access', {
+    p_co_parent_row_id: coParentRowId
+  });
+
+  if (error) throw error;
+  return data as RevokeCoParentResult;
+};
+
+export const getFamilyId = async (ownerId: string): Promise<string | null> => {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  // 1. Check if family exists
+  const { data: existing } = await supabase
+    .from('families')
+    .select('id')
+    .eq('created_by', ownerId)
+    .maybeSingle();
+
+  if (existing) return existing.id;
+
+  // 2. Create family if not exists (first-time setup)
+  const familyId = crypto.randomUUID();
+  const { error } = await supabase
+    .from('families')
+    .insert({
+      id: familyId,
+      name: 'Ma Famille',
+      created_by: ownerId
+    });
+
+  if (error) {
+    console.error('❌ [SUPABASE] Failed to create family:', error.message);
+    return null;
+  }
+
+  // 3. Link existing children to this family
+  await supabase
+    .from('children')
+    .update({ family_id: familyId })
+    .eq('user_id', ownerId)
+    .is('family_id', null);
+
+  return familyId;
 };

@@ -10,6 +10,7 @@ import { verifyPin } from '../services/security';
 import HelpModal from './HelpModal';
 import ConfirmDialog from './ConfirmDialog';
 import { SubscriptionModal } from './SubscriptionModal';
+import CoParentInviteModal from './CoParentInviteModal';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 const HistoryChart = React.lazy(() => import('./HistoryChart'));
@@ -229,6 +230,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [historyView, setHistoryView] = useState<'LIST' | 'CHART'>('LIST');
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('THIS_MONTH');
   const [showHelp, setShowHelp] = useState(false);
+  const [isCoParentInviteOpen, setIsCoParentInviteOpen] = useState(false);
   const [goalsFilter, setGoalsFilter] = useState<GoalsFilter>('ALL');
 
   // Edit Mission Modal state
@@ -534,7 +536,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   } | null>(null);
 
   // Lock body scroll when any inline modal is open
-  const _anyInlineModalOpen = showOfflineModal || !!editingMission || !!transactionType || !!selectedMissionId || promptConfig.isOpen || !!(biometricChoice?.isOpen);
+  const _anyInlineModalOpen = showOfflineModal || !!editingMission || !!transactionType || !!selectedMissionId || promptConfig.isOpen || !!(biometricChoice?.isOpen) || isCoParentInviteOpen;
   useModal(_anyInlineModalOpen);
 
   const handleResetPin = async () => {
@@ -2299,6 +2301,19 @@ const ParentView: React.FC<ParentViewProps> = ({
                         <i className="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 group-hover:translate-x-1 transition-transform"></i>
                       </button>
 
+                      <button onClick={() => setIsCoParentInviteOpen(true)} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 group transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-100 dark:hover:border-indigo-900/30 text-left">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-800/40 transition-colors">
+                            <i className="fa-solid fa-people-group"></i>
+                          </div>
+                          <div>
+                            <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">{language === 'fr' ? 'Inviter un co-parent' : language === 'nl' ? 'Co-ouder uitnodigen' : 'Invite Co-parent'}</span>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500">{language === 'fr' ? 'Partager la gestion familiale' : language === 'nl' ? 'Familiebeheer delen' : 'Share family management'}</p>
+                          </div>
+                        </div>
+                        <i className="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 group-hover:translate-x-1 transition-transform"></i>
+                      </button>
+
                       <button onClick={async () => {
                         await onSignOut();
                       }} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 group transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 text-left mb-6">
@@ -2442,6 +2457,14 @@ const ParentView: React.FC<ParentViewProps> = ({
       }
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} language={language} />
+
+      {/* Co-Parent Invite Modal */}
+      <CoParentInviteModal
+        isOpen={isCoParentInviteOpen}
+        onClose={() => setIsCoParentInviteOpen(false)}
+        ownerId={ownerId || ''}
+        language={language}
+      />
 
       {/* Subscription Modal */}
       <SubscriptionModal

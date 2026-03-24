@@ -11,7 +11,7 @@ import AlertBanner from './components/AlertBanner';
 import { GlobalState, INITIAL_DATA, HistoryEntry, ChildProfile, Language, Goal, BADGE_THRESHOLDS, ParentBadge, MAX_BALANCE } from './types';
 import { loadData, saveData } from './services/storage';
 import { updateWidgetData } from './services/widgetBridge';
-import { getSupabase, updatePassword, deleteAccount, ensureUserProfile } from './services/supabase';
+import { getSupabase, updatePassword, deleteAccount, ensureUserProfile, acceptCoParentInvitation } from './services/supabase';
 import { alertService, AppAlert } from './services/alertService';
 import { notifications } from './services/notifications';
 import { translations } from './i18n';
@@ -446,6 +446,43 @@ const App: React.FC = () => {
       // (évite la page blanche quand iOS intercepte le custom scheme avant le SFSafariViewController)
       if (event.url.includes('com.koiny.app://callback')) {
         Browser.close().catch(() => {});
+      }
+
+      // Co-parent invitation deep link: koiny://invite?token=xxx
+      if (event.url.includes('koiny://invite') || event.url.includes('/invite-redirect?token=')) {
+        try {
+          // Extract token — try URL parser first, fallback to regex
+          let token: string | null = null;
+          try {
+            const urlObj = new URL(event.url);
+            token = urlObj.searchParams.get('token');
+          } catch {
+            const match = event.url.match(/[?&]token=([a-f0-9]+)/);
+            token = match ? match[1] : null;
+          }
+          if (token) {
+            console.log('👥 [DEEP LINK] Invitation co-parent détectée');
+            const result = await acceptCoParentInvitation(token);
+            if (result.success) {
+              alert(data.language === 'fr' ? 'Invitation acceptée ! Vous êtes maintenant co-parent.' : data.language === 'nl' ? 'Uitnodiging geaccepteerd! U bent nu co-ouder.' : 'Invitation accepted! You are now a co-parent.');
+            } else {
+              const messages: Record<string, Record<string, string>> = {
+                TOKEN_INVALID: { fr: 'Lien invalide.', nl: 'Ongeldige link.', en: 'Invalid link.' },
+                TOKEN_EXPIRED: { fr: 'Lien expiré.', nl: 'Link verlopen.', en: 'Link expired.' },
+                TOKEN_ALREADY_USED: { fr: 'Lien déjà utilisé.', nl: 'Link al gebruikt.', en: 'Link already used.' },
+                SELF_INVITATION: { fr: 'Vous ne pouvez pas accepter votre propre invitation.', nl: 'U kunt uw eigen uitnodiging niet accepteren.', en: "You can't accept your own invitation." },
+                ALREADY_CO_PARENT: { fr: 'Vous êtes déjà co-parent de cette famille.', nl: 'U bent al co-ouder van dit gezin.', en: 'You are already a co-parent of this family.' },
+              };
+              const lang = data.language || 'fr';
+              const msg = messages[result.error || '']?.[lang] || result.error || 'Error';
+              alert(msg);
+            }
+            return;
+          }
+        } catch (e: any) {
+          console.error('❌ [DEEP LINK] Erreur invitation co-parent:', e.message);
+        }
+        return;
       }
 
       const supabase = getSupabase();
