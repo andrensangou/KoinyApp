@@ -271,7 +271,8 @@ export const updatePassword = async (password: string) => {
  */
 export const deleteAccount = async () => {
     try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user logged in');
 
         const { error } = await supabase.rpc('delete_user_data');
@@ -387,12 +388,14 @@ export const loadFromSupabase = async (userId: string): Promise<any> => {
             return { profile, children };
         };
 
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('TIMEOUT_LOAD_DATA')), 8000)
-        );
-
         // Usage de l'outil retry réseau: 3 tentatives avec backoff exponentiel
-        const result = await withRetry(() => Promise.race([fetchData(), timeoutPromise])) as any;
+        // Timeout créé à chaque tentative pour éviter qu'un timeout expiré bloque les retries
+        const result = await withRetry(() => {
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('TIMEOUT_LOAD_DATA')), 12000)
+            );
+            return Promise.race([fetchData(), timeoutPromise]);
+        }) as any;
         if (!result) return null;
 
         const { profile, children } = result;
@@ -450,7 +453,7 @@ export const loadFromSupabase = async (userId: string): Promise<any> => {
             }))
         };
     } catch (err) {
-        console.error('❌ Error loading from Supabase V2:', err);
+        console.error('❌ Error loading from Supabase V2:', (err as any)?.message || (err as any)?.code || JSON.stringify(err));
         return null;
     }
 };
@@ -470,7 +473,8 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
     log(`☁️ [SUPABASE] Save V2 START`);
 
     try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const { data: { session: saveSession } } = await supabase.auth.getSession();
+        const currentUser = saveSession?.user;
         if (!currentUser) return { success: false, idMapping };
 
         const userId = currentUser.id;
@@ -492,6 +496,15 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
         // 3. Sync Children
         const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
+        // Lookup family_id once for all children (ensures new children are linked)
+        let userFamilyId: string | null = null;
+        const { data: famRow } = await supabase
+            .from('families')
+            .select('id')
+            .eq('created_by', userId)
+            .maybeSingle();
+        userFamilyId = famRow?.id || null;
+
         for (const child of (state.children || [])) {
             log(`👶 [SUPABASE] Processing child: ${child.name} (ID: ${child.id}, isUUID: ${isUUID(child.id)})`);
 
@@ -502,7 +515,8 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                 theme_color: child.colorClass || '#6366f1',
                 balance: child.balance ?? 0,
                 mission_requested: child.missionRequested || false,
-                gift_requested: child.giftRequested || false
+                gift_requested: child.giftRequested || false,
+                ...(userFamilyId ? { family_id: userFamilyId } : {})
             };
 
             let savedChildId = child.id;
@@ -770,11 +784,12 @@ export const checkIfCoParent = async (): Promise<{ isCoParent: boolean; familyId
 };
 
 export const mapCoParentDataToChildren = (familyData: CoParentFamilyData): any[] => {
-  const { children, missions, goals } = familyData;
+  const { children, missions, goals, transactions } = familyData;
 
-  // Group missions and goals by child_id
+  // Group missions, goals and transactions by child_id
   const missionsByChild = new Map<string, any[]>();
   const goalsByChild = new Map<string, any[]>();
+  const historyByChild = new Map<string, any[]>();
 
   for (const m of missions) {
     const list = missionsByChild.get(m.child_id) || [];
@@ -802,6 +817,20 @@ export const mapCoParentDataToChildren = (familyData: CoParentFamilyData): any[]
     goalsByChild.set(g.child_id, list);
   }
 
+  if (transactions && transactions.length > 0) {
+    for (const tx of transactions) {
+      const list = historyByChild.get(tx.child_id) || [];
+      const d = new Date(tx.created_at);
+      list.push({
+        id: tx.id,
+        date: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`,
+        title: tx.description || tx.type,
+        amount: tx.amount,
+      });
+      historyByChild.set(tx.child_id, list);
+    }
+  }
+
   return children.map(c => ({
     id: c.id,
     name: c.name,
@@ -810,7 +839,7 @@ export const mapCoParentDataToChildren = (familyData: CoParentFamilyData): any[]
     balance: c.balance,
     missions: missionsByChild.get(c.id) || [],
     goals: goalsByChild.get(c.id) || [],
-    history: [],
+    history: historyByChild.get(c.id) || [],
     tutorialSeen: true,
     giftRequested: c.gift_requested || false,
     missionRequested: c.mission_requested || false,
@@ -826,32 +855,21 @@ export const generateCoParentInvitation = async (
   const supabase = getSupabase();
   if (!supabase) throw new Error('Supabase not initialized');
 
-  // 1. Vérifier si un token pending + non expiré existe déjà
-  const { data: existing } = await supabase
+  // Expirer les anciens tokens pending pour cet owner
+  await supabase
     .from('co_parent_invitations')
-    .select('token, expires_at')
+    .update({ status: 'expired' })
     .eq('owner_id', ownerId)
-    .eq('status', 'pending')
-    .gt('expires_at', new Date().toISOString())
-    .limit(1)
-    .single();
+    .eq('status', 'pending');
 
-  if (existing) {
-    return {
-      token: existing.token,
-      expires_at: existing.expires_at,
-      qr_payload: `https://xmicutzneisrrtqgstro.supabase.co/functions/v1/invite-redirect?token=${existing.token}`
-    };
-  }
-
-  // 2. Générer un token hex sécurisé de 32 caractères
+  // Générer un token hex sécurisé de 32 caractères
   const array = new Uint8Array(16);
   crypto.getRandomValues(array);
   const token = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
 
-  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 heure
 
-  // 3. Insérer la nouvelle invitation
+  // Insérer la nouvelle invitation
   const { error } = await supabase
     .from('co_parent_invitations')
     .insert({
@@ -943,7 +961,7 @@ export const revokeCoParentAccess = async (
 
 export const getFamilyId = async (ownerId: string): Promise<string | null> => {
   const supabase = getSupabase();
-  if (!supabase) return null;
+  if (!supabase || !ownerId) return null;
 
   // 1. Check if family exists
   const { data: existing } = await supabase

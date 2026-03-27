@@ -21,7 +21,7 @@ export default function CoParentInviteModal({ isOpen, onClose, ownerId, language
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !ownerId) return;
 
     let cancelled = false;
     const generate = async () => {
@@ -29,22 +29,31 @@ export default function CoParentInviteModal({ isOpen, onClose, ownerId, language
       setError(null);
       setQrPayload(null);
 
+      const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+        Promise.race([
+          promise,
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`${label} timeout`)), ms))
+        ]);
+
       try {
-        const familyId = await getFamilyId(ownerId);
+        const familyId = await withTimeout(getFamilyId(ownerId), 10000, 'getFamilyId');
         if (!familyId) {
           setError(language === 'fr' ? 'Famille introuvable' : language === 'nl' ? 'Familie niet gevonden' : 'Family not found');
           return;
         }
         if (cancelled) return;
 
-        const result = await generateCoParentInvitation(ownerId, familyId);
+        const result = await withTimeout(generateCoParentInvitation(ownerId, familyId), 10000, 'generateInvitation');
         if (cancelled) return;
 
         setQrPayload(result.qr_payload);
         setExpiresAt(result.expires_at);
       } catch (e: any) {
         if (!cancelled) {
-          setError(e.message || 'Erreur');
+          const msg = e.message?.includes('timeout')
+            ? (language === 'fr' ? 'Connexion lente, réessayez' : language === 'nl' ? 'Trage verbinding, probeer opnieuw' : 'Slow connection, try again')
+            : (e.message || 'Erreur');
+          setError(msg);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -124,7 +133,28 @@ export default function CoParentInviteModal({ isOpen, onClose, ownerId, language
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 text-center">
-            <p className="text-red-600 dark:text-red-400 text-sm font-medium">{error}</p>
+            <p className="text-red-600 dark:text-red-400 text-sm font-medium mb-3">{error}</p>
+            <button
+              onClick={() => {
+                setError(null);
+                setLoading(true);
+                const retry = async () => {
+                  try {
+                    const familyId = await getFamilyId(ownerId);
+                    if (!familyId) { setError(language === 'fr' ? 'Famille introuvable' : 'Family not found'); return; }
+                    const result = await generateCoParentInvitation(ownerId, familyId);
+                    setQrPayload(result.qr_payload);
+                    setExpiresAt(result.expires_at);
+                  } catch (e: any) {
+                    setError(e.message || 'Erreur');
+                  } finally { setLoading(false); }
+                };
+                retry();
+              }}
+              className="text-sm font-medium text-indigo-600 dark:text-indigo-400 underline"
+            >
+              {language === 'fr' ? 'Réessayer' : language === 'nl' ? 'Opnieuw proberen' : 'Retry'}
+            </button>
           </div>
         )}
 

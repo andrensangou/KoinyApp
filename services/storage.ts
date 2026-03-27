@@ -397,6 +397,44 @@ export const saveData = async (data: GlobalState, ownerId?: string, immediate?: 
 };
 
 
+const CO_PARENT_CACHE_KEY = 'koiny_co_parent_v1';
+const CO_PARENT_CHILDREN_KEY = 'koiny_co_parent_children_v1';
+
+/**
+ * Persiste le statut co-parent dans le stockage natif (survie aux TIMEOUT_DATABASE)
+ */
+export const saveCoParentCache = async (familyId: string, permissions: string[]): Promise<void> => {
+  await persistentStorage.set(CO_PARENT_CACHE_KEY, JSON.stringify({ familyId, permissions }));
+};
+
+export const loadCoParentCache = async (): Promise<{ familyId: string; permissions: string[] } | null> => {
+  const value = await persistentStorage.get(CO_PARENT_CACHE_KEY);
+  if (!value) return null;
+  try { return JSON.parse(value); } catch { return null; }
+};
+
+export const clearCoParentCache = async (): Promise<void> => {
+  await persistentStorage.remove(CO_PARENT_CACHE_KEY);
+  await persistentStorage.remove(CO_PARENT_CHILDREN_KEY);
+};
+
+/**
+ * Sauvegarde locale des enfants vus par le co-parent (clé séparée, pas koiny_local_v1)
+ */
+export const saveCoParentChildrenCache = async (children: any[]): Promise<void> => {
+  if (children.length === 0) return;
+  await persistentStorage.set(CO_PARENT_CHILDREN_KEY, JSON.stringify(children));
+};
+
+export const loadCoParentChildrenCache = async (): Promise<any[] | null> => {
+  const value = await persistentStorage.get(CO_PARENT_CHILDREN_KEY);
+  if (!value) return null;
+  try {
+    const children = JSON.parse(value);
+    return Array.isArray(children) && children.length > 0 ? children : null;
+  } catch { return null; }
+};
+
 /**
  * Fonction d'exportation RGPD (Portabilité)
  */

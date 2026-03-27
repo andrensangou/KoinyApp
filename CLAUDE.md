@@ -17,6 +17,8 @@ Koiny est une app mobile iOS d'education financiere pour enfants 6-14 ans. Stack
 - Utiliser autre chose que `crypto.randomUUID()` pour les nouveaux IDs
 - Modifier `components/ParentView.tsx` (2500+ lignes) sans precaution
 - Hardcoder des clés API ou secrets dans le code source (utiliser `.env`)
+- Utiliser `supabase.auth.getUser()` dans les handlers → **toujours `getSession()`** (getUser = réseau, plante sur iPhone si offline/timeout)
+- Appeler une RPC Supabase pendant `isInitializing.current = true` → lock contention `AbortError: Lock was stolen`
 
 ### TOUJOURS
 - `updatedAt: new Date().toISOString()` a chaque modification du state
@@ -59,6 +61,36 @@ Build prend ~24 minutes sur cette machine.
 | `services/logger.ts` | Logger sécurisé avec anonymisation |
 | `services/security.ts` | PBKDF2 PIN hashing (100k iterations, SHA-512) |
 | `config.ts` | Validation des credentials au startup |
+| `components/CoParentInviteModal.tsx` | Modal invitation co-parent (QR code) |
+| `components/LoginView.tsx` | Sélection profil famille (login screen) |
+
+## Co-Parenting (feature/next)
+
+### Architecture
+- **Tables Supabase**: `families`, `co_parents`, `co_parent_invitations`
+- **RPC functions**: `load_co_parent_family_data`, `accept_co_parent_invitation`, `check_co_parent_permission`, `revoke_co_parent_access`
+- **Deep link**: QR code → `https://...supabase.co/functions/v1/invite-redirect?token=xxx` → browser → `koiny://invite?token=xxx` → app
+- **Edge Function**: `invite-redirect` sert une page HTML qui redirige vers le deep link `koiny://`
+
+### Règles critiques co-parent
+- **Un parent avec ses propres enfants n'est JAMAIS en mode co-parent** : `hasOwnChildren` check dans `initialize()` avant `checkIfCoParent()`
+- **`isCoParent = true` bloque le save auto** : les co-parents ne peuvent pas écraser les données du parent principal via `saveToSupabase`
+- **`family_id` obligatoire** : `saveToSupabase` inclut toujours `family_id` dans le payload enfant (lookup `families` table avant la boucle enfants)
+- **Permissions co-parent** : `read_balance`, `create_mission`, `edit_mission`, `approve_expense` — vérifiées via `checkCoParentPermission()` avant chaque handler
+- **Co-parent ne peut pas** : ajouter/supprimer enfant, modifier profil enfant, inviter un autre co-parent
+
+### Bugs connus résolus
+- ✅ **children.family_id NULL** (24/03) : enfants créés après la famille n'avaient pas de `family_id` → `saveToSupabase` lookup `families` + inclut `family_id` dans payload
+- ✅ **Parent principal en mode co-parent** (24/03) : si user_id dans `co_parents` ET a ses propres enfants → skip mode co-parent
+- ✅ **Save bloqué pour parent principal** (24/03) : `isCoParent` guard bloquait tous les saves → fix via `hasOwnChildren` check
+- ✅ **Cold-start deep link ignoré** (25/03) : `appUrlOpen` ne se déclenche pas si l'app est fermée → fix via `getLaunchUrl()`
+- ✅ **`AbortError: Lock was stolen`** (26/03) : `applicationWillEnterForeground` déclenchait un nouveau `initialize()` simultanément avec `acceptCoParentInvitation` → lock Supabase volé. Fix: ref `isAcceptingInvitation` bloque `initialize()` pendant l'acceptation ; polling `!isInitializing.current` avant de commencer
+- ✅ **Realtime TIMED_OUT loop** (26/03) : tous les canaux (children/missions/goals/transactions) timeoutaient car `transactions` n'avait pas de colonne `family_id` → filtre `family_id=eq.X` invalide → TIMED_OUT en boucle. Fix: migration `add_family_id_to_transactions` + backfill + index
+- ✅ **Callbacks dupliqués sur TIMED_OUT** (26/03) : retry appelait `this.subscribe()` → réenregistrait le callback → doublement des appels. Fix: `_createChannel()` private method (ne touche pas aux callbacks), TIMED_OUT handler appelle `supabase.removeChannel()` avant de recréer
+- ✅ **Data loss sur reload co-parent vide** (26/03) : `loadCoParentFamilyData()` retournant `[]` après un TIMEOUT_DATABASE écrasait les enfants existants. Fix: guard `if (mappedChildren.length > 0)` avant tout `setData`
+- ✅ **Goals co-parent non persistés** (26/03) : `handleEditChild` mettait à jour le state local uniquement → goals perdus au reload. Fix: `handleEditChild` async avec insert/update direct Supabase pour co-parents (détecte nouveaux goals via non-UUID id)
+- ✅ **transactions.family_id manquant** (26/03) : inserts `transactions` n'incluaient pas `family_id` → canal Realtime transactions inutile. Fix: `family_id: isCoParent ? coParentFamilyId : ownerId` dans `handleApprove` et `handleManualTransaction`
+- ✅ **Sync bidirectionnelle** (26/03) : owner ne recevait pas les changements co-parent. Fix: `setupFamilyRealtime` appelé dans `initialize()` pour les owners avec `loadFromSupabase` comme callback
 
 ## Architecture sync
 
@@ -175,6 +207,38 @@ const t = translations[data.language || 'fr'];
 - ✅ **SubscriptionModal.tsx**: `useModal(isOpen)` + backdrop click (tap en dehors du sheet → ferme le modal)
 - ✅ **ParentView.tsx**: `useModal(_anyInlineModalOpen)` couvrant tous les modals inline (offline, editingMission, transactionType, selectedMissionId, promptConfig, biometricChoice)
 
+### Corrections appliquées (27/03/2026)
+- ✅ **RPC `load_co_parent_family_data` + transactions** : ajout des 100 dernières transactions dans la réponse RPC → `mapCoParentDataToChildren` construit `history[]` au lieu de `history: []` (historique vidé à chaque reload realtime)
+- ✅ **Permission checks locaux** : `checkCoParentPermission()` (RPC Supabase) remplacé par vérification locale `coParentPermissions.includes(action)` dans les 4 handlers (handleApprove, handleManualTransaction, handleAddMission, handleEditChild). Élimine les timeout Supabase qui bloquaient toute action co-parent
+- ✅ **Co-parent cache fast path** : si `koiny_co_parent_v1` existe → skip `checkIfCoParent()` (RPC Supabase) → charge enfants depuis `koiny_co_parent_children_v1` directement → refresh Supabase en arrière-plan. Élimine le TIMEOUT_DATABASE au démarrage
+- ✅ **Vidage données stales co-parent** : si cache enfants co-parent vide → `setData(children: [])` au lieu de garder les enfants de `koiny_local_v1` (ex: "Dilan" affiché à la place de "Loulo")
+- ✅ **ParentView goals co-parent** : bouton objectifs (bullseye) visible pour co-parents dans l'onglet Famille. Formulaire limité à la section goals (nom/avatar/couleur masqués)
+
+### Corrections appliquées (26/03/2026)
+- ✅ **`realtime.ts` rewrite** : `_createChannel()` private method — TIMED_OUT retry appelle `supabase.removeChannel(oldChannel)` avant de recréer, sans réenregistrer les callbacks (élimine la duplication)
+- ✅ **Migration `add_family_id_to_transactions`** : `ALTER TABLE transactions ADD COLUMN family_id UUID` + backfill depuis `children.family_id` + index. Résout le TIMED_OUT de tous les canaux Realtime
+- ✅ **Owner realtime** : `setupFamilyRealtime` appelé dans `initialize()` branche owner → changements co-parent visibles en temps réel côté owner
+- ✅ **Guard data loss co-parent** : `if (mappedChildren.length > 0)` avant tout `setData` dans initialize() et deep link handler
+- ✅ **`handleEditChild` async** : goals co-parent insérés/mis à jour directement dans Supabase (nouveaux goals détectés par ID non-UUID)
+- ✅ **`family_id` dans transactions** : inserts `transactions` incluent `family_id: isCoParent ? coParentFamilyId : ownerId`
+- ✅ **App Store offre introductoire** : "Gratuit - 2 semaines" configurée dans App Store Connect pour `com.koiny.premium.monthly` et `com.koiny.premium.yearly` (était seulement du texte hardcodé dans l'UI)
+
+### Corrections appliquées (25/03/2026)
+- ✅ **`timeoutPromise` reuse bug** : dans `loadFromSupabase`, le timeout était créé UNE FOIS en dehors de la boucle `withRetry` → retries 2 et 3 échouaient instantanément. Fix: timeout créé à l'intérieur du closure retry (`const timeoutPromise = new Promise(...)` dans le callback)
+- ✅ **Erreur serialization iOS WebKit** : `console.error(':', err)` loggait `{}` sur iPhone. Fix: logger `err.message || err.code || JSON.stringify(err)`
+- ✅ **`getUser()` → `getSession()`** : remplacé dans tous les handlers (handleManualTransaction, handleAddChild, handlePurchaseGoal, handleSetPin, ParentView loadLocalPin, deleteAccount, saveToSupabase) — `getUser()` est un appel réseau qui plante sur iPhone
+- ✅ **`getFamilyId()` guard** : ajout `if (!supabase || !ownerId) return null` — évitait `invalid input syntax for type uuid: ""` sur Postgres quand ownerId vide
+- ✅ **Cold-start deep link** : `CapApp.addListener('appUrlOpen')` ne déclenche PAS si l'app est fermée. Fix: `CapApp.getLaunchUrl()` au startup pour récupérer l'URL de lancement
+- ✅ **`AbortError: Lock was stolen`** (26/03) : `applicationWillEnterForeground` + `acceptCoParentInvitation` → lock contention. Fix: `isAcceptingInvitation` ref bloque les nouveaux `initialize()` ; polling `!isInitializing.current` si init en cours au moment du deep link. Confirmé fonctionnel.
+- ✅ **QR code réutilisé (token périmé)** (26/03) : `generateCoParentInvitation` réutilisait un token existant de 48h → token potentiellement ancien. Fix: expire les anciens tokens + génère toujours un nouveau avec expiration 1h
+
+### Corrections appliquées (24/03/2026)
+- ✅ **Co-parent: parent principal bloqué**: `checkIfCoParent()` détectait le parent principal comme co-parent (car présent dans `co_parents` table) → save bloqué, enfants invisibles. Fix: skip check si `hasOwnChildren`
+- ✅ **Co-parent: children.family_id NULL**: enfants créés après `getFamilyId()` n'avaient pas de `family_id` → `saveToSupabase` lookup `families` avant boucle enfants
+- ✅ **SubscriptionModal: liens légaux**: ajout "Conditions d'utilisation" + "Politique de confidentialité" (3 langues) → `koiny.app/privacy.html#terms` et `koiny.app/privacy.html`
+- ✅ **LoginView redesign**: gradient indigo-900→indigo-700 (40% haut), logo avec halo, cartes enfants `rounded-3xl shadow-md`, bouton parent glassmorphism, safe-area bottom
+- ✅ **Apple App Store**: réponse Guideline 2.1 (data collection), EULA link, IAP screenshots/remarks pour Monthly + Yearly
+
 ### Corrections appliquées (21/03/2026)
 - ✅ **PIN flash "Code erroné" — fix définitif**: machine d'état `pinState: 'idle'|'validating'|'error'|'success'` + `pinErrorTimeoutRef` (useRef) avec `clearTimeout()` à chaque nouveau digit. Race condition éliminée : le timeout de l'ancienne tentative incorrecte ne peut plus déclencher `'error'` après que `verifyPin()` a retourné `true`. Avant: deux booleans `isPinWrong + isPinValidating` indépendants — le timeout se déclenchait pendant `isPinValidating=true`, puis quand `setPinValidating(false)` rendait, `isPinWrong` était encore `true` → flash. Désormais: `clearTimeout` dès le 1er chiffre suivant.
 - ✅ **Xcode dSYM Sentry**: `DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"` ajouté sur la target App Release (pas seulement projet), Run Script Build Phase `65D4B2E1` copie `Sentry.framework.dSYM` dans `$DWARF_DSYM_FOLDER_PATH` lors de l'Archive. Élimine le warning App Store Connect "The archive did not include a dSYM for Sentry.framework".
@@ -241,6 +305,7 @@ Branche actuelle active : `feature/next`
 - Statut: "Actif" (signé le 16/03/2026)
 - Produits IAP: Disponibles (com.koiny.premium.monthly, com.koiny.premium.yearly)
 - RevenueCat: Récupère les produits correctement
+- Offre introductoire: "Gratuit - 2 semaines" (Free Trial) configurée sur monthly + yearly (26/03/2026)
 
 **Sentry — Issues connues:**
 - WatchdogTermination (RAM) — iOS tue l'app pour mémoire excessive, à investiguer

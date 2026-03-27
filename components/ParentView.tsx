@@ -203,12 +203,12 @@ const ParentView: React.FC<ParentViewProps> = ({
       const supabase = getSupabase();
       if (supabase) {
         try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const pin = await loadParentPinLocally(user.id);
+          const { data: { session: pinSess } } = await supabase.auth.getSession();
+          if (pinSess?.user) {
+            const pin = await loadParentPinLocally(pinSess.user.id);
             if (pin) {
               setLocalPin(pin);
-              console.log('✅ [PARENT VIEW] PIN local chargé pour:', user.id);
+              console.log('✅ [PARENT VIEW] PIN local chargé pour:', pinSess.user.id);
             }
           }
         } catch (error) {
@@ -1123,14 +1123,6 @@ const ParentView: React.FC<ParentViewProps> = ({
         style={{ height: 'env(safe-area-inset-top)' }}
       />
       {/* Floating Header Premium */}
-      {/* Co-parent badge */}
-      {isCoParent && (
-        <div className="fixed top-0 left-1/2 -translate-x-1/2 z-[55] safe-pt pointer-events-none">
-          <div className="mt-1 px-3 py-1 bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-md">
-            Co-parent
-          </div>
-        </div>
-      )}
 
       {/* Unified Header for Dashboard & Other Views */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${mainView !== 'dashboard' ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800' : 'pointer-events-none safe-pt'}`}>
@@ -1895,7 +1887,11 @@ const ParentView: React.FC<ParentViewProps> = ({
                                 </p>
                               </div>
                             </div>
-                            {!isCoParent && (
+                            {isCoParent ? (
+                            <button onClick={() => startEditChild(child, true)} aria-label={`${language === 'fr' ? 'Objectifs' : 'Goals'} ${child.name}`} className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-500 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors shadow-sm active:scale-90">
+                              <i className="fa-solid fa-bullseye text-xs" aria-hidden="true"></i>
+                            </button>
+                            ) : (
                             <div className="flex gap-2">
                               <button onClick={() => startEditChild(child)} aria-label={`${language === 'fr' ? 'Modifier' : 'Edit'} ${child.name}`} className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-500 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors shadow-sm active:scale-90">
                                 <i className="fa-solid fa-pen text-xs" aria-hidden="true"></i>
@@ -1927,6 +1923,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         </div>
                       </div>
 
+                      {!isCoParent && (<>
                       <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm p-6 space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                           <div className="space-y-2">
@@ -2049,6 +2046,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                           <p className="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest mt-3">{(t.colors as any)[formColorClass]}</p>
                         </div>
                       </div>
+                      </>)}
 
                       <div ref={formGoalsRef} className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
                         <div className="p-5 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center bg-slate-50/30 dark:bg-slate-900/30">

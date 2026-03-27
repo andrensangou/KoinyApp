@@ -9,9 +9,10 @@ import OnboardingView from './components/OnboardingView';
 import LegalModal from './components/LegalModal';
 import AlertBanner from './components/AlertBanner';
 import { GlobalState, INITIAL_DATA, HistoryEntry, ChildProfile, Language, Goal, BADGE_THRESHOLDS, ParentBadge, MAX_BALANCE } from './types';
-import { loadData, saveData } from './services/storage';
+import { loadData, saveData, saveCoParentCache, loadCoParentCache, clearCoParentCache, saveCoParentChildrenCache, loadCoParentChildrenCache } from './services/storage';
 import { updateWidgetData } from './services/widgetBridge';
-import { getSupabase, updatePassword, deleteAccount, ensureUserProfile, acceptCoParentInvitation, checkIfCoParent, loadCoParentFamilyData, mapCoParentDataToChildren, checkCoParentPermission } from './services/supabase';
+import { getSupabase, updatePassword, deleteAccount, ensureUserProfile, acceptCoParentInvitation, checkIfCoParent, loadCoParentFamilyData, mapCoParentDataToChildren, getFamilyId, loadFromSupabase } from './services/supabase';
+import { realtimeService } from './services/realtime';
 import { alertService, AppAlert } from './services/alertService';
 import { notifications } from './services/notifications';
 import { translations } from './i18n';
@@ -49,7 +50,25 @@ const App: React.FC = () => {
   const prevChildrenRef = React.useRef<ChildProfile[]>([]);
 
   const isInitializing = React.useRef(false);
+  const isAcceptingInvitation = React.useRef(false);
   const pendingSessionRef = React.useRef<any>(null);
+  const coParentRealtimeUnsubRef = React.useRef<(() => void) | null>(null);
+
+  // Realtime : s'abonner aux changements d'une famille (owner ou co-parent)
+  const setupFamilyRealtime = useCallback((familyId: string, reloadFn: () => Promise<void>) => {
+    if (coParentRealtimeUnsubRef.current) {
+      coParentRealtimeUnsubRef.current();
+      coParentRealtimeUnsubRef.current = null;
+    }
+    console.log('🔔 [REALTIME] Abonnement famille:', familyId);
+    const unsub = realtimeService.subscribeToFamily(familyId, async () => {
+      console.log('🔔 [REALTIME] Changement détecté, rechargement...');
+      try { await reloadFn(); } catch (e: any) {
+        console.warn('⚠️ [REALTIME] Erreur rechargement:', e?.message);
+      }
+    });
+    coParentRealtimeUnsubRef.current = unsub;
+  }, []);
 
   // Securité : Forcer la fin du chargement après 15s quoi qu'il arrive
   useEffect(() => {
@@ -132,8 +151,8 @@ const App: React.FC = () => {
       setLanguage(savedLanguage);
     }
 
-    if (isInitializing.current) {
-      console.log('⏳ [INIT] Déjà en cours, session mise en attente...');
+    if (isInitializing.current || isAcceptingInvitation.current) {
+      console.log('⏳ [INIT] Déjà en cours ou invitation en cours, session mise en attente...');
       if (session) pendingSessionRef.current = session;
       return;
     }
@@ -206,25 +225,117 @@ const App: React.FC = () => {
       setOwnerId(result.ownerId);
 
       // Vérifier si l'utilisateur est co-parent
-      if (session?.user) {
+      // Le cache survit aux TIMEOUT — si le cache dit co-parent, forcer le check même avec children locaux
+      // (les children locaux peuvent être des données co-parent sauvegardées dans koiny_local_v1 par un build antérieur)
+      const hasOwnChildren = (cloudData.children?.length || 0) > 0;
+      const cachedCoParent = await loadCoParentCache().catch(() => null);
+      // Helper: setup owner realtime
+      const setupOwnerRealtime = async () => {
+        if (!result.ownerId) return;
+        const ownerIdForRealtime = result.ownerId;
         try {
-          const coParentStatus = await checkIfCoParent();
-          if (coParentStatus.isCoParent && coParentStatus.familyId) {
-            console.log('👥 [INIT] Co-parent détecté, chargement famille...');
-            setIsCoParent(true);
-            setCoParentFamilyId(coParentStatus.familyId);
-            setCoParentPermissions(coParentStatus.permissions || []);
-
-            const familyData = await loadCoParentFamilyData();
-            if (!familyData.error) {
-              const mappedChildren = mapCoParentDataToChildren(familyData);
-              setData(prev => ({ ...prev, children: mappedChildren, updatedAt: new Date().toISOString() }));
-              console.log(`👥 [INIT] ${mappedChildren.length} enfant(s) co-parent chargé(s)`);
-            }
+          const ownerFamilyId = await getFamilyId(ownerIdForRealtime);
+          if (ownerFamilyId) {
+            setupFamilyRealtime(ownerFamilyId, async () => {
+              try {
+                const freshData = await loadFromSupabase(ownerIdForRealtime);
+                if (freshData && !freshData.error && freshData.children?.length > 0) {
+                  setData(prev => ({ ...prev, children: freshData.children, updatedAt: new Date().toISOString() }));
+                }
+              } catch (e: any) {
+                console.warn('⚠️ [REALTIME] Rechargement owner échoué:', e?.message);
+              }
+            });
           }
         } catch (e: any) {
-          console.warn('⚠️ [INIT] Co-parent check failed (non-blocking):', e?.message);
+          console.warn('⚠️ [INIT] Owner realtime setup failed (non-blocking):', e?.message);
         }
+      };
+
+      // Helper: setup co-parent avec familyId connu
+      const setupCoParentWithFamily = (familyId: string) => {
+        setupFamilyRealtime(familyId, async () => {
+          const fd = await loadCoParentFamilyData();
+          if (!fd.error) {
+            const mapped = mapCoParentDataToChildren(fd);
+            if (mapped.length > 0) {
+              setData(prev => ({ ...prev, children: mapped, updatedAt: new Date().toISOString() }));
+              saveCoParentChildrenCache(mapped).catch(() => {});
+            }
+          }
+        });
+      };
+
+      // Vérifier co-parent : si cache existe → utiliser directement (zéro appel Supabase)
+      // sinon → checker Supabase (peut timeout)
+      let resolvedAsCoParent = false;
+      if (session?.user && (!hasOwnChildren || cachedCoParent?.familyId)) {
+        if (cachedCoParent?.familyId) {
+          // ⚡ Fast path: cache existe, pas besoin de Supabase pour démarrer
+          console.log('👥 [INIT] Co-parent depuis cache (skip Supabase)');
+          resolvedAsCoParent = true;
+          setIsCoParent(true);
+          setCoParentFamilyId(cachedCoParent.familyId);
+          setCoParentPermissions(cachedCoParent.permissions || ['read_balance', 'create_mission', 'approve_expense']);
+          // Charger enfants depuis cache local, vider les données stales (ex: "Dilan" de koiny_local_v1)
+          const cachedChildren = await loadCoParentChildrenCache();
+          if (cachedChildren && cachedChildren.length > 0) {
+            console.log(`👥 [INIT] ${cachedChildren.length} enfant(s) depuis cache`);
+            setData(prev => ({ ...prev, children: cachedChildren, updatedAt: new Date().toISOString() }));
+          } else {
+            // Pas de cache enfants → vider les enfants stales pour ne pas afficher de mauvaises données
+            console.log('👥 [INIT] Pas de cache enfants, vidage données stales');
+            setData(prev => ({ ...prev, children: [], updatedAt: new Date().toISOString() }));
+          }
+          setupCoParentWithFamily(cachedCoParent.familyId);
+          // Background refresh: rafraîchir données depuis Supabase sans bloquer l'UI
+          (async () => {
+            try {
+              const fd = await loadCoParentFamilyData();
+              if (!fd.error) {
+                const mapped = mapCoParentDataToChildren(fd);
+                if (mapped.length > 0) {
+                  setData(prev => ({ ...prev, children: mapped, updatedAt: new Date().toISOString() }));
+                  saveCoParentChildrenCache(mapped).catch(() => {});
+                  console.log('👥 [INIT] Données co-parent rafraîchies en arrière-plan');
+                }
+              }
+            } catch (e: any) {
+              console.warn('⚠️ [INIT] Background refresh failed:', e?.message);
+            }
+          })();
+        } else {
+          // Pas de cache: checker Supabase (premier lancement ou cache effacé)
+          try {
+            const coParentStatus = await checkIfCoParent();
+            if (coParentStatus.isCoParent && coParentStatus.familyId) {
+              console.log('👥 [INIT] Co-parent détecté via Supabase');
+              resolvedAsCoParent = true;
+              setIsCoParent(true);
+              setCoParentFamilyId(coParentStatus.familyId);
+              setCoParentPermissions(coParentStatus.permissions || []);
+              saveCoParentCache(coParentStatus.familyId, coParentStatus.permissions || []).catch(() => {});
+
+              const familyData = await loadCoParentFamilyData();
+              if (!familyData.error) {
+                const mappedChildren = mapCoParentDataToChildren(familyData);
+                if (mappedChildren.length > 0) {
+                  setData(prev => ({ ...prev, children: mappedChildren, updatedAt: new Date().toISOString() }));
+                  saveCoParentChildrenCache(mappedChildren).catch(() => {});
+                }
+                console.log(`👥 [INIT] ${mappedChildren.length} enfant(s) co-parent chargé(s)`);
+              }
+              setupCoParentWithFamily(coParentStatus.familyId);
+            }
+          } catch (e: any) {
+            console.warn('⚠️ [INIT] Co-parent check failed:', e?.message);
+          }
+        }
+      }
+
+      // Owner realtime (seulement si PAS résolu comme co-parent ET a ses propres enfants)
+      if (!resolvedAsCoParent && session?.user && hasOwnChildren && result.ownerId) {
+        await setupOwnerRealtime();
       }
 
       // Initialiser RevenueCat et vérifier le statut premium
@@ -463,9 +574,9 @@ const App: React.FC = () => {
     }
 
     // Gestion des liens profonds (Deep Links) pour OAuth & Invites
-    let urlListener: any;
-    CapApp.addListener('appUrlOpen', async (event: any) => {
-      console.log('🔗 [DEEP LINK] Ouvert avec:', event.url);
+    const handleDeepLink = async (url: string) => {
+      console.log('🔗 [DEEP LINK] Ouvert avec:', url);
+      const event = { url };
 
       // Fermer le browser immédiatement dès le retour du callback OAuth
       // (évite la page blanche quand iOS intercepte le custom scheme avant le SFSafariViewController)
@@ -487,39 +598,79 @@ const App: React.FC = () => {
           }
           if (token) {
             console.log('👥 [DEEP LINK] Invitation co-parent détectée');
-            const result = await acceptCoParentInvitation(token);
-            if (result.success) {
-              // Load co-parent family data immediately
-              setIsCoParent(true);
-              setCoParentFamilyId(result.family_id || null);
-              try {
-                const familyData = await loadCoParentFamilyData();
-                if (!familyData.error) {
-                  const mappedChildren = mapCoParentDataToChildren(familyData);
-                  setData(prev => ({ ...prev, children: mappedChildren, updatedAt: new Date().toISOString() }));
-                  setCoParentPermissions(['read_balance', 'create_mission', 'approve_expense']);
-                  setView(mappedChildren.length > 0 ? 'LOGIN' : 'PARENT');
+            // Attendre la fin d'un éventuel initialize() en cours
+            if (isInitializing.current) {
+              console.log('⏳ [DEEP LINK] Init en cours, attente...');
+              await new Promise<void>(resolve => {
+                const check = setInterval(() => {
+                  if (!isInitializing.current) { clearInterval(check); resolve(); }
+                }, 200);
+                setTimeout(() => { clearInterval(check); resolve(); }, 20000);
+              });
+              console.log('✅ [DEEP LINK] Init terminée, traitement invitation...');
+            }
+            // Bloquer tout nouveau initialize() pendant l'acceptation (évite lock contention)
+            isAcceptingInvitation.current = true;
+            try {
+              const result = await acceptCoParentInvitation(token);
+              if (result.success) {
+                setIsCoParent(true);
+                setCoParentFamilyId(result.family_id || null);
+                if (result.family_id) {
+                  saveCoParentCache(result.family_id, ['read_balance', 'create_mission', 'approve_expense']).catch(() => {});
                 }
-              } catch (e: any) {
-                console.warn('⚠️ [DEEP LINK] Failed to load family data:', e?.message);
+                try {
+                  const familyData = await loadCoParentFamilyData();
+                  if (!familyData.error) {
+                    const mappedChildren = mapCoParentDataToChildren(familyData);
+                    if (mappedChildren.length > 0) {
+                      setData(prev => ({ ...prev, children: mappedChildren, updatedAt: new Date().toISOString() }));
+                      saveCoParentChildrenCache(mappedChildren).catch(() => {});
+                    }
+                    setCoParentPermissions(['read_balance', 'create_mission', 'approve_expense']);
+                    setView(mappedChildren.length > 0 ? 'LOGIN' : 'PARENT');
+                  }
+                  if (result.family_id) setupFamilyRealtime(result.family_id, async () => {
+                    const fd = await loadCoParentFamilyData();
+                    if (!fd.error) {
+                      const mapped = mapCoParentDataToChildren(fd);
+                      if (mapped.length > 0) {
+                        setData(prev => ({ ...prev, children: mapped, updatedAt: new Date().toISOString() }));
+                      }
+                    }
+                  });
+                } catch (e: any) {
+                  console.warn('⚠️ [DEEP LINK] Failed to load family data:', e?.message);
+                }
+                alert(data.language === 'fr' ? 'Invitation acceptée ! Vous êtes maintenant co-parent.' : data.language === 'nl' ? 'Uitnodiging geaccepteerd! U bent nu co-ouder.' : 'Invitation accepted! You are now a co-parent.');
+              } else {
+                const messages: Record<string, Record<string, string>> = {
+                  TOKEN_INVALID: { fr: 'Lien invalide.', nl: 'Ongeldige link.', en: 'Invalid link.' },
+                  TOKEN_EXPIRED: { fr: 'Lien expiré.', nl: 'Link verlopen.', en: 'Link expired.' },
+                  TOKEN_ALREADY_USED: { fr: 'Lien déjà utilisé.', nl: 'Link al gebruikt.', en: 'Link already used.' },
+                  SELF_INVITATION: { fr: 'Vous ne pouvez pas accepter votre propre invitation.', nl: 'U kunt uw eigen uitnodiging niet accepteren.', en: "You can't accept your own invitation." },
+                  ALREADY_CO_PARENT: { fr: 'Vous êtes déjà co-parent de cette famille.', nl: 'U bent al co-ouder van dit gezin.', en: 'You are already a co-parent of this family.' },
+                };
+                const lang = data.language || 'fr';
+                const msg = messages[result.error || '']?.[lang] || result.error || 'Error';
+                alert(msg);
               }
-              alert(data.language === 'fr' ? 'Invitation acceptée ! Vous êtes maintenant co-parent.' : data.language === 'nl' ? 'Uitnodiging geaccepteerd! U bent nu co-ouder.' : 'Invitation accepted! You are now a co-parent.');
-            } else {
-              const messages: Record<string, Record<string, string>> = {
-                TOKEN_INVALID: { fr: 'Lien invalide.', nl: 'Ongeldige link.', en: 'Invalid link.' },
-                TOKEN_EXPIRED: { fr: 'Lien expiré.', nl: 'Link verlopen.', en: 'Link expired.' },
-                TOKEN_ALREADY_USED: { fr: 'Lien déjà utilisé.', nl: 'Link al gebruikt.', en: 'Link already used.' },
-                SELF_INVITATION: { fr: 'Vous ne pouvez pas accepter votre propre invitation.', nl: 'U kunt uw eigen uitnodiging niet accepteren.', en: "You can't accept your own invitation." },
-                ALREADY_CO_PARENT: { fr: 'Vous êtes déjà co-parent de cette famille.', nl: 'U bent al co-ouder van dit gezin.', en: 'You are already a co-parent of this family.' },
-              };
-              const lang = data.language || 'fr';
-              const msg = messages[result.error || '']?.[lang] || result.error || 'Error';
-              alert(msg);
+            } catch (e: any) {
+              console.error('❌ [DEEP LINK] Erreur invitation co-parent:', e.message);
+            } finally {
+              isAcceptingInvitation.current = false;
+              // Traiter l'éventuel initialize() mis en attente pendant l'acceptation
+              const pendingSession = pendingSessionRef.current;
+              if (pendingSession) {
+                pendingSessionRef.current = null;
+                console.log('🔄 [DEEP LINK] Traitement session mise en attente après invitation...');
+                setTimeout(() => initialize(pendingSession), 100);
+              }
             }
             return;
           }
         } catch (e: any) {
-          console.error('❌ [DEEP LINK] Erreur invitation co-parent:', e.message);
+          console.error('❌ [DEEP LINK] Erreur deep link co-parent:', e.message);
         }
         return;
       }
@@ -560,28 +711,57 @@ const App: React.FC = () => {
           const refreshToken = params.get('refresh_token');
           if (accessToken && refreshToken) {
             try {
-              const { data: sessionData, error } = await supabase.auth.setSession({
+              console.log('🔐 [DEEP LINK] Appel setSession...');
+              // Timeout de sécurité: setSession peut bloquer si le réseau WKWebView est gelé
+              const setSessionPromise = supabase.auth.setSession({
                 access_token: accessToken,
                 refresh_token: refreshToken
               });
+              const setSessionTimeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('TIMEOUT_SET_SESSION')), 15000)
+              );
+              const { data: sessionData, error } = await Promise.race([
+                setSessionPromise,
+                setSessionTimeout
+              ]) as any;
+              console.log('🔐 [DEEP LINK] setSession terminé, error:', error?.message || 'none');
               if (error) {
                 console.error('❌ [DEEP LINK] Erreur setSession:', error.message);
               } else {
                 console.log('✅ [DEEP LINK] Session implicite établie pour:', sessionData.session?.user?.email);
                 if (sessionData.session) {
                   // Attendre que le WebProcess récupère son réseau après le freeze du browser
-                  await new Promise(r => setTimeout(r, 2000));
+                  // iOS WKWebView peut mettre plusieurs secondes à rétablir les connexions réseau
+                  console.log('⏳ [DEEP LINK] Attente réseau WebProcess (3s)...');
+                  await new Promise(r => setTimeout(r, 3000));
+                  console.log('🚀 [DEEP LINK] Lancement initialize()...');
                   await initialize(sessionData.session);
                 }
               }
             } catch (e: any) {
-              console.error('❌ [DEEP LINK] Exception setSession:', e.message);
+              console.error('❌ [DEEP LINK] Exception setSession:', e.message || e);
             }
           }
         }
       }
 
+    };
+
+    // Écouter les deep links quand l'app est en arrière-plan
+    let urlListener: any;
+    CapApp.addListener('appUrlOpen', (event: any) => {
+      handleDeepLink(event.url);
     }).then(h => { urlListener = h; }).catch(err => console.warn('⚠️ [APP] Deep link listener failed:', err));
+
+    // Vérifier si l'app a été lancée via un deep link (cold start)
+    if (Capacitor.isNativePlatform()) {
+      CapApp.getLaunchUrl().then(ret => {
+        if (ret?.url) {
+          console.log('🚀 [DEEP LINK] Launch URL détectée:', ret.url);
+          handleDeepLink(ret.url);
+        }
+      }).catch(() => {});
+    }
 
     return () => {
       window.removeEventListener('error', handleError);
@@ -623,8 +803,13 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const runSave = async () => {
-      // Bloquer la sauvegarde si co-parent (les writes se font via isDirectSupabaseOperation)
-      if (isCoParent) return;
+      // Pour les co-parents : sauvegarde locale des enfants uniquement (pas de cloud sync)
+      if (isCoParent) {
+        if (!loading && view !== 'AUTH' && view !== 'LANDING' && !criticalError && data.children.length > 0) {
+          saveCoParentChildrenCache(data.children).catch(() => {});
+        }
+        return;
+      }
 
       // Bloquer la sauvegarde si on vient de recharger depuis Realtime, opération directe, en cours d'init ou déjà en cours
       if (isSavingRef.current || isReloadingFromRealtime.current || isDirectSupabaseOperation.current || isInitializing.current) {
@@ -719,10 +904,9 @@ const App: React.FC = () => {
   };
 
   const handleApprove = async (childId: string, missionId: string, note?: string) => {
-    // Co-parent permission check
-    if (isCoParent && coParentFamilyId) {
-      const perm = await checkCoParentPermission(coParentFamilyId, 'approve_expense');
-      if (!perm.authorized) { alert(data.language === 'fr' ? 'Permission refusée' : 'Permission denied'); return; }
+    // Co-parent permission check (local — pas d'appel Supabase qui timeout)
+    if (isCoParent && !coParentPermissions.includes('approve_expense')) {
+      alert(data.language === 'fr' ? 'Permission refusée' : 'Permission denied'); return;
     }
 
     monitoring.track('BUSINESS', 'MISSION_APPROVED', 1, { childId });
@@ -827,9 +1011,11 @@ const App: React.FC = () => {
               validated_by: userId
             }).eq('id', missionId);
           }
+          const childFamilyId = isCoParent ? coParentFamilyId : ownerId;
           await supabase.from('transactions').insert({
             id: transactionId,
             child_id: childId,
+            family_id: childFamilyId,
             type: 'mission',
             amount: effectiveReward,
             description: mission.title + titleSuffix,
@@ -850,10 +1036,9 @@ const App: React.FC = () => {
   };
 
   const handleManualTransaction = async (childId: string, amount: number, reason: string) => {
-    // Co-parent permission check
-    if (isCoParent && coParentFamilyId) {
-      const perm = await checkCoParentPermission(coParentFamilyId, 'approve_expense');
-      if (!perm.authorized) { alert(data.language === 'fr' ? 'Permission refusée' : 'Permission denied'); return; }
+    // Co-parent permission check (local — pas d'appel Supabase qui timeout)
+    if (isCoParent && !coParentPermissions.includes('approve_expense')) {
+      alert(data.language === 'fr' ? 'Permission refusée' : 'Permission denied'); return;
     }
 
     let effectiveAmount = amount;
@@ -927,7 +1112,8 @@ const App: React.FC = () => {
         isDirectSupabaseOperation.current = true;
         try {
           const supabase = getSupabase();
-          const { data: { user } } = await supabase.auth.getUser();
+          const { data: { session } } = await supabase.auth.getSession();
+          const user = session?.user;
 
           if (!user) {
             console.warn('⚠️ Pas de session pour sync Supabase');
@@ -939,6 +1125,7 @@ const App: React.FC = () => {
             .insert({
               id: transactionId,
               child_id: childId,
+              family_id: isCoParent ? coParentFamilyId : ownerId,
               type: effectiveAmount >= 0 ? 'bonus' : 'withdrawal',
               amount: effectiveAmount,
               description: finalReason,
@@ -979,7 +1166,10 @@ const App: React.FC = () => {
     // Naviguer immédiatement — le cleanup se fait en arrière-plan
     setData(INITIAL_DATA);
     setOwnerId(undefined);
+    setIsCoParent(false);
+    setCoParentFamilyId(null);
     setView('AUTH');
+    clearCoParentCache().catch(() => {});
 
     if (supabase) {
       try {
@@ -1019,10 +1209,9 @@ const App: React.FC = () => {
   const handleMissionComplete = (id: string) => { updateChild(activeChildId!, (child) => ({ ...child, missions: child.missions.map(m => m.id === id ? { ...m, status: 'PENDING', feedback: undefined } : m) })); };
   const handleReject = (childId: string, missionId: string, note?: string) => { updateChild(childId, (child) => ({ ...child, missions: child.missions.map(m => m.id === missionId ? { ...m, status: 'ACTIVE', feedback: note } : m) })); };
   const handleAddMission = async (childId: string, title: string, amount: number) => {
-    // Co-parent permission check
-    if (isCoParent && coParentFamilyId) {
-      const perm = await checkCoParentPermission(coParentFamilyId, 'create_mission');
-      if (!perm.authorized) { alert(data.language === 'fr' ? 'Permission refusée' : 'Permission denied'); return; }
+    // Co-parent permission check (local — pas d'appel Supabase qui timeout)
+    if (isCoParent && !coParentPermissions.includes('create_mission')) {
+      alert(data.language === 'fr' ? 'Permission refusée' : 'Permission denied'); return;
     }
 
     const supabase = getSupabase();
@@ -1152,7 +1341,41 @@ const App: React.FC = () => {
   const handleChildTutorialComplete = () => { updateChild(activeChildId!, (child) => ({ ...child, tutorialSeen: true })); };
   const handleParentTutorialComplete = () => setData(prev => ({ ...prev, parentTutorialSeen: true, updatedAt: new Date().toISOString() }));
   const handleSetGoalPrimary = (childId: string, goalId: string) => { updateChild(childId, (child) => { const idx = child.goals.findIndex(g => g.id === goalId); if (idx <= 0) return child; const next = [...child.goals]; const [g] = next.splice(idx, 1); next.unshift(g); return { ...child, goals: next }; }); };
-  const handleEditChild = (id: string, updates: Partial<ChildProfile>) => updateChild(id, (c) => ({ ...c, ...updates }));
+  const handleEditChild = async (id: string, updates: Partial<ChildProfile>) => {
+    // Pour les co-parents avec changements de goals: sauvegarder directement dans Supabase
+    if (isCoParent && coParentFamilyId && updates.goals) {
+      // Co-parent permission check (local — pas d'appel Supabase qui timeout)
+      if (!coParentPermissions.includes('create_mission')) {
+        alert(data.language === 'fr' ? 'Permission refusée' : data.language === 'nl' ? 'Toestemming geweigerd' : 'Permission denied');
+        return;
+      }
+      const supabase = getSupabase();
+      const isUUID = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+      const savedGoals = await Promise.all(updates.goals.map(async (g) => {
+        if (!isUUID(g.id)) {
+          // Nouveau goal: générer UUID et insérer
+          const newId = crypto.randomUUID();
+          const { error: gErr } = await supabase.from('goals').insert({
+            id: newId, child_id: id, family_id: coParentFamilyId,
+            title: g.name, target_amount: g.target, image_url: g.icon,
+            status: 'ACTIVE', current_amount: 0
+          });
+          if (gErr) console.warn('⚠️ Goal insert error:', gErr.message);
+          return { ...g, id: newId };
+        } else {
+          // Goal existant: mettre à jour
+          const { error: gErr2 } = await supabase.from('goals').update({
+            title: g.name, target_amount: g.target, image_url: g.icon,
+            status: g.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE'
+          }).eq('id', g.id);
+          if (gErr2) console.warn('⚠️ Goal update error:', gErr2.message);
+          return g;
+        }
+      }));
+      updates = { ...updates, goals: savedGoals };
+    }
+    updateChild(id, (c) => ({ ...c, ...updates }));
+  };
   const handleDeleteGoal = async (childId: string, goalId: string) => {
     const supabase = getSupabase();
 
@@ -1227,7 +1450,8 @@ const App: React.FC = () => {
   const handleAddChild = async (childData: any) => {
     const supabase = getSupabase();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) {
       showAppError('Vous n\'êtes pas connecté.');
       return;
@@ -1272,7 +1496,8 @@ const App: React.FC = () => {
   };
   const handlePurchaseGoal = async (childId: string, goal: Goal) => {
     const supabase = getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user || !ownerId) return;
 
     const transactionId = crypto.randomUUID();
@@ -1348,10 +1573,10 @@ const App: React.FC = () => {
     const supabase = getSupabase();
     if (supabase) {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await saveParentPinLocally(user.id, pinToStore);
-          console.log('✅ [APP] PIN haché et sauvegardé localement pour:', user.id);
+        const { data: { session: pinSession } } = await supabase.auth.getSession();
+        if (pinSession?.user) {
+          await saveParentPinLocally(pinSession.user.id, pinToStore);
+          console.log('✅ [APP] PIN haché et sauvegardé localement pour:', pinSession.user.id);
         }
       } catch (error) {
         console.error('❌ [APP] Erreur sauvegarde PIN local:', error);
@@ -1483,7 +1708,7 @@ const App: React.FC = () => {
           data={data} ownerId={ownerId} language={data.language} onApprove={handleApprove} onReject={handleReject} onAddMission={handleAddMission}
           onDeleteActiveMission={handleDeleteActiveMission} onEditMission={handleEditMission} onManualTransaction={handleManualTransaction} onAddChild={handleAddChild}
           onEditChild={handleEditChild} onDeleteGoal={handleDeleteGoal} onArchiveGoal={handleArchiveGoal} onDeleteChild={handleDeleteChild} onSetPin={handleSetPin} onClearHistory={handleClearHistory}
-          onUpdatePassword={async (p) => { await updatePassword(p); }} onDeleteAccount={async () => { await deleteAccount(); localStorage.removeItem('koiny_last_view'); localStorage.removeItem('koiny_last_child_id'); setData(INITIAL_DATA); setOwnerId(undefined); setView('LANDING'); }}
+          onUpdatePassword={async (p) => { await updatePassword(p); }} onDeleteAccount={async () => { await deleteAccount(); localStorage.removeItem('koiny_last_view'); localStorage.removeItem('koiny_last_child_id'); clearCoParentCache().catch(() => {}); setData(INITIAL_DATA); setOwnerId(undefined); setIsCoParent(false); setCoParentFamilyId(null); setView('LANDING'); }}
           onExit={handleLogout} onTutorialComplete={handleParentTutorialComplete} onToggleSound={handleToggleSound} onSetLanguage={setLanguage}
           onUpdateMaxBalance={handleUpdateMaxBalance}
           onSetPremium={handleSetPremium}

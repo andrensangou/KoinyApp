@@ -76,12 +76,22 @@ export interface CoParentGoalData {
   created_at: string;
 }
 
+export interface CoParentTransactionData {
+  id: string;
+  child_id: string;
+  type: string;
+  amount: number;
+  description: string;
+  created_at: string;
+}
+
 export interface CoParentFamilyData {
   family_id: string;
   owner_id: string; // anonymized (last 4 chars)
   children: CoParentChildData[];
   missions: CoParentMissionData[];
   goals: CoParentGoalData[];
+  transactions: CoParentTransactionData[];
   loaded_at: string;
   error?: 'ACCESS_DENIED' | 'PERMISSION_DENIED' | 'NOT_AUTHENTICATED';
 }
