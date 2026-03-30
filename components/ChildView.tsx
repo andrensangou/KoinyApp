@@ -6,6 +6,7 @@ import { translations } from '../i18n';
 import confetti from 'canvas-confetti';
 import { getIcon } from '../constants/icons';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { isAndroid } from '../hooks/usePlatform';
 
 interface ChildViewProps {
   data: ChildProfile;
@@ -159,7 +160,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 flex justify-center font-sans transition-colors duration-500">
-      <div className="w-full max-w-lg md:max-w-7xl bg-white dark:bg-slate-900 min-h-screen relative shadow-2xl sm:my-4 sm:rounded-[40px] sm:min-h-[calc(100vh-2rem)] sm:h-fit overflow-hidden pb-20 border border-slate-200 dark:border-slate-800 transition-colors duration-500">
+      <div className={`w-full ${isAndroid ? 'bg-white dark:bg-slate-900 min-h-screen relative overflow-hidden pb-20' : 'max-w-lg md:max-w-7xl bg-white dark:bg-slate-900 min-h-screen relative shadow-2xl sm:my-4 sm:rounded-[40px] sm:min-h-[calc(100vh-2rem)] sm:h-fit overflow-hidden pb-20 border border-slate-200 dark:border-slate-800 transition-colors duration-500'}`}>
 
         {balanceDiff && (
           <div className="fixed inset-0 flex items-center justify-center z-[70] pointer-events-none p-6">
@@ -178,324 +179,627 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
           </div>
         )}
 
-        <div className={`relative bg-gradient-to-br ${bgGradient} rounded-b-[3.5rem] p-6 pt-12 safe-pt shadow-2xl text-white z-10 transition-colors duration-500 pb-20 overflow-hidden`}>
-          {/* Magic Stardust Background */}
-          <div className="absolute inset-0 opacity-20 pointer-events-none">
-            <div className="absolute top-10 left-10 w-1 h-1 bg-white rounded-full animate-pulse"></div>
-            <div className="absolute top-20 right-20 w-1.5 h-1.5 bg-white rounded-full animate-pulse delay-700"></div>
-            <div className="absolute bottom-10 left-1/2 w-1 h-1 bg-white rounded-full animate-pulse delay-1000"></div>
-            <div className="absolute top-40 left-1/4 w-0.5 h-0.5 bg-white rounded-full animate-pulse delay-300"></div>
-            <div className="absolute top-10 right-1/3 w-1 h-1 bg-white rounded-full animate-ping opacity-30"></div>
-            <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="stardust" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-                  <circle cx="2" cy="2" r="1" fill="white" opacity="0.3" />
-                  <circle cx="50" cy="50" r="0.5" fill="white" opacity="0.2" />
-                  <circle cx="80" cy="20" r="1" fill="white" opacity="0.3" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#stardust)" />
-            </svg>
-          </div>
-
-          <div className="flex justify-between items-start relative z-10 mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/20 overflow-hidden shadow-2xl ring-1 ring-white/10">
-                {renderAvatar(data.avatar, "w-full h-full", data.colorClass)}
-              </div>
-              <div className="space-y-0.5">
-                <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.2em]">{t.child.hello}</p>
-                <h1 className="text-2xl font-black tracking-tight truncate max-w-[150px]">{data.name}</h1>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => { setShowHistory(!showHistory); if ("vibrate" in navigator) navigator.vibrate(10); }}
-                aria-label={showHistory ? t.child.historyHeader : t.child.historyHeader}
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 ${showHistory ? 'bg-white text-slate-800 shadow-md shadow-black/10' : 'bg-white/20 text-white hover:bg-white/30'}`}
-              >
-                <i className="fa-solid fa-clock-rotate-left text-lg" aria-hidden="true"></i>
-              </button>
-
-              <button onClick={onLogout} aria-label={language === 'fr' ? 'Déconnexion' : language === 'nl' ? 'Uitloggen' : 'Logout'} className="w-12 h-12 rounded-2xl bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-all active:scale-90">
-                <i className="fa-solid fa-power-off text-lg" aria-hidden="true"></i>
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-8 mb-4 text-center relative z-10">
-            <p className="text-white/80 mb-3 text-[10px] font-black uppercase tracking-[0.3em]">{t.child.myBalance}</p>
-            <div className={`flex items-baseline justify-center transform transition-all duration-300 ${isBalanceAnimating ? 'animate-balance-pop' : 'hover:scale-105'}`}>
-              <span className="text-7xl sm:text-8xl font-black tracking-tighter tabular-nums drop-shadow-[0_10px_20px_rgba(0,0,0,0.2)]">
-                {data.balance.toFixed(2)}
-              </span>
-              <span className="text-3xl font-black ml-3 opacity-40">€</span>
-            </div>
-
-            <div className="flex justify-center gap-8 mt-10 pb-2">
-              <div className="transform -rotate-12 animate-bounce-short">
-                <i className="fa-solid fa-coins text-3xl text-yellow-400 drop-shadow-md"></i>
-              </div>
-              <div className="transform translate-y-2 scale-110">
-                <i className="fa-solid fa-sack-dollar text-4xl text-yellow-500 drop-shadow-lg"></i>
-              </div>
-              <div className="transform rotate-12 animate-bounce-short animation-delay-500">
-                <i className="fa-solid fa-coins text-3xl text-yellow-400 drop-shadow-md"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="-mt-12 relative z-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">
-          {latestPenalty && (
-            <div className="mb-6 animate-pop-in max-w-2xl mx-auto">
-              <div className="bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-900/50 rounded-[2.5rem] p-5 shadow-xl relative overflow-hidden transition-colors duration-500">
-                <div className="absolute top-0 right-0 p-3">
-                  <button onClick={() => setAcknowledgedPenaltyId(latestPenalty.id)} aria-label={language === 'fr' ? 'Fermer l\'alerte' : 'Dismiss alert'} className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">
-                    <i className="fa-solid fa-check" aria-hidden="true"></i>
-                  </button>
+        {isAndroid ? (
+          /* ── Android MD3 Hero ── */
+          <div className="relative bg-indigo-600 p-6 pt-12 safe-pt text-white z-10 pb-20">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+                  {renderAvatar(data.avatar, "w-full h-full", data.colorClass)}
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-2xl shadow-lg animate-bounce-short">
-                    <i className="fa-solid fa-gavel"></i>
+                <div>
+                  <p className="text-white/70 text-xs font-medium">{t.child.hello}</p>
+                  <h1 className="text-xl font-medium tracking-tight truncate max-w-[150px]">{data.name}</h1>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setShowHistory(!showHistory); if ("vibrate" in navigator) navigator.vibrate(10); }}
+                  aria-label={t.child.historyHeader}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${showHistory ? 'bg-white text-indigo-600' : 'bg-white/20 text-white active:bg-white/30'}`}
+                >
+                  <i className="fa-solid fa-clock-rotate-left text-base" aria-hidden="true"></i>
+                </button>
+                <button onClick={onLogout} aria-label={language === 'fr' ? 'Déconnexion' : language === 'nl' ? 'Uitloggen' : 'Logout'} className="w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center active:bg-white/30 transition-colors">
+                  <i className="fa-solid fa-power-off text-base" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 mb-4 text-center">
+              <p className="text-white/70 mb-2 text-xs font-medium">
+                {language === 'fr' ? 'Ma fortune' : language === 'nl' ? 'Mijn fortuin' : 'My fortune'}
+              </p>
+              <div className={`flex items-baseline justify-center transition-all duration-300 ${isBalanceAnimating ? 'animate-balance-pop' : ''}`}>
+                <span className="text-6xl font-bold tracking-tight tabular-nums">
+                  {data.balance.toFixed(2)}
+                </span>
+                <span className="text-2xl font-medium ml-2 opacity-50">€</span>
+              </div>
+
+              <div className="flex justify-center gap-8 mt-8 pb-2">
+                <div className="transform -rotate-12 animate-bounce-short">
+                  <i className="fa-solid fa-coins text-2xl text-yellow-400"></i>
+                </div>
+                <div className="transform translate-y-1 scale-110">
+                  <i className="fa-solid fa-sack-dollar text-3xl text-yellow-500"></i>
+                </div>
+                <div className="transform rotate-12 animate-bounce-short animation-delay-500">
+                  <i className="fa-solid fa-coins text-2xl text-yellow-400"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* ── iOS Hero ── */
+          <div className={`relative bg-gradient-to-br ${bgGradient} rounded-b-[3.5rem] p-6 pt-12 safe-pt shadow-2xl text-white z-10 transition-colors duration-500 pb-20 overflow-hidden`}>
+            {/* Magic Stardust Background */}
+            <div className="absolute inset-0 opacity-20 pointer-events-none">
+              <div className="absolute top-10 left-10 w-1 h-1 bg-white rounded-full animate-pulse"></div>
+              <div className="absolute top-20 right-20 w-1.5 h-1.5 bg-white rounded-full animate-pulse delay-700"></div>
+              <div className="absolute bottom-10 left-1/2 w-1 h-1 bg-white rounded-full animate-pulse delay-1000"></div>
+              <div className="absolute top-40 left-1/4 w-0.5 h-0.5 bg-white rounded-full animate-pulse delay-300"></div>
+              <div className="absolute top-10 right-1/3 w-1 h-1 bg-white rounded-full animate-ping opacity-30"></div>
+              <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <pattern id="stardust" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+                    <circle cx="2" cy="2" r="1" fill="white" opacity="0.3" />
+                    <circle cx="50" cy="50" r="0.5" fill="white" opacity="0.2" />
+                    <circle cx="80" cy="20" r="1" fill="white" opacity="0.3" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#stardust)" />
+              </svg>
+            </div>
+
+            <div className="flex justify-between items-start relative z-10 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/20 overflow-hidden shadow-2xl ring-1 ring-white/10">
+                  {renderAvatar(data.avatar, "w-full h-full", data.colorClass)}
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.2em]">{t.child.hello}</p>
+                  <h1 className="text-2xl font-black tracking-tight truncate max-w-[150px]">{data.name}</h1>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setShowHistory(!showHistory); if ("vibrate" in navigator) navigator.vibrate(10); }}
+                  aria-label={showHistory ? t.child.historyHeader : t.child.historyHeader}
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 ${showHistory ? 'bg-white text-slate-800 shadow-md shadow-black/10' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                >
+                  <i className="fa-solid fa-clock-rotate-left text-lg" aria-hidden="true"></i>
+                </button>
+
+                <button onClick={onLogout} aria-label={language === 'fr' ? 'Déconnexion' : language === 'nl' ? 'Uitloggen' : 'Logout'} className="w-12 h-12 rounded-2xl bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-all active:scale-90">
+                  <i className="fa-solid fa-power-off text-lg" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-8 mb-4 text-center relative z-10">
+              <p className="text-white/80 mb-3 text-[10px] font-black uppercase tracking-[0.3em]">{t.child.myBalance}</p>
+              <div className={`flex items-baseline justify-center transform transition-all duration-300 ${isBalanceAnimating ? 'animate-balance-pop' : 'hover:scale-105'}`}>
+                <span className="text-7xl sm:text-8xl font-black tracking-tighter tabular-nums drop-shadow-[0_10px_20px_rgba(0,0,0,0.2)]">
+                  {data.balance.toFixed(2)}
+                </span>
+                <span className="text-3xl font-black ml-3 opacity-40">€</span>
+              </div>
+
+              <div className="flex justify-center gap-8 mt-10 pb-2">
+                <div className="transform -rotate-12 animate-bounce-short">
+                  <i className="fa-solid fa-coins text-3xl text-yellow-400 drop-shadow-md"></i>
+                </div>
+                <div className="transform translate-y-2 scale-110">
+                  <i className="fa-solid fa-sack-dollar text-4xl text-yellow-500 drop-shadow-lg"></i>
+                </div>
+                <div className="transform rotate-12 animate-bounce-short animation-delay-500">
+                  <i className="fa-solid fa-coins text-3xl text-yellow-400 drop-shadow-md"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={`relative z-20 px-4 sm:px-6 max-w-7xl mx-auto w-full ${isAndroid ? '-mt-10 bg-white dark:bg-slate-900 rounded-t-3xl pt-6' : '-mt-12'}`}>
+          {latestPenalty && (
+            isAndroid ? (
+              /* ── Android MD3 Penalty Alert ── */
+              <div className="mb-5 animate-scale-in max-w-2xl mx-auto">
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                    <i className="fa-solid fa-gavel text-amber-600 dark:text-amber-400 text-sm"></i>
                   </div>
-                  <div className="flex-1 pr-6">
-                    <h4 className="font-black text-amber-800 dark:text-amber-400 text-sm uppercase tracking-wider mb-1">{t.child.penaltyAlertTitle}</h4>
-                    <p className="text-amber-700 dark:text-amber-500 text-xs font-bold leading-relaxed">
-                      {getTranslatedTitle(latestPenalty.title, language)} : <span className="underline">-{Math.abs(latestPenalty.amount)}€</span>.
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-amber-900 dark:text-amber-300 mb-0.5">{t.child.penaltyAlertTitle}</h4>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                      {getTranslatedTitle(latestPenalty.title, language)} : -{Math.abs(latestPenalty.amount)}€.
                       {latestPenalty.note ? ` "${latestPenalty.note}"` : ` ${t.child.penaltyAlertDefaultNote}`}
                     </p>
                   </div>
+                  <button onClick={() => setAcknowledgedPenaltyId(latestPenalty.id)} aria-label={language === 'fr' ? 'Fermer l\'alerte' : 'Dismiss alert'} className="w-8 h-8 rounded-full flex items-center justify-center text-amber-500 active:bg-amber-100 dark:active:bg-amber-900/30 shrink-0">
+                    <i className="fa-solid fa-xmark text-sm" aria-hidden="true"></i>
+                  </button>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* ── iOS Penalty Alert ── */
+              <div className="mb-6 animate-pop-in max-w-2xl mx-auto">
+                <div className="bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-900/50 rounded-[2.5rem] p-5 shadow-xl relative overflow-hidden transition-colors duration-500">
+                  <div className="absolute top-0 right-0 p-3">
+                    <button onClick={() => setAcknowledgedPenaltyId(latestPenalty.id)} aria-label={language === 'fr' ? 'Fermer l\'alerte' : 'Dismiss alert'} className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">
+                      <i className="fa-solid fa-check" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-2xl shadow-lg animate-bounce-short">
+                      <i className="fa-solid fa-gavel"></i>
+                    </div>
+                    <div className="flex-1 pr-6">
+                      <h4 className="font-black text-amber-800 dark:text-amber-400 text-sm uppercase tracking-wider mb-1">{t.child.penaltyAlertTitle}</h4>
+                      <p className="text-amber-700 dark:text-amber-500 text-xs font-bold leading-relaxed">
+                        {getTranslatedTitle(latestPenalty.title, language)} : <span className="underline">-{Math.abs(latestPenalty.amount)}€</span>.
+                        {latestPenalty.note ? ` "${latestPenalty.note}"` : ` ${t.child.penaltyAlertDefaultNote}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
           )}
 
           {showHistory && (
-            <div className="mb-6 animate-fade-in-up max-w-2xl mx-auto">
-              <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl p-6 border border-slate-100 dark:border-slate-800 transition-colors duration-500">
-                <div className="flex justify-between items-center mb-6 px-1">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500 dark:text-indigo-400 flex items-center justify-center">
-                      <i className="fa-solid fa-receipt text-sm"></i>
-                    </div>
-                    <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-800 dark:text-white">{t.child.historyHeader}</h4>
-                  </div>
-                  <button onClick={() => setShowHistory(false)} aria-label={language === 'fr' ? 'Fermer l\'historique' : 'Close history'} className="w-8 h-8 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"><i className="fa-solid fa-xmark" aria-hidden="true"></i></button>
-                </div>
+            isAndroid ? (
+              /* ── Android MD3 History Bottom Sheet ── */
+              <div className="fixed inset-0 bg-black/40 z-[200] flex items-end animate-fade-in" onClick={() => setShowHistory(false)}>
+                <div
+                  className="w-full bg-white dark:bg-slate-900 rounded-t-[28px] shadow-2xl animate-slide-up flex flex-col max-h-[85vh] relative z-10"
+                  onClick={e => e.stopPropagation()}
+                  style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+                >
+                  {/* Handle bar */}
+                  <div className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mt-3 mb-1 shrink-0" />
 
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-emerald-500 rounded-2xl p-4 text-center shadow-md shadow-emerald-500/25 dark:shadow-none">
-                    <p className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">{t.child.totalGains}</p>
-                    <p className="text-xl font-black text-white">+{stats.totalGains.toFixed(2)}€</p>
-                  </div>
-                  <div className="bg-rose-500 rounded-2xl p-4 text-center shadow-md shadow-rose-500/25 dark:shadow-none">
-                    <p className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">{t.child.totalLosses}</p>
-                    <p className="text-xl font-black text-white">-{stats.totalLosses.toFixed(2)}€</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 max-h-[350px] overflow-y-auto no-scrollbar">
-                  {data.history && data.history.length > 0 ? data.history.map(entry => {
-                    const neg = entry.amount < 0 || isPenalty(entry.title) || isPurchase(entry.title);
-                    return (
-                      <div key={entry.id} className="flex items-start justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all group">
-                        <div className="flex items-start gap-4 flex-1 pr-3">
-                          <div className={`w-10 h-10 rounded-xl flex shrink-0 items-center justify-center text-sm shadow-sm transition-transform group-hover:scale-110 ${neg ? 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
-                            <i className={`fa-solid ${getEntryIcon(entry.title)}`}></i>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-black text-slate-800 dark:text-white tracking-tight">{getTranslatedTitle(entry.title, language)}</p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest leading-none mt-0.5">{entry.date}</p>
-                            {entry.note && !isPenalty(entry.title) && (
-                              <div className="mt-2 flex items-start gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1.5 rounded-xl border border-amber-100/50 dark:border-amber-800/30">
-                                <span className="text-xs">💬</span>
-                                <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 leading-snug break-words">{entry.note}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <span className={`font-black text-sm tabular-nums shrink-0 mt-1 ${neg ? 'text-rose-500' : 'text-emerald-500'}`}>
-                          {neg ? '-' : '+'}{Math.abs(entry.amount).toFixed(2)}€
-                        </span>
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-6 py-4 shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+                        <i className="fa-solid fa-receipt text-indigo-500 text-sm"></i>
                       </div>
-                    )
-                  }) : (
-                    <div className="text-center py-10 opacity-30">
-                      <i className="fa-solid fa-moon text-4xl mb-2"></i>
-                      <p className="text-xs font-bold uppercase tracking-widest">{t.child.emptyHistory}</p>
+                      <h4 className="text-xl font-medium text-slate-900 dark:text-white">{t.child.historyHeader}</h4>
                     </div>
-                  )}
+                    <button onClick={() => setShowHistory(false)} aria-label={language === 'fr' ? 'Fermer' : 'Close'} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 transition-colors">
+                      <i className="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
+                    </button>
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-2 gap-3 px-6 mb-4">
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-3 text-center">
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mb-0.5">{t.child.totalGains}</p>
+                      <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300">+{stats.totalGains.toFixed(2)}€</p>
+                    </div>
+                    <div className="bg-rose-50 dark:bg-rose-900/20 rounded-2xl p-3 text-center">
+                      <p className="text-[10px] text-rose-600 dark:text-rose-400 font-medium mb-0.5">{t.child.totalLosses}</p>
+                      <p className="text-lg font-bold text-rose-700 dark:text-rose-300">-{stats.totalLosses.toFixed(2)}€</p>
+                    </div>
+                  </div>
+
+                  {/* Transaction list */}
+                  <div className="px-6 pb-4 overflow-y-auto flex-grow">
+                    {data.history && data.history.length > 0 ? data.history.map(entry => {
+                      const neg = entry.amount < 0 || isPenalty(entry.title) || isPurchase(entry.title);
+                      return (
+                        <div key={entry.id} className="flex items-center gap-3 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                          <div className={`w-10 h-10 rounded-full flex shrink-0 items-center justify-center ${neg ? 'bg-slate-100 dark:bg-slate-800 text-slate-500' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'}`}>
+                            <i className={`fa-solid ${getEntryIcon(entry.title)} text-sm`}></i>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{getTranslatedTitle(entry.title, language)}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">{entry.date}</p>
+                          </div>
+                          <span className={`text-sm font-bold tabular-nums shrink-0 ${neg ? 'text-rose-500' : 'text-emerald-500'}`}>
+                            {neg ? '-' : '+'}{Math.abs(entry.amount).toFixed(2)}€
+                          </span>
+                        </div>
+                      );
+                    }) : (
+                      <div className="text-center py-10 text-slate-300 dark:text-slate-600">
+                        <i className="fa-solid fa-moon text-3xl mb-2"></i>
+                        <p className="text-xs font-medium">{t.child.emptyHistory}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            ) : (
+              /* ── iOS History Panel ── */
+              <div className="mb-6 animate-fade-in-up max-w-2xl mx-auto">
+                <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl p-6 border border-slate-100 dark:border-slate-800 transition-colors duration-500">
+                  <div className="flex justify-between items-center mb-6 px-1">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500 dark:text-indigo-400 flex items-center justify-center">
+                        <i className="fa-solid fa-receipt text-sm"></i>
+                      </div>
+                      <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-800 dark:text-white">{t.child.historyHeader}</h4>
+                    </div>
+                    <button onClick={() => setShowHistory(false)} aria-label={language === 'fr' ? 'Fermer l\'historique' : 'Close history'} className="w-8 h-8 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"><i className="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                  </div>
 
-          <div className="mb-10">
-            {data.goals && data.goals.filter(g => g.status !== 'ARCHIVED').length > 0 ? (
-              <>
-                <div
-                  ref={goalsScrollRef}
-                  onScroll={() => {
-                    if (!goalsScrollRef.current) return;
-                    const el = goalsScrollRef.current;
-                    const firstCard = el.children[0] as HTMLElement;
-                    if (!firstCard) return;
-                    const cardWidth = firstCard.offsetWidth + 16;
-                    setActiveGoalIndex(Math.round(el.scrollLeft / cardWidth));
-                  }}
-                  className={`flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 no-scrollbar md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible md:snap-none md:justify-items-center md:gap-6`}
-                >
-                  {data.goals.filter(g => g.status !== 'ARCHIVED').map((goal, index) => {
-                    const percentage = Math.min(100, Math.round((data.balance / goal.target) * 100));
-                    const isReached = data.balance >= goal.target && goal.status !== 'COMPLETED';
-                    const isCompleted = goal.status === 'COMPLETED';
-                    return (
-                      <div key={goal.id} className={`snap-start shrink-0 w-full rounded-3xl p-5 shadow-lg flex flex-col justify-between relative transition-all animate-scale-in overflow-hidden ${isCompleted ? 'bg-emerald-50 dark:bg-emerald-900/30' : isReached ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-white dark:bg-slate-800'}`}>
-                        <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full blur-3xl opacity-20 ${isReached ? 'bg-yellow-400' : `bg-${data.colorClass}-400`}`}></div>
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-emerald-500 rounded-2xl p-4 text-center shadow-md shadow-emerald-500/25 dark:shadow-none">
+                      <p className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">{t.child.totalGains}</p>
+                      <p className="text-xl font-black text-white">+{stats.totalGains.toFixed(2)}€</p>
+                    </div>
+                    <div className="bg-rose-500 rounded-2xl p-4 text-center shadow-md shadow-rose-500/25 dark:shadow-none">
+                      <p className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">{t.child.totalLosses}</p>
+                      <p className="text-xl font-black text-white">-{stats.totalLosses.toFixed(2)}€</p>
+                    </div>
+                  </div>
 
-                        <div className="flex items-center justify-between relative z-10">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-md ${isCompleted ? 'bg-emerald-500 text-white' : isReached ? 'bg-yellow-400 text-white animate-bounce-short' : 'bg-indigo-100 dark:bg-slate-800 text-indigo-500 dark:text-indigo-400'}`}>
-                              <i className={isCompleted ? 'fa-solid fa-trophy' : isReached ? 'fa-solid fa-star' : getIcon(goal.icon, 'fa-solid fa-bullseye')}></i>
+                  <div className="space-y-3 max-h-[350px] overflow-y-auto no-scrollbar">
+                    {data.history && data.history.length > 0 ? data.history.map(entry => {
+                      const neg = entry.amount < 0 || isPenalty(entry.title) || isPurchase(entry.title);
+                      return (
+                        <div key={entry.id} className="flex items-start justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all group">
+                          <div className="flex items-start gap-4 flex-1 pr-3">
+                            <div className={`w-10 h-10 rounded-xl flex shrink-0 items-center justify-center text-sm shadow-sm transition-transform group-hover:scale-110 ${neg ? 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
+                              <i className={`fa-solid ${getEntryIcon(entry.title)}`}></i>
                             </div>
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <h3 className={`font-black text-base leading-none tracking-tight ${isCompleted ? 'text-emerald-800 dark:text-emerald-100' : isReached ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-800 dark:text-white'}`}>{goal.name}</h3>
-                                {index === 0 && <i className="fa-solid fa-star text-yellow-400 text-[10px] animate-pulse"></i>}
-                              </div>
-                              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-0.5">{t.child.goalObjective}</p>
+                            <div className="flex-1">
+                              <p className="text-sm font-black text-slate-800 dark:text-white tracking-tight">{getTranslatedTitle(entry.title, language)}</p>
+                              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest leading-none mt-0.5">{entry.date}</p>
+                              {entry.note && !isPenalty(entry.title) && (
+                                <div className="mt-2 flex items-start gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1.5 rounded-xl border border-amber-100/50 dark:border-amber-800/30">
+                                  <span className="text-xs">💬</span>
+                                  <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 leading-snug break-words">{entry.note}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <span className={`text-xl font-black tabular-nums leading-none ${isCompleted ? 'text-emerald-600' : isReached ? 'text-yellow-600' : `text-${data.colorClass}-600`}`}>{goal.target}€</span>
+                          <span className={`font-black text-sm tabular-nums shrink-0 mt-1 ${neg ? 'text-rose-500' : 'text-emerald-500'}`}>
+                            {neg ? '-' : '+'}{Math.abs(entry.amount).toFixed(2)}€
+                          </span>
                         </div>
+                      )
+                    }) : (
+                      <div className="text-center py-10 opacity-30">
+                        <i className="fa-solid fa-moon text-4xl mb-2"></i>
+                        <p className="text-xs font-bold uppercase tracking-widest">{t.child.emptyHistory}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          )}
 
-                        <div className="relative z-10 mt-4">
+          <div className={isAndroid ? 'mb-8' : 'mb-10'}>
+            {data.goals && data.goals.filter(g => g.status !== 'ARCHIVED').length > 0 ? (
+              isAndroid ? (
+                /* ── Android MD3 Goal Cards ── */
+                <>
+                  <div
+                    ref={goalsScrollRef}
+                    onScroll={() => {
+                      if (!goalsScrollRef.current) return;
+                      const el = goalsScrollRef.current;
+                      const firstCard = el.children[0] as HTMLElement;
+                      if (!firstCard) return;
+                      const cardWidth = firstCard.offsetWidth + 16;
+                      setActiveGoalIndex(Math.round(el.scrollLeft / cardWidth));
+                    }}
+                    className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-3 no-scrollbar"
+                  >
+                    {data.goals.filter(g => g.status !== 'ARCHIVED').map((goal, index) => {
+                      const percentage = Math.min(100, Math.round((data.balance / goal.target) * 100));
+                      const isReached = data.balance >= goal.target && goal.status !== 'COMPLETED';
+                      const isCompleted = goal.status === 'COMPLETED';
+                      return (
+                        <div key={goal.id} className={`snap-start shrink-0 w-full rounded-2xl p-4 flex flex-col justify-between ${isCompleted ? 'bg-emerald-50 dark:bg-emerald-900/20' : isReached ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${isCompleted ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' : isReached ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500'}`}>
+                              <i className={isCompleted ? 'fa-solid fa-trophy' : isReached ? 'fa-solid fa-star' : getIcon(goal.icon, 'fa-solid fa-bullseye')}></i>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <h3 className={`font-medium text-sm truncate ${isCompleted ? 'text-emerald-900 dark:text-emerald-200' : isReached ? 'text-amber-900 dark:text-amber-200' : 'text-slate-900 dark:text-white'}`}>{goal.name}</h3>
+                                {index === 0 && <i className="fa-solid fa-star text-yellow-400 text-[10px]"></i>}
+                              </div>
+                              <p className="text-xs text-slate-400 dark:text-slate-500">{t.child.goalObjective}</p>
+                            </div>
+                            <span className={`text-lg font-bold tabular-nums ${isCompleted ? 'text-emerald-600' : isReached ? 'text-amber-600' : 'text-indigo-600'}`}>{goal.target}€</span>
+                          </div>
+
                           {isCompleted ? (
-                            <div className="w-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2 border border-emerald-500/20">
+                            <div className="flex items-center gap-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2 px-3 rounded-xl text-xs font-medium justify-center">
                               <i className="fa-solid fa-circle-check"></i>
                               {language === 'fr' ? 'Obtenu !' : language === 'nl' ? 'Behaald!' : 'Purchased!'}
                             </div>
                           ) : isReached ? (
                             <button onClick={() => handlePurchase(goal)}
                               aria-label={`${t.child.reached} ${goal.name}`}
-                              className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all animate-bounce-short flex items-center justify-center gap-2"
+                              className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium active:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
                             >
-                              <i className={`${getIcon('gift')} text-yellow-400`} aria-hidden="true"></i>
+                              <i className={`${getIcon('gift')} text-yellow-300`} aria-hidden="true"></i>
                               {t.child.reached}
                             </button>
                           ) : (
-                            <div className="space-y-2.5">
+                            <div className="space-y-2">
                               <div className="flex justify-between items-center">
-                                <span className="text-xs font-black text-slate-400 tabular-nums">{t.child.remaining} {(goal.target - data.balance).toFixed(2)}€</span>
-                                <span className={`text-xs font-black text-${data.colorClass}-500 tabular-nums`}>{percentage}%</span>
+                                <span className="text-xs text-slate-500 tabular-nums">{t.child.remaining} {(goal.target - data.balance).toFixed(2)}€</span>
+                                <span className="text-xs font-medium text-indigo-600 tabular-nums">{percentage}%</span>
                               </div>
-                              <div className="w-full h-3 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden p-0.5">
+                              <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                 <div
-                                  className="h-full rounded-full transition-all duration-1000 ease-out flex items-center justify-end pr-1"
-                                  style={{
-                                    width: `${Math.max(percentage, 2)}%`,
-                                    background: (() => {
-                                      if (percentage >= 100) return 'linear-gradient(to right, #fbbf24, #f59e0b)';
-                                      if (percentage >= 75) return 'linear-gradient(to right, #34d399, #10b981)';
-                                      if (percentage >= 50) return 'linear-gradient(to right, #a3e635, #fde047)';
-                                      if (percentage >= 25) return 'linear-gradient(to right, #fb923c, #f97316)';
-                                      return 'linear-gradient(to right, #f87171, #fb7185)';
-                                    })()
-                                  }}
-                                >
-                                  {percentage > 15 && <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>}
-                                </div>
+                                  className="h-full rounded-full bg-orange-500 transition-all duration-1000 ease-out"
+                                  style={{ width: `${Math.max(percentage, 2)}%` }}
+                                />
                               </div>
                             </div>
                           )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                {/* Dot pagination */}
-                {data.goals.filter(g => g.status !== 'ARCHIVED').length > 1 && (
-                  <div className="flex justify-center gap-1.5 mt-1 md:hidden">
-                    {data.goals.filter(g => g.status !== 'ARCHIVED').map((_, i) => (
-                      <div key={i} className={`rounded-full transition-all duration-300 ${i === activeGoalIndex ? `w-4 h-1.5 bg-${data.colorClass}-500` : 'w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600'}`} />
-                    ))}
+                      );
+                    })}
                   </div>
-                )}
-              </>
+                  {data.goals.filter(g => g.status !== 'ARCHIVED').length > 1 && (
+                    <div className="flex justify-center gap-1.5 mt-2">
+                      {data.goals.filter(g => g.status !== 'ARCHIVED').map((_, i) => (
+                        <div key={i} className={`rounded-full transition-all duration-300 ${i === activeGoalIndex ? 'w-4 h-1.5 bg-indigo-500' : 'w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600'}`} />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* ── iOS Goal Cards ── */
+                <>
+                  <div
+                    ref={goalsScrollRef}
+                    onScroll={() => {
+                      if (!goalsScrollRef.current) return;
+                      const el = goalsScrollRef.current;
+                      const firstCard = el.children[0] as HTMLElement;
+                      if (!firstCard) return;
+                      const cardWidth = firstCard.offsetWidth + 16;
+                      setActiveGoalIndex(Math.round(el.scrollLeft / cardWidth));
+                    }}
+                    className={`flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 no-scrollbar md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible md:snap-none md:justify-items-center md:gap-6`}
+                  >
+                    {data.goals.filter(g => g.status !== 'ARCHIVED').map((goal, index) => {
+                      const percentage = Math.min(100, Math.round((data.balance / goal.target) * 100));
+                      const isReached = data.balance >= goal.target && goal.status !== 'COMPLETED';
+                      const isCompleted = goal.status === 'COMPLETED';
+                      return (
+                        <div key={goal.id} className={`snap-start shrink-0 w-full rounded-3xl p-5 shadow-lg flex flex-col justify-between relative transition-all animate-scale-in overflow-hidden ${isCompleted ? 'bg-emerald-50 dark:bg-emerald-900/30' : isReached ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-white dark:bg-slate-800'}`}>
+                          <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full blur-3xl opacity-20 ${isReached ? 'bg-yellow-400' : `bg-${data.colorClass}-400`}`}></div>
+
+                          <div className="flex items-center justify-between relative z-10">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-md ${isCompleted ? 'bg-emerald-500 text-white' : isReached ? 'bg-yellow-400 text-white animate-bounce-short' : 'bg-indigo-100 dark:bg-slate-800 text-indigo-500 dark:text-indigo-400'}`}>
+                                <i className={isCompleted ? 'fa-solid fa-trophy' : isReached ? 'fa-solid fa-star' : getIcon(goal.icon, 'fa-solid fa-bullseye')}></i>
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <h3 className={`font-black text-base leading-none tracking-tight ${isCompleted ? 'text-emerald-800 dark:text-emerald-100' : isReached ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-800 dark:text-white'}`}>{goal.name}</h3>
+                                  {index === 0 && <i className="fa-solid fa-star text-yellow-400 text-[10px] animate-pulse"></i>}
+                                </div>
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-0.5">{t.child.goalObjective}</p>
+                              </div>
+                            </div>
+                            <span className={`text-xl font-black tabular-nums leading-none ${isCompleted ? 'text-emerald-600' : isReached ? 'text-yellow-600' : `text-${data.colorClass}-600`}`}>{goal.target}€</span>
+                          </div>
+
+                          <div className="relative z-10 mt-4">
+                            {isCompleted ? (
+                              <div className="w-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2 border border-emerald-500/20">
+                                <i className="fa-solid fa-circle-check"></i>
+                                {language === 'fr' ? 'Obtenu !' : language === 'nl' ? 'Behaald!' : 'Purchased!'}
+                              </div>
+                            ) : isReached ? (
+                              <button onClick={() => handlePurchase(goal)}
+                                aria-label={`${t.child.reached} ${goal.name}`}
+                                className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all animate-bounce-short flex items-center justify-center gap-2"
+                              >
+                                <i className={`${getIcon('gift')} text-yellow-400`} aria-hidden="true"></i>
+                                {t.child.reached}
+                              </button>
+                            ) : (
+                              <div className="space-y-2.5">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-black text-slate-400 tabular-nums">{t.child.remaining} {(goal.target - data.balance).toFixed(2)}€</span>
+                                  <span className={`text-xs font-black text-${data.colorClass}-500 tabular-nums`}>{percentage}%</span>
+                                </div>
+                                <div className="w-full h-3 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden p-0.5">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-1000 ease-out flex items-center justify-end pr-1"
+                                    style={{
+                                      width: `${Math.max(percentage, 2)}%`,
+                                      background: (() => {
+                                        if (percentage >= 100) return 'linear-gradient(to right, #fbbf24, #f59e0b)';
+                                        if (percentage >= 75) return 'linear-gradient(to right, #34d399, #10b981)';
+                                        if (percentage >= 50) return 'linear-gradient(to right, #a3e635, #fde047)';
+                                        if (percentage >= 25) return 'linear-gradient(to right, #fb923c, #f97316)';
+                                        return 'linear-gradient(to right, #f87171, #fb7185)';
+                                      })()
+                                    }}
+                                  >
+                                    {percentage > 15 && <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Dot pagination */}
+                  {data.goals.filter(g => g.status !== 'ARCHIVED').length > 1 && (
+                    <div className="flex justify-center gap-1.5 mt-1 md:hidden">
+                      {data.goals.filter(g => g.status !== 'ARCHIVED').map((_, i) => (
+                        <div key={i} className={`rounded-full transition-all duration-300 ${i === activeGoalIndex ? `w-4 h-1.5 bg-${data.colorClass}-500` : 'w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600'}`} />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )
             ) : (
-              <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 text-center shadow-md shadow-slate-900/5 dark:shadow-black/20 group hover:scale-[1.02] transition-transform mx-1 max-w-lg mx-auto">
-                <i className={`fa-solid fa-bullseye text-4xl mb-3 transition-transform ${isGoalNudging ? 'text-emerald-500 animate-bounce' : 'text-slate-200'}`}></i>
-                <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mb-4 leading-relaxed">{isGoalNudging ? t.child.nudgeSent : t.child.askParentsGoal}</p>
-                <button onClick={() => { setIsGoalNudging(true); if (onRequestGift) onRequestGift(); setTimeout(() => setIsGoalNudging(false), 3000); }} className={`w-full bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-600 dark:text-${data.colorClass}-400 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-${data.colorClass}-100 dark:hover:bg-${data.colorClass}-900/30 transition-all active:scale-95 shadow-sm`}>
-                  {t.child.addGoalAction}
-                </button>
-              </div>
+              isAndroid ? (
+                /* ── Android MD3 Empty Goal ── */
+                <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl text-center max-w-lg mx-auto">
+                  <div className={`w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center ${isGoalNudging ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                    <i className={`fa-solid fa-bullseye text-xl ${isGoalNudging ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-500'}`}></i>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{isGoalNudging ? t.child.nudgeSent : t.child.askParentsGoal}</p>
+                  <button onClick={() => { setIsGoalNudging(true); if (onRequestGift) onRequestGift(); setTimeout(() => setIsGoalNudging(false), 3000); }}
+                    className="w-full py-3 rounded-xl bg-indigo-600 text-white text-sm font-medium active:bg-indigo-700 transition-colors"
+                  >
+                    {t.child.addGoalAction}
+                  </button>
+                </div>
+              ) : (
+                /* ── iOS Empty Goal ── */
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 text-center shadow-md shadow-slate-900/5 dark:shadow-black/20 group hover:scale-[1.02] transition-transform mx-1 max-w-lg mx-auto">
+                  <i className={`fa-solid fa-bullseye text-4xl mb-3 transition-transform ${isGoalNudging ? 'text-emerald-500 animate-bounce' : 'text-slate-200'}`}></i>
+                  <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mb-4 leading-relaxed">{isGoalNudging ? t.child.nudgeSent : t.child.askParentsGoal}</p>
+                  <button onClick={() => { setIsGoalNudging(true); if (onRequestGift) onRequestGift(); setTimeout(() => setIsGoalNudging(false), 3000); }} className={`w-full bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-600 dark:text-${data.colorClass}-400 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-${data.colorClass}-100 dark:hover:bg-${data.colorClass}-900/30 transition-all active:scale-95 shadow-sm`}>
+                    {t.child.addGoalAction}
+                  </button>
+                </div>
+              )
             )}
           </div>
 
           <div className="pb-10">
-            <div className="flex items-center gap-3 mb-6 px-1">
-              <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center text-indigo-500">
-                <i className="fa-solid fa-list-check text-sm"></i>
-              </div>
-              <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest leading-none">
-                {t.child.myMissions}
-              </h2>
-            </div>
+            {isAndroid ? (
+              /* ── Android MD3 Mission Section ── */
+              <>
+                <div className="flex items-center gap-3 mb-4 px-1">
+                  <div className="w-9 h-9 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-500">
+                    <i className="fa-solid fa-list-check text-sm"></i>
+                  </div>
+                  <h2 className="text-base font-medium text-slate-900 dark:text-white">
+                    {t.child.myMissions}
+                  </h2>
+                </div>
 
-            <div className="space-y-4 px-1 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:space-y-0">
-              {data.missions && data.missions.filter(m => m.status !== 'COMPLETED').length > 0 ? (
-                data.missions.filter(m => m.status !== 'COMPLETED').map(mission => (
-                  <button
-                    key={mission.id}
-                    disabled={mission.status === 'PENDING'}
-                    onClick={() => handleMissionClick(mission.id)}
-                    className={`w-full p-5 rounded-[2.5rem] shadow-md shadow-slate-900/5 dark:shadow-black/20 border-2 flex items-center justify-between transition-all relative overflow-hidden group transition-colors duration-500 ${mission.status === 'PENDING'
-                      ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-100/50 dark:border-indigo-900/30 cursor-default'
-                      : 'bg-white dark:bg-slate-900 border-slate-50 dark:border-slate-800 active:scale-95 hover:border-emerald-100 dark:hover:border-emerald-900 hover:shadow-lg transition-all duration-300'
-                      }`}
-                  >
-                    <div className="flex items-center gap-5 relative z-10">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-transform group-hover:scale-110 shadow-sm ${mission.status === 'PENDING' ? 'bg-white dark:bg-slate-800 text-indigo-400 dark:text-indigo-500 ring-4 ring-indigo-50 dark:ring-indigo-900/20' : `bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-500 dark:text-${data.colorClass}-400 border border-${data.colorClass}-100 dark:border-${data.colorClass}-900/30`}`}>
-                        <i className={mission.status === 'PENDING' ? 'fa-solid fa-hourglass-half animate-spin-slow' : getIcon(mission.icon)}></i>
-                      </div>
-                      <div className="text-left">
-                        <div className={`font-black text-base sm:text-lg tracking-tight ${mission.status === 'PENDING' ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-800 dark:text-white'}`}>{getTranslatedTitle(mission.title, language)}</div>
-                        <div className={`text-[10px] font-black uppercase tracking-[0.15em] mt-1 flex items-center gap-2 ${mission.status === 'PENDING' ? 'text-indigo-400 dark:text-indigo-500' : 'text-slate-400 dark:text-slate-500'}`}>
-                          {mission.status === 'PENDING' ? (
-                            <><span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 animate-pulse"></span> {t.child.pending}</>
-                          ) : (
-                            <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-emerald-500"></span> {t.child.todo}</>
+                <div className="space-y-3 px-1">
+                  {data.missions && data.missions.filter(m => m.status !== 'COMPLETED').length > 0 ? (
+                    data.missions.filter(m => m.status !== 'COMPLETED').map(mission => (
+                      <button
+                        key={mission.id}
+                        disabled={mission.status === 'PENDING'}
+                        onClick={() => handleMissionClick(mission.id)}
+                        className={`w-full p-4 rounded-2xl flex items-center gap-3 transition-colors text-left ${mission.status === 'PENDING'
+                          ? 'bg-slate-50 dark:bg-slate-800 cursor-default'
+                          : 'bg-white dark:bg-slate-800 active:bg-slate-50 dark:active:bg-slate-700'
+                          }`}
+                      >
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shrink-0 ${mission.status === 'PENDING' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-400' : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500'}`}>
+                          <i className={mission.status === 'PENDING' ? 'fa-solid fa-hourglass-half' : getIcon(mission.icon)}></i>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${mission.status === 'PENDING' ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'}`}>{getTranslatedTitle(mission.title, language)}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${mission.status === 'PENDING'
+                              ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                              : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                              }`}>
+                              {mission.status === 'PENDING' ? t.child.pending : t.child.todo}
+                            </span>
+                          </div>
+                          {mission.feedback && mission.status === 'ACTIVE' && (
+                            <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-lg">
+                              {mission.feedback}
+                            </p>
                           )}
                         </div>
-                        {mission.feedback && mission.status === 'ACTIVE' && (
-                          <div className="mt-2 flex items-start gap-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-2.5 py-1.5 rounded-xl">
-                            <span className="text-sm shrink-0">💬</span>
-                            <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 leading-snug">{mission.feedback}</span>
-                          </div>
-                        )}
+                        <span className={`text-sm font-bold tabular-nums shrink-0 ${mission.status === 'PENDING' ? 'text-indigo-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                          +{mission.reward}€
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-8 text-center">
+                      <div className={`w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center bg-slate-100 dark:bg-slate-700 ${isNudging ? 'animate-bounce' : ''}`}>
+                        <i className="fa-solid fa-rocket text-xl text-slate-300 dark:text-slate-500"></i>
                       </div>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm mb-1">{t.child.noMissions}</p>
+                      <p className="text-slate-400 dark:text-slate-500 text-xs mb-4">{isNudging ? t.child.nudgeSent : t.child.askNewMission}</p>
+                      <button onClick={() => { setIsNudging(true); if (onRequestMission) onRequestMission(); setTimeout(() => setIsNudging(false), 3000); }}
+                        className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-sm font-medium active:bg-indigo-700 transition-colors"
+                      >
+                        {t.child.askButton}
+                      </button>
                     </div>
-                    <div className={`font-black text-sm px-5 py-2.5 rounded-2xl shadow-sm ${mission.status === 'PENDING' ? 'bg-white dark:bg-slate-800 text-indigo-500 dark:text-indigo-400 border border-indigo-50 dark:border-indigo-900/30' : `bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-600 dark:text-${data.colorClass}-400 border border-${data.colorClass}-100 dark:border-${data.colorClass}-900/30`}`}>
-                      +{mission.reward}€
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-[3rem] p-12 text-center flex flex-col items-center gap-4 col-span-full">
-                  <div className={`w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center text-4xl shadow-inner ${isNudging ? 'animate-bounce' : ''}`}>
-                    <i className={`fa-solid fa-rocket text-slate-200`}></i>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-slate-500 font-black text-sm uppercase tracking-widest">{t.child.noMissions}</p>
-                    <p className="text-slate-400 text-xs font-medium">{isNudging ? t.child.nudgeSent : t.child.askNewMission}</p>
-                  </div>
-                  <button onClick={() => { setIsNudging(true); if (onRequestMission) onRequestMission(); setTimeout(() => setIsNudging(false), 3000); }} className="mt-4 px-8 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-md shadow-indigo-500/25 hover:bg-indigo-700 transition-all active:scale-95">
-                    {t.child.askButton}
-                  </button>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              /* ── iOS Mission Section ── */
+              <>
+                <div className="flex items-center gap-3 mb-6 px-1">
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center text-indigo-500">
+                    <i className="fa-solid fa-list-check text-sm"></i>
+                  </div>
+                  <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest leading-none">
+                    {t.child.myMissions}
+                  </h2>
+                </div>
+
+                <div className="space-y-4 px-1 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:space-y-0">
+                  {data.missions && data.missions.filter(m => m.status !== 'COMPLETED').length > 0 ? (
+                    data.missions.filter(m => m.status !== 'COMPLETED').map(mission => (
+                      <button
+                        key={mission.id}
+                        disabled={mission.status === 'PENDING'}
+                        onClick={() => handleMissionClick(mission.id)}
+                        className={`w-full p-5 rounded-[2.5rem] shadow-md shadow-slate-900/5 dark:shadow-black/20 border-2 flex items-center justify-between transition-all relative overflow-hidden group transition-colors duration-500 ${mission.status === 'PENDING'
+                          ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-100/50 dark:border-indigo-900/30 cursor-default'
+                          : 'bg-white dark:bg-slate-900 border-slate-50 dark:border-slate-800 active:scale-95 hover:border-emerald-100 dark:hover:border-emerald-900 hover:shadow-lg transition-all duration-300'
+                          }`}
+                      >
+                        <div className="flex items-center gap-5 relative z-10">
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-transform group-hover:scale-110 shadow-sm ${mission.status === 'PENDING' ? 'bg-white dark:bg-slate-800 text-indigo-400 dark:text-indigo-500 ring-4 ring-indigo-50 dark:ring-indigo-900/20' : `bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-500 dark:text-${data.colorClass}-400 border border-${data.colorClass}-100 dark:border-${data.colorClass}-900/30`}`}>
+                            <i className={mission.status === 'PENDING' ? 'fa-solid fa-hourglass-half animate-spin-slow' : getIcon(mission.icon)}></i>
+                          </div>
+                          <div className="text-left">
+                            <div className={`font-black text-base sm:text-lg tracking-tight ${mission.status === 'PENDING' ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-800 dark:text-white'}`}>{getTranslatedTitle(mission.title, language)}</div>
+                            <div className={`text-[10px] font-black uppercase tracking-[0.15em] mt-1 flex items-center gap-2 ${mission.status === 'PENDING' ? 'text-indigo-400 dark:text-indigo-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                              {mission.status === 'PENDING' ? (
+                                <><span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 animate-pulse"></span> {t.child.pending}</>
+                              ) : (
+                                <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-emerald-500"></span> {t.child.todo}</>
+                              )}
+                            </div>
+                            {mission.feedback && mission.status === 'ACTIVE' && (
+                              <div className="mt-2 flex items-start gap-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-2.5 py-1.5 rounded-xl">
+                                <span className="text-sm shrink-0">💬</span>
+                                <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 leading-snug">{mission.feedback}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className={`font-black text-sm px-5 py-2.5 rounded-2xl shadow-sm ${mission.status === 'PENDING' ? 'bg-white dark:bg-slate-800 text-indigo-500 dark:text-indigo-400 border border-indigo-50 dark:border-indigo-900/30' : `bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-600 dark:text-${data.colorClass}-400 border border-${data.colorClass}-100 dark:border-${data.colorClass}-900/30`}`}>
+                          +{mission.reward}€
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-[3rem] p-12 text-center flex flex-col items-center gap-4 col-span-full">
+                      <div className={`w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center text-4xl shadow-inner ${isNudging ? 'animate-bounce' : ''}`}>
+                        <i className={`fa-solid fa-rocket text-slate-200`}></i>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-slate-500 font-black text-sm uppercase tracking-widest">{t.child.noMissions}</p>
+                        <p className="text-slate-400 text-xs font-medium">{isNudging ? t.child.nudgeSent : t.child.askNewMission}</p>
+                      </div>
+                      <button onClick={() => { setIsNudging(true); if (onRequestMission) onRequestMission(); setTimeout(() => setIsNudging(false), 3000); }} className="mt-4 px-8 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-md shadow-indigo-500/25 hover:bg-indigo-700 transition-all active:scale-95">
+                        {t.child.askButton}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
 

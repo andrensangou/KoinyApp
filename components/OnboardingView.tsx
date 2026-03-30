@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Language } from '../types';
+import { isAndroid } from '../hooks/usePlatform';
 
 interface OnboardingViewProps {
     language: Language;

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Language } from '../types';
 import { useModal } from '../hooks/useModal';
+import { isAndroid } from '../hooks/usePlatform';
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -299,6 +300,83 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
   }[language] ?? {
     title: 'User Guide', welcomeTitle: 'Welcome to Koiny!', welcomeText: '', steps: [], close: "Let's go!"
   };
+
+  if (isAndroid) {
+    return (
+      <div className="fixed inset-0 z-[200] flex items-end">
+        <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={onClose}></div>
+        <div
+          className="w-full bg-white dark:bg-slate-900 rounded-t-[28px] shadow-2xl animate-slide-up flex flex-col max-h-[90vh] relative z-10"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="help-dialog-title"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          {/* Handle bar */}
+          <div className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mt-3 mb-1 shrink-0" />
+
+          {/* MD3 Header — light surface */}
+          <div className="flex items-center justify-between px-6 py-4 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+                <i className="fa-solid fa-book-open text-indigo-500 text-sm"></i>
+              </div>
+              <h3 id="help-dialog-title" className="text-xl font-medium text-slate-900 dark:text-white">{t.title}</h3>
+            </div>
+            <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 transition-colors">
+              <i className="fa-solid fa-xmark text-lg"></i>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 pb-6 overflow-y-auto flex-grow">
+            {/* Welcome Card */}
+            <div className="relative overflow-hidden mb-6 p-5 rounded-3xl bg-gradient-to-br from-indigo-600 to-indigo-800 text-white">
+              <div className="relative z-10">
+                <h4 className="font-semibold text-lg mb-1">{t.welcomeTitle}</h4>
+                <p className="text-sm text-indigo-100 leading-relaxed">{t.welcomeText}</p>
+              </div>
+              <i className="fa-solid fa-piggy-bank absolute -bottom-4 -right-4 text-8xl text-white/10 rotate-12"></i>
+            </div>
+
+            <div className="space-y-6">
+              {t.steps.map((step) => (
+                <section key={step.id}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${step.color} flex items-center justify-center text-white shrink-0`}>
+                      <i className={`fa-solid ${step.icon} text-xs`}></i>
+                    </div>
+                    <h4 className="font-medium text-slate-900 dark:text-white text-base">{step.title}</h4>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 ml-11">{step.text}</p>
+                  <ul className="space-y-2 ml-11">
+                    {step.items.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <div className="w-5 h-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center shrink-0 mt-0.5">
+                          <i className="fa-solid fa-check text-indigo-500 text-[8px]"></i>
+                        </div>
+                        <span className="text-sm text-slate-600 dark:text-slate-300 leading-snug">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+
+            {/* MD3 bottom button */}
+            <div className="mt-6 flex justify-center">
+              <button onClick={onClose}
+                className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold active:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+              >
+                {t.close}
+                <i className="fa-solid fa-arrow-right text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">

@@ -168,10 +168,16 @@ const t = translations[data.language || 'fr'];
 - ✅ Fix: `waitForInit()` — produits ne chargeaient pas car modal ouvert avant init RevenueCat
 - ✅ Fix: SubscriptionModal retry auto + bouton "Réessayer" + spinner achat + anti double-clic
 
+### Corrections appliquées (30/03/2026 — session 2)
+- ✅ **Android MD3 — ChildView.tsx**: Adaptation complète du dashboard enfant. Hero: `bg-indigo-600` plat (pas de gradient, pas de stardust SVG, pas de backdrop-blur), sentence case labels, surface blanche `rounded-t-3xl`. Alerte pénalité: carte tonal `rounded-2xl`. Historique: bottom sheet MD3 (`fixed inset-0`, `rounded-t-[28px]`, handle bar, backdrop dismiss). Objectifs: cartes `rounded-2xl` avec barre orange simple. Missions: liste `rounded-2xl` avec chips tonal status (indigo pending, emerald actif). iOS: code préservé dans `else` branches.
+
 ### Corrections appliquées (30/03/2026)
 - ✅ **Demo data bleed fix (App.tsx)**: Mode démo ne persiste plus dans localStorage/Capacitor Preferences. `saveData()` bloqué quand `ownerId === 'demo'`. Au `SIGNED_OUT`, nettoyage complet: `koiny_local_v1`, `koiny_last_view`, `koiny_last_child_id`, `koiny_premium_active` (localStorage + `persistentStorage.remove`).
 - ✅ **Premium state reset (App.tsx)**: Si RevenueCat retourne `isSubscribed: false`, `isPremium` est explicitement remis à `false` et `koiny_premium_active` supprimé du localStorage. Empêche le stale premium d'un ancien utilisateur.
-- ✅ **Android Material Design 3 (ParentView.tsx)**: Ajout de variantes Android pour les modals (edit mission, transactions, approve/reject, prompt/alert). Pattern: `isAndroid ? (version MD3) : (version iOS)`. Import: `import { isAndroid } from '../hooks/usePlatform'`.
+- ✅ **Android MD3 — modals ParentView.tsx**: Variantes Android pour les modals inline (offline, edit mission, transactions, approve/reject, prompt/alert, biometric choice). Pattern: `isAndroid ? (version MD3) : (version iOS)`.
+- ✅ **Android MD3 — ConfirmDialog.tsx**: Dialog `rounded-[28px]`, icône en cercle, titre left-aligned, text buttons right-aligned.
+- ✅ **Android MD3 — HelpModal.tsx + LegalModal.tsx**: Bottom sheet avec handle bar, surface claire, bouton indigo full-width.
+- ✅ **Android MD3 — OnboardingView.tsx**: Import `isAndroid` re-ajouté.
 - ✅ **Build number iOS**: Incrémenté `CURRENT_PROJECT_VERSION` de 1 → 2 dans `project.pbxproj` (4 targets: App Debug/Release, Widget Debug/Release).
 - ✅ **Android Gradle JDK**: `gradleJvm` fixé sur `jbr-21` dans `android/.idea/gradle.xml`.
 
@@ -360,6 +366,18 @@ import { isAndroid } from '../hooks/usePlatform';
 - `components/AndroidListItem.tsx`
 - `components/AndroidSwitch.tsx`
 - `components/AndroidTopBar.tsx`
+
+**Composants adaptés avec variantes `isAndroid` (✅ = terminé, ⏳ = reste):**
+| Composant | Statut | Ce qui a été adapté |
+|---|---|---|
+| `components/ChildView.tsx` | ✅ | Hero, penalty alert, history bottom sheet, goal cards, mission list |
+| `components/ConfirmDialog.tsx` | ✅ | Dialog MD3 complet |
+| `components/HelpModal.tsx` | ✅ | Bottom sheet avec handle bar |
+| `components/LegalModal.tsx` | ✅ | Bottom sheet avec handle bar |
+| `components/OnboardingView.tsx` | ✅ | Import isAndroid |
+| `components/ParentView.tsx` | ✅ (modals) | Offline, edit mission, transactions, approve/reject, prompt/alert, biometric |
+| `components/SubscriptionModal.tsx` | ⏳ | — |
+| `components/ParentView.tsx` | ⏳ (tabs) | Dashboard tabs, contenu principal |
 
 **`hooks/usePlatform.ts`:**
 ```typescript

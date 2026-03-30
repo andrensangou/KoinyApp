@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from '../i18n';
 import { Language } from '../types';
+import { isAndroid } from '../hooks/usePlatform';
 
 interface LegalModalProps {
   language: Language;
@@ -18,6 +19,81 @@ const LegalModal: React.FC<LegalModalProps> = ({ language }) => {
   }, []);
 
   if (!show) return null;
+
+  if (isAndroid) {
+    return (
+      <div className="fixed inset-0 bg-black/40 z-[200] flex items-end">
+        <div className="absolute inset-0" onClick={() => setShow(false)}></div>
+        <div
+          className="w-full bg-white dark:bg-slate-900 rounded-t-[28px] shadow-2xl animate-slide-up flex flex-col max-h-[90vh] relative z-10"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="legal-dialog-title"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          {/* Handle bar */}
+          <div className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mt-3 mb-1 shrink-0" />
+
+          {/* MD3 Header — light surface */}
+          <div className="flex items-center justify-between px-6 py-4 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+                <i className="fa-solid fa-scale-balanced text-indigo-500 text-sm"></i>
+              </div>
+              <div>
+                <h3 id="legal-dialog-title" className="text-xl font-medium text-slate-900 dark:text-white">{t.legal.title}</h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Koiny v1.0</p>
+              </div>
+            </div>
+            <button aria-label={language === 'fr' ? 'Fermer' : language === 'nl' ? 'Sluiten' : 'Close'} onClick={() => setShow(false)} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 transition-colors">
+              <i className="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 pb-4 overflow-y-auto text-slate-600 dark:text-slate-300 space-y-6 flex-grow">
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl">
+              <p className="text-sm text-indigo-700 dark:text-indigo-300 leading-relaxed">
+                {t.legal.intro}
+              </p>
+            </div>
+
+            {Object.entries(t.legal.sections).map(([key, section]: [string, any]) => (
+              <div key={key} className="space-y-2">
+                <h4 className="font-medium text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-indigo-500 rounded-full"></span>
+                  {section.title}
+                </h4>
+                <p className="text-sm leading-relaxed ml-3.5">
+                  {section.content}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 pb-6 pt-3 shrink-0">
+            <button onClick={() => setShow(false)}
+              className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold active:bg-indigo-700 transition-colors"
+            >
+              {t.common.close}
+            </button>
+            <a
+              href="https://koiny.app/privacy.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-center mt-3 text-indigo-600 dark:text-indigo-400 text-xs font-medium"
+            >
+              {language === 'fr' ? 'Politique de confidentialité complète' : language === 'nl' ? 'Volledig privacybeleid' : 'Full privacy policy'}
+            </a>
+            <p className="text-center mt-2 text-[10px] text-slate-400 dark:text-slate-500">
+              &copy; {new Date().getFullYear()} Koiny — Andre Nsangou
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">

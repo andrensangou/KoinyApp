@@ -2768,6 +2768,75 @@ const ParentView: React.FC<ParentViewProps> = ({
 
       {/* Biometric Choice Dialog */}
       {biometricChoice?.isOpen && (
+        isAndroid ? (
+          <div className="fixed inset-0 z-[260] flex items-center justify-center p-6">
+            <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setBiometricChoice(null)}></div>
+            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[28px] shadow-2xl relative z-10 animate-scale-in overflow-hidden">
+              {/* MD3 header */}
+              <div className="px-6 pt-6 pb-2">
+                <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mb-4">
+                  <i className="fa-solid fa-shield-halved text-indigo-500 text-lg"></i>
+                </div>
+                <h3 className="text-xl font-medium text-slate-900 dark:text-white mb-1">
+                  {t.parent.messages.chooseMethodTitle}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                  {t.parent.messages.chooseMethodMessage}
+                </p>
+              </div>
+
+              {/* MD3 option list */}
+              <div className="px-4 py-4 space-y-2">
+                {/* Biometric option */}
+                <button onClick={() => {
+                  setBiometricChoice(null);
+                  setTimeout(() => handleResetPinWithBiometric(), 300);
+                }}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 active:bg-indigo-100 dark:active:bg-indigo-900/30 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+                    <i className={`${biometricChoice.icon} text-white text-sm`}></i>
+                  </div>
+                  <div className="text-left">
+                    <span className="text-sm font-medium text-slate-900 dark:text-white block">
+                      {t.parent.messages.useBiometric.replace('{biometric}', biometricChoice.label)}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {language === 'fr' ? 'Rapide & sécurisé' : language === 'nl' ? 'Snel & veilig' : 'Fast & secure'}
+                    </span>
+                  </div>
+                </button>
+
+                {/* Password option */}
+                <button onClick={() => {
+                  setBiometricChoice(null);
+                  setTimeout(() => handleResetPinWithPassword(), 300);
+                }}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl active:bg-slate-50 dark:active:bg-slate-800 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                    <i className="fa-solid fa-key text-slate-500 dark:text-slate-400 text-sm"></i>
+                  </div>
+                  <div className="text-left">
+                    <span className="text-sm font-medium text-slate-900 dark:text-white block">
+                      {t.parent.messages.usePassword}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {language === 'fr' ? 'Méthode classique' : language === 'nl' ? 'Klassieke methode' : 'Classic method'}
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              {/* MD3 cancel button */}
+              <div className="flex justify-end px-6 pb-6 pt-1">
+                <button onClick={() => setBiometricChoice(null)} className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 rounded-full active:bg-slate-50 dark:active:bg-slate-800 transition-colors">
+                  {t.common.cancel}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="fixed inset-0 z-[260] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/40 dark:bg-black/70 backdrop-blur-xl animate-fade-in"
@@ -2832,6 +2901,7 @@ const ParentView: React.FC<ParentViewProps> = ({
             </div>
           </div>
         </div>
+        )
       )}
 
       <BottomNavigation
