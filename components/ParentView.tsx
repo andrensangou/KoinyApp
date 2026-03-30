@@ -887,184 +887,145 @@ const ParentView: React.FC<ParentViewProps> = ({
     // Utiliser le PIN local si disponible, sinon le PIN de Supabase
     const effectivePin = localPin || data.parentPin;
     const isPinSetup = !effectivePin || String(effectivePin).trim().length === 0;
-    return (
-      <div className="min-h-screen bg-[#0f172a] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 via-[#0f172a] to-black flex flex-col items-center justify-center p-6 text-white font-sans overflow-hidden relative">
-        {/* Background Atmosphere */}
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none animate-pulse-slow"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
 
-        {isPinSetup ? (
-          <div className="w-full max-w-sm z-10 animate-fade-in-up">
-            <div className="flex justify-center mb-10">
-              <div className="w-24 h-24 bg-gradient-to-br from-indigo-500/20 to-indigo-700/5 rounded-[2.5rem] flex items-center justify-center border border-indigo-500/30 shadow-[0_20px_50px_-12px_rgba(79,70,229,0.4)] backdrop-blur-xl group">
-                <i className="fa-solid fa-lock-hashtag text-5xl text-indigo-400 group-hover:scale-110 transition-transform duration-500"></i>
-              </div>
+    if (isAndroid) {
+      return (
+        /* ── Android MD3 PIN Screen ── */
+        <div className="min-h-screen bg-white dark:bg-slate-900 flex flex-col font-sans" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          {/* Indigo top bar */}
+          <div className="bg-indigo-600 flex flex-col items-center pt-14 pb-10 px-6" style={{ paddingTop: 'max(56px, env(safe-area-inset-top))' }}>
+            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-4">
+              <i className="fa-solid fa-user-lock text-3xl text-white"></i>
             </div>
-
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-black text-white mb-3 tracking-tight">{t.parent.createPinTitle}</h2>
-              <p className="text-slate-400 font-bold px-4">{t.parent.createPinDesc}</p>
-            </div>
-
-            <form onSubmit={handleCreatePin} className="space-y-8 bg-white/[0.03] backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-[0_25px_80px_-15px_rgba(0,0,0,0.5)]">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-[10px] font-black text-indigo-400/80 uppercase mb-3 tracking-[0.2em] ml-1">{t.parent.definePin}</label>
-                  <div className="relative group">
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      value={newPin}
-                      onChange={(e) => setNewPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
-                      className="w-full text-center text-3xl font-bold tracking-[0.8em] bg-black/40 border-2 border-white/5 rounded-3xl py-5 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-white placeholder:text-white/5 shadow-inner"
-                      placeholder="••••"
-                      required
-                    />
-                    <div className="absolute inset-0 rounded-3xl border border-white/5 pointer-events-none group-hover:border-white/10 transition-colors"></div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-indigo-400/80 uppercase mb-3 tracking-[0.2em] ml-1">{t.parent.confirmPin}</label>
-                  <div className="relative group">
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      value={confirmPin}
-                      onChange={(e) => setConfirmPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
-                      className="w-full text-center text-3xl font-bold tracking-[0.8em] bg-black/40 border-2 border-white/5 rounded-3xl py-5 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-white placeholder:text-white/5 shadow-inner"
-                      placeholder="••••"
-                      required
-                    />
-                    <div className="absolute inset-0 rounded-3xl border border-white/5 pointer-events-none group-hover:border-white/10 transition-colors"></div>
-                  </div>
-                </div>
-              </div>
-
-              {pinError && (
-                <div className="bg-red-500/10 border border-red-500/20 py-3 px-4 rounded-2xl animate-shake">
-                  <p className="text-red-400 text-xs text-center font-black uppercase tracking-widest leading-none flex items-center justify-center gap-2">
-                    <i className="fa-solid fa-circle-exclamation text-sm"></i>
-                    {pinError}
-                  </p>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={newPin.length !== 4 || confirmPin.length !== 4}
-                className="w-full relative group"
-              >
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-indigo-500 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-1000 group-active:duration-200"></div>
-                <div className="relative w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black py-5 rounded-3xl group-hover:from-emerald-400 group-hover:to-emerald-500 group-active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3">
-                  <span className="tracking-widest uppercase text-sm">{t.common.save}</span>
-                  <i className="fa-solid fa-arrow-right-long animate-bounce-x"></i>
-                </div>
-              </button>
-            </form>
+            <h2 className="text-xl font-medium text-white mb-1">{t.parent.accessTitle}</h2>
+            <p className="text-white/70 text-xs">{t.parent.enterPin}</p>
           </div>
-        ) : (
-          <div className="flex flex-col items-center animate-fade-in-up w-full max-w-[340px] mx-auto py-8 z-10">
-            <div className="relative mb-10">
-              <div className="absolute -inset-4 bg-emerald-500/20 rounded-full blur-2xl animate-pulse"></div>
-              <div className="w-24 h-24 bg-white/[0.05] backdrop-blur-2xl rounded-[2.5rem] flex items-center justify-center border border-white/10 shadow-2xl relative">
-                <i className="fa-solid fa-user-lock text-4xl text-emerald-400"></i>
+
+          {isPinSetup ? (
+            /* ── Android MD3 Create PIN ── */
+            <div className="flex-1 px-6 pt-8">
+              <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mx-auto mb-6">
+                <i className="fa-solid fa-lock-hashtag text-2xl text-indigo-500"></i>
               </div>
-            </div>
+              <h2 className="text-xl font-medium text-slate-900 dark:text-white text-center mb-1">{t.parent.createPinTitle}</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm text-center mb-8 px-4">{t.parent.createPinDesc}</p>
 
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-black text-white mb-2 tracking-tight">{t.parent.accessTitle}</h2>
-              <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px]">{t.parent.enterPin}</p>
-            </div>
-
-            {/* Custom PIN Display - Re-styled for Premium Feel */}
-            <div className="flex justify-center gap-4 mb-16 px-4 py-6 bg-black/20 rounded-[2.5rem] border border-white/5 shadow-inner">
-              {[0, 1, 2, 3].map(i => {
-                const isActive = pin.length > i;
-                return (
-                  <div key={i} className={`w-14 h-18 rounded-2xl flex items-center justify-center transition-all duration-500 transform relative ${isActive ? 'scale-110' : 'scale-100'}`}>
-                    <div className={`absolute inset-0 rounded-2xl transition-all duration-500 ${isActive ? 'bg-emerald-500 border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.4)]' : 'bg-white/5 border border-white/10'}`}></div>
-                    {isActive ? (
-                      <div className="w-4 h-4 bg-white rounded-full animate-pop-in relative z-10 shadow-sm"></div>
-                    ) : (
-                      <div className="w-2 h-2 bg-slate-700 rounded-full relative z-10"></div>
-                    )}
+              <form onSubmit={handleCreatePin} className="space-y-5">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 ml-1">{t.parent.definePin}</label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+                    className="w-full text-center text-2xl font-bold tracking-[0.8em] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-4 focus:outline-none focus:border-2 focus:border-indigo-600 text-slate-900 dark:text-white"
+                    placeholder="••••"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 ml-1">{t.parent.confirmPin}</label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    value={confirmPin}
+                    onChange={(e) => setConfirmPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+                    className="w-full text-center text-2xl font-bold tracking-[0.8em] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-4 focus:outline-none focus:border-2 focus:border-indigo-600 text-slate-900 dark:text-white"
+                    placeholder="••••"
+                    required
+                  />
+                </div>
+                {pinError && (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 py-3 px-4 rounded-xl">
+                    <p className="text-red-600 dark:text-red-400 text-xs text-center flex items-center justify-center gap-2">
+                      <i className="fa-solid fa-circle-exclamation"></i>{pinError}
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-
-            {/* Custom Keypad - Premium Glass Buttons */}
-            <div className="grid grid-cols-3 gap-6 w-full max-w-[320px] mb-12">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                <button key={num}
-                  type="button"
-                  onClick={() => handlePinInput(pin + num)}
-                  className="w-18 h-18 rounded-3xl bg-white/[0.03] hover:bg-white/[0.08] active:bg-indigo-500 text-white transition-all flex items-center justify-center text-3xl font-black border border-white/10 active:scale-90 shadow-xl"
+                )}
+                <button type="submit" disabled={newPin.length !== 4 || confirmPin.length !== 4}
+                  className="w-full bg-indigo-600 text-white py-4 rounded-xl text-sm font-medium disabled:opacity-40 active:bg-indigo-700 transition-colors mt-4"
                 >
-                  {num}
+                  {t.common.save}
                 </button>
-              ))}
-              <div className="flex items-center justify-center">
-                <button onClick={onExit} aria-label={language === 'fr' ? 'Retour' : 'Back'} className="w-12 h-12 flex items-center justify-center text-slate-500 hover:text-white transition-colors">
+              </form>
+            </div>
+          ) : (
+            /* ── Android MD3 Enter PIN ── */
+            <div className="flex-1 flex flex-col items-center px-6 pt-8">
+              {/* PIN dots */}
+              <div className="flex justify-center gap-5 mb-10">
+                {[0, 1, 2, 3].map(i => {
+                  const isActive = pin.length > i;
+                  return (
+                    <div key={i} className={`w-4 h-4 rounded-full transition-all duration-300 ${isActive ? 'bg-indigo-600 scale-110' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+                  );
+                })}
+              </div>
+
+              {/* Keypad MD3 */}
+              <div className="grid grid-cols-3 gap-3 w-full max-w-[300px] mb-8">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                  <button key={num} type="button"
+                    onClick={() => handlePinInput(pin + num)}
+                    className="h-16 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-2xl font-medium active:bg-slate-200 dark:active:bg-slate-700 transition-colors flex items-center justify-center"
+                  >
+                    {num}
+                  </button>
+                ))}
+                <button onClick={onExit} aria-label={language === 'fr' ? 'Retour' : 'Back'}
+                  className="h-16 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
+                >
                   <i className="fa-solid fa-chevron-left text-xl" aria-hidden="true"></i>
                 </button>
+                <button type="button" onClick={() => handlePinInput(pin + '0')}
+                  className="h-16 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-2xl font-medium active:bg-slate-200 dark:active:bg-slate-700 transition-colors flex items-center justify-center"
+                >
+                  0
+                </button>
+                <button type="button" onClick={() => handlePinInput(pin.slice(0, -1))}
+                  className="h-16 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
+                >
+                  <i className="fa-solid fa-delete-left text-xl"></i>
+                </button>
               </div>
-              <button type="button"
-                onClick={() => handlePinInput(pin + '0')}
-                className="w-18 h-18 rounded-3xl bg-white/[0.03] hover:bg-white/[0.08] active:bg-indigo-500 text-white transition-all flex items-center justify-center text-3xl font-black border border-white/10 active:scale-90 shadow-xl"
-              >
-                0
-              </button>
-              <button type="button"
-                onClick={() => handlePinInput(pin.slice(0, -1))}
-                className="w-18 h-18 rounded-3xl flex items-center justify-center text-2xl hover:bg-white/5 active:scale-90 transition-all text-slate-500"
-              >
-                <i className="fa-solid fa-delete-left"></i>
-              </button>
-            </div>
 
-            <div className="flex flex-col items-center gap-8 w-full">
               {(ownerId === 'demo' || !ownerId) && data.parentPin === '0000' && (
-                <div className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 bg-emerald-400/10 px-6 py-3 rounded-full border border-emerald-400/20 flex items-center gap-2">
-                    <i className="fa-solid fa-lightbulb text-sm"></i>
-                    {t.parent.demoHint}
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2.5 rounded-xl mb-4">
+                  <p className="text-emerald-700 dark:text-emerald-400 text-xs flex items-center gap-2">
+                    <i className="fa-solid fa-lightbulb"></i>{t.parent.demoHint}
                   </p>
                 </div>
               )}
 
               {pinState === 'error' && (
-                <div className="flex flex-col items-center gap-5 animate-shake">
-                  <div className="bg-red-500/10 px-6 py-3 rounded-full border border-red-500/20">
-                    <p className="text-red-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <div className="flex flex-col items-center gap-3 animate-shake">
+                  <div className="bg-red-50 dark:bg-red-900/20 px-4 py-2.5 rounded-xl">
+                    <p className="text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
                       <i className="fa-solid fa-circle-xmark"></i>{t.parent.incorrectCode}
                     </p>
                   </div>
-                  <button onClick={handleResetPin} className="text-[10px] text-slate-500 hover:text-indigo-400 font-bold uppercase tracking-widest transition-colors underline decoration-slate-800 underline-offset-8 relative z-50 cursor-pointer p-2">
+                  <button onClick={handleResetPin} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium underline underline-offset-4 p-2">
                     {t.parent.forgotPinAction}
                   </button>
                 </div>
               )}
 
-              {/* Bouton biométrique — visible sur iOS natif, que le plugin soit prêt ou non */}
               {Capacitor.isNativePlatform() && (
                 <button onClick={handleBiometricUnlock}
-                  className="flex flex-col items-center gap-2 group active:scale-95 transition-all"
+                  className="flex flex-col items-center gap-2 mt-6 active:opacity-70 transition-opacity"
                 >
-                  <div className="w-16 h-16 rounded-3xl bg-white/[0.05] border border-white/10 hover:bg-white/[0.1] hover:border-indigo-500/40 transition-all flex items-center justify-center shadow-xl">
-                    <i className={`${getBiometricIcon(biometricStatus?.biometryType ?? 'face')} text-2xl text-slate-300 group-hover:text-indigo-400 transition-colors`}></i>
+                  <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <i className={`${getBiometricIcon(biometricStatus?.biometryType ?? 'face')} text-2xl text-slate-600 dark:text-slate-300`}></i>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-indigo-400 transition-colors">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                     {getBiometricLabel(biometricStatus?.biometryType ?? 'face', language)}
                   </span>
                 </button>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        <ConfirmDialog
+          <ConfirmDialog
           isOpen={confirmConfig.isOpen}
           onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
           onConfirm={confirmConfig.onConfirm}
@@ -1107,12 +1068,153 @@ const ParentView: React.FC<ParentViewProps> = ({
     );
   }
 
+  // ── iOS PIN Screen ──
+  return (
+    <div className="min-h-screen bg-[#0f172a] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 via-[#0f172a] to-black flex flex-col items-center justify-center p-6 text-white font-sans overflow-hidden relative">
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none animate-pulse-slow"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
 
+      {isPinSetup ? (
+        <div className="w-full max-w-sm z-10 animate-fade-in-up">
+          <div className="flex justify-center mb-10">
+            <div className="w-24 h-24 bg-gradient-to-br from-indigo-500/20 to-indigo-700/5 rounded-[2.5rem] flex items-center justify-center border border-indigo-500/30 shadow-[0_20px_50px_-12px_rgba(79,70,229,0.4)] backdrop-blur-xl group">
+              <i className="fa-solid fa-lock-hashtag text-5xl text-indigo-400 group-hover:scale-110 transition-transform duration-500"></i>
+            </div>
+          </div>
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-black text-white mb-3 tracking-tight">{t.parent.createPinTitle}</h2>
+            <p className="text-slate-400 font-bold px-4">{t.parent.createPinDesc}</p>
+          </div>
+          <form onSubmit={handleCreatePin} className="space-y-8 bg-white/[0.03] backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-[0_25px_80px_-15px_rgba(0,0,0,0.5)]">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-indigo-400/80 uppercase mb-3 tracking-[0.2em] ml-1">{t.parent.definePin}</label>
+                <div className="relative group">
+                  <input type="password" inputMode="numeric" value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+                    className="w-full text-center text-3xl font-bold tracking-[0.8em] bg-black/40 border-2 border-white/5 rounded-3xl py-5 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-white placeholder:text-white/5 shadow-inner"
+                    placeholder="••••" required />
+                  <div className="absolute inset-0 rounded-3xl border border-white/5 pointer-events-none group-hover:border-white/10 transition-colors"></div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-indigo-400/80 uppercase mb-3 tracking-[0.2em] ml-1">{t.parent.confirmPin}</label>
+                <div className="relative group">
+                  <input type="password" inputMode="numeric" value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+                    className="w-full text-center text-3xl font-bold tracking-[0.8em] bg-black/40 border-2 border-white/5 rounded-3xl py-5 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-white placeholder:text-white/5 shadow-inner"
+                    placeholder="••••" required />
+                  <div className="absolute inset-0 rounded-3xl border border-white/5 pointer-events-none group-hover:border-white/10 transition-colors"></div>
+                </div>
+              </div>
+            </div>
+            {pinError && (
+              <div className="bg-red-500/10 border border-red-500/20 py-3 px-4 rounded-2xl animate-shake">
+                <p className="text-red-400 text-xs text-center font-black uppercase tracking-widest leading-none flex items-center justify-center gap-2">
+                  <i className="fa-solid fa-circle-exclamation text-sm"></i>{pinError}
+                </p>
+              </div>
+            )}
+            <button type="submit" disabled={newPin.length !== 4 || confirmPin.length !== 4} className="w-full relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-indigo-500 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-1000 group-active:duration-200"></div>
+              <div className="relative w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black py-5 rounded-3xl group-hover:from-emerald-400 group-hover:to-emerald-500 group-active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3">
+                <span className="tracking-widest uppercase text-sm">{t.common.save}</span>
+                <i className="fa-solid fa-arrow-right-long animate-bounce-x"></i>
+              </div>
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center animate-fade-in-up w-full max-w-[340px] mx-auto py-8 z-10">
+          <div className="relative mb-10">
+            <div className="absolute -inset-4 bg-emerald-500/20 rounded-full blur-2xl animate-pulse"></div>
+            <div className="w-24 h-24 bg-white/[0.05] backdrop-blur-2xl rounded-[2.5rem] flex items-center justify-center border border-white/10 shadow-2xl relative">
+              <i className="fa-solid fa-user-lock text-4xl text-emerald-400"></i>
+            </div>
+          </div>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-black text-white mb-2 tracking-tight">{t.parent.accessTitle}</h2>
+            <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px]">{t.parent.enterPin}</p>
+          </div>
+          <div className="flex justify-center gap-4 mb-16 px-4 py-6 bg-black/20 rounded-[2.5rem] border border-white/5 shadow-inner">
+            {[0, 1, 2, 3].map(i => {
+              const isActive = pin.length > i;
+              return (
+                <div key={i} className={`w-14 h-18 rounded-2xl flex items-center justify-center transition-all duration-500 transform relative ${isActive ? 'scale-110' : 'scale-100'}`}>
+                  <div className={`absolute inset-0 rounded-2xl transition-all duration-500 ${isActive ? 'bg-emerald-500 border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.4)]' : 'bg-white/5 border border-white/10'}`}></div>
+                  {isActive ? <div className="w-4 h-4 bg-white rounded-full animate-pop-in relative z-10 shadow-sm"></div> : <div className="w-2 h-2 bg-slate-700 rounded-full relative z-10"></div>}
+                </div>
+              );
+            })}
+          </div>
+          <div className="grid grid-cols-3 gap-6 w-full max-w-[320px] mb-12">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+              <button key={num} type="button" onClick={() => handlePinInput(pin + num)}
+                className="w-18 h-18 rounded-3xl bg-white/[0.03] hover:bg-white/[0.08] active:bg-indigo-500 text-white transition-all flex items-center justify-center text-3xl font-black border border-white/10 active:scale-90 shadow-xl"
+              >{num}</button>
+            ))}
+            <div className="flex items-center justify-center">
+              <button onClick={onExit} aria-label={language === 'fr' ? 'Retour' : 'Back'} className="w-12 h-12 flex items-center justify-center text-slate-500 hover:text-white transition-colors">
+                <i className="fa-solid fa-chevron-left text-xl" aria-hidden="true"></i>
+              </button>
+            </div>
+            <button type="button" onClick={() => handlePinInput(pin + '0')}
+              className="w-18 h-18 rounded-3xl bg-white/[0.03] hover:bg-white/[0.08] active:bg-indigo-500 text-white transition-all flex items-center justify-center text-3xl font-black border border-white/10 active:scale-90 shadow-xl"
+            >0</button>
+            <button type="button" onClick={() => handlePinInput(pin.slice(0, -1))}
+              className="w-18 h-18 rounded-3xl flex items-center justify-center text-2xl hover:bg-white/5 active:scale-90 transition-all text-slate-500"
+            ><i className="fa-solid fa-delete-left"></i></button>
+          </div>
+          <div className="flex flex-col items-center gap-8 w-full">
+            {(ownerId === 'demo' || !ownerId) && data.parentPin === '0000' && (
+              <div className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 bg-emerald-400/10 px-6 py-3 rounded-full border border-emerald-400/20 flex items-center gap-2">
+                  <i className="fa-solid fa-lightbulb text-sm"></i>{t.parent.demoHint}
+                </p>
+              </div>
+            )}
+            {pinState === 'error' && (
+              <div className="flex flex-col items-center gap-5 animate-shake">
+                <div className="bg-red-500/10 px-6 py-3 rounded-full border border-red-500/20">
+                  <p className="text-red-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                    <i className="fa-solid fa-circle-xmark"></i>{t.parent.incorrectCode}
+                  </p>
+                </div>
+                <button onClick={handleResetPin} className="text-[10px] text-slate-500 hover:text-indigo-400 font-bold uppercase tracking-widest transition-colors underline decoration-slate-800 underline-offset-8 relative z-50 cursor-pointer p-2">
+                  {t.parent.forgotPinAction}
+                </button>
+              </div>
+            )}
+            {Capacitor.isNativePlatform() && (
+              <button onClick={handleBiometricUnlock} className="flex flex-col items-center gap-2 group active:scale-95 transition-all">
+                <div className="w-16 h-16 rounded-3xl bg-white/[0.05] border border-white/10 hover:bg-white/[0.1] hover:border-indigo-500/40 transition-all flex items-center justify-center shadow-xl">
+                  <i className={`${getBiometricIcon(biometricStatus?.biometryType ?? 'face')} text-2xl text-slate-300 group-hover:text-indigo-400 transition-colors`}></i>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-indigo-400 transition-colors">
+                  {getBiometricLabel(biometricStatus?.biometryType ?? 'face', language)}
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        confirmLabel={t.common.confirm}
+        cancelLabel={t.common.cancel}
+      />
+    </div>
+  );
+}
 
   const badgeInfo = getBadgeInfo(data.parentBadge, language);
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 font-sans pb-10 relative text-slate-900 dark:text-slate-100 transition-colors duration-500">
+    <div className={`min-h-screen font-sans pb-10 relative text-slate-900 dark:text-slate-100 transition-colors duration-500 ${isAndroid ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-950'}`}>
       {/* Overscroll roof: absorbs iOS bounce at top */}
       <div
         className={`fixed top-0 left-0 right-0 z-[60] pointer-events-none ${mainView === 'dashboard' ? 'bg-indigo-700 dark:bg-slate-900' : 'bg-white dark:bg-slate-950'}`}
@@ -1315,75 +1417,139 @@ const ParentView: React.FC<ParentViewProps> = ({
 
       {/* Hero Section (Dashboard Only, avec enfants) */}
       {mainView === 'dashboard' && data.children && data.children.length > 0 && (
-        <div ref={heroRef} className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-indigo-800 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 pt-28 pb-10 px-6 relative overflow-hidden transition-colors duration-500">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full -mr-64 -mt-64 blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-500/20 rounded-full -ml-32 -mb-32 blur-2xl"></div>
-
-          <div className="max-w-7xl mx-auto relative z-10">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-8 bg-black/10 dark:bg-black/30 backdrop-blur-md rounded-[2.5rem] p-8 shadow-xl">
-              <div className="flex items-center gap-5">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-xl ring-1 ring-white/10">
-                  <i className="fa-solid fa-chart-pie text-2xl text-white"></i>
+        isAndroid ? (
+          /* ── Android MD3 Hero Stats ── */
+          <div ref={heroRef} className="bg-indigo-600 pt-16 pb-6 px-4 transition-colors duration-300" style={{ paddingTop: 'max(64px, calc(env(safe-area-inset-top) + 16px))' }}>
+            <div className="max-w-7xl mx-auto">
+              <div className="bg-white/10 rounded-2xl p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <i className="fa-solid fa-chart-pie text-xl text-white"></i>
                 </div>
-                <div>
-                  <h2 className="text-white text-lg font-black tracking-tight">{t.parent.dashboard.weeklyBilling}</h2>
-                  <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest opacity-80">{language === 'fr' ? 'Sept derniers jours' : 'Last seven days'}</p>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-white text-base font-medium">{t.parent.dashboard.weeklyBilling}</h2>
+                  <p className="text-white/60 text-xs">{language === 'fr' ? 'Sept derniers jours' : language === 'nl' ? 'Zeven laatste dagen' : 'Last seven days'}</p>
                 </div>
-              </div>
-
-              <div className="flex gap-10 sm:gap-14">
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 opacity-60">{t.parent.history.income}</span>
-                  <span className="text-xl font-black text-emerald-400">+{weeklySummary.income.toFixed(2)}€</span>
-                </div>
-                <div className="h-10 w-px bg-white/10 self-center"></div>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 opacity-60">{language === 'fr' ? 'Sorties' : 'Outcome'}</span>
-                  <span className="text-xl font-black text-rose-300">-{weeklySummary.expense.toFixed(2)}€</span>
+                <div className="flex gap-6 shrink-0">
+                  <div className="text-center">
+                    <p className="text-[10px] text-white/60 mb-0.5">{t.parent.history.income}</p>
+                    <p className="text-base font-bold text-emerald-300">+{weeklySummary.income.toFixed(2)}€</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-white/60 mb-0.5">{language === 'fr' ? 'Sorties' : 'Outcome'}</p>
+                    <p className="text-base font-bold text-rose-300">-{weeklySummary.expense.toFixed(2)}€</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          /* ── iOS Hero Stats ── */
+          <div ref={heroRef} className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-indigo-800 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 pt-28 pb-10 px-6 relative overflow-hidden transition-colors duration-500">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full -mr-64 -mt-64 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-500/20 rounded-full -ml-32 -mb-32 blur-2xl"></div>
+
+            <div className="max-w-7xl mx-auto relative z-10">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-8 bg-black/10 dark:bg-black/30 backdrop-blur-md rounded-[2.5rem] p-8 shadow-xl">
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-xl ring-1 ring-white/10">
+                    <i className="fa-solid fa-chart-pie text-2xl text-white"></i>
+                  </div>
+                  <div>
+                    <h2 className="text-white text-lg font-black tracking-tight">{t.parent.dashboard.weeklyBilling}</h2>
+                    <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest opacity-80">{language === 'fr' ? 'Sept derniers jours' : 'Last seven days'}</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-10 sm:gap-14">
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 opacity-60">{t.parent.history.income}</span>
+                    <span className="text-xl font-black text-emerald-400">+{weeklySummary.income.toFixed(2)}€</span>
+                  </div>
+                  <div className="h-10 w-px bg-white/10 self-center"></div>
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 opacity-60">{language === 'fr' ? 'Sorties' : 'Outcome'}</span>
+                    <span className="text-xl font-black text-rose-300">-{weeklySummary.expense.toFixed(2)}€</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
       )}
 
       {/* Standard Child Selector (Dashboard Only, avec enfants) */}
       {mainView === 'dashboard' && data.children && data.children.length > 0 && (
-        <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky sticky-safe-top z-30 pt-5 pb-4 transition-colors duration-500">
-          <div className="relative">
-            <div
-              ref={childSelectorScrollRef}
-              className={`max-w-7xl mx-auto overflow-x-auto no-scrollbar flex gap-3 items-center transition-all duration-300 snap-x snap-mandatory ${!isHeroVisible && !data.isPremium ? 'pl-20' : 'pl-6'} pr-20`}
-            >
-              {data.children.map(child => {
-                const childPending = child.missions ? child.missions.filter(m => m.status === 'PENDING').length : 0;
-                const childGiftPending = child.giftRequested ? 1 : 0;
-                const childMissionPending = child.missionRequested ? 1 : 0;
-                const totalIconPending = childPending + childGiftPending + childMissionPending;
-                const isSelected = selectedChildId === child.id;
-                return (
-                  <button key={child.id}
-                    data-active={isSelected ? 'true' : 'false'}
-                    onClick={() => setSelectedChildId(child.id)}
-                    className={`snap-start shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl font-black text-xs transition-all whitespace-nowrap relative border-2 min-w-[120px] ${isSelected ? `bg-${child.colorClass}-600 border-${child.colorClass}-600 text-white shadow-md shadow-${child.colorClass}-500/25 dark:shadow-none -translate-y-0.5` : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:border-slate-200 dark:hover:border-slate-700'}`}
-                  >
-                    <div className={`w-9 h-9 rounded-full overflow-hidden shrink-0 ${isSelected ? 'ring-2 ring-white/50' : 'opacity-60 dark:opacity-40 grayscale-[50%]'}`}>
-                      {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
-                    </div>
-                    <span className="tracking-tight">{child.name}</span>
-                    {totalIconPending > 0 && (
-                      <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-black shadow-sm shrink-0 ${isSelected ? 'bg-white text-red-500' : 'bg-red-500 text-white dark:border dark:border-slate-900'}`}>
-                        {totalIconPending}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+        isAndroid ? (
+          /* ── Android MD3 Child Selector ── */
+          <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-30 pt-3 pb-3">
+            <div className="relative">
+              <div
+                ref={childSelectorScrollRef}
+                className="overflow-x-auto no-scrollbar flex gap-2 items-center px-4 snap-x snap-mandatory"
+              >
+                {data.children.map(child => {
+                  const childPending = child.missions ? child.missions.filter(m => m.status === 'PENDING').length : 0;
+                  const totalIconPending = childPending + (child.giftRequested ? 1 : 0) + (child.missionRequested ? 1 : 0);
+                  const isSelected = selectedChildId === child.id;
+                  return (
+                    <button key={child.id}
+                      data-active={isSelected ? 'true' : 'false'}
+                      onClick={() => setSelectedChildId(child.id)}
+                      className={`snap-start shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-colors whitespace-nowrap relative min-w-[100px] ${isSelected ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}
+                    >
+                      <div className={`w-7 h-7 rounded-full overflow-hidden shrink-0 ${isSelected ? '' : 'opacity-60 grayscale'}`}>
+                        {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
+                      </div>
+                      <span className="font-medium">{child.name}</span>
+                      {totalIconPending > 0 && (
+                        <span className="flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold bg-red-500 text-white shrink-0">
+                          {totalIconPending}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-slate-900 to-transparent" />
             </div>
-            {/* Gradient indicateur : d'autres enfants à droite */}
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white/80 dark:from-slate-950/80 to-transparent" />
           </div>
-        </div>
+        ) : (
+          /* ── iOS Child Selector ── */
+          <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky sticky-safe-top z-30 pt-5 pb-4 transition-colors duration-500">
+            <div className="relative">
+              <div
+                ref={childSelectorScrollRef}
+                className={`max-w-7xl mx-auto overflow-x-auto no-scrollbar flex gap-3 items-center transition-all duration-300 snap-x snap-mandatory ${!isHeroVisible && !data.isPremium ? 'pl-20' : 'pl-6'} pr-20`}
+              >
+                {data.children.map(child => {
+                  const childPending = child.missions ? child.missions.filter(m => m.status === 'PENDING').length : 0;
+                  const childGiftPending = child.giftRequested ? 1 : 0;
+                  const childMissionPending = child.missionRequested ? 1 : 0;
+                  const totalIconPending = childPending + childGiftPending + childMissionPending;
+                  const isSelected = selectedChildId === child.id;
+                  return (
+                    <button key={child.id}
+                      data-active={isSelected ? 'true' : 'false'}
+                      onClick={() => setSelectedChildId(child.id)}
+                      className={`snap-start shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl font-black text-xs transition-all whitespace-nowrap relative border-2 min-w-[120px] ${isSelected ? `bg-${child.colorClass}-600 border-${child.colorClass}-600 text-white shadow-md shadow-${child.colorClass}-500/25 dark:shadow-none -translate-y-0.5` : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:border-slate-200 dark:hover:border-slate-700'}`}
+                    >
+                      <div className={`w-9 h-9 rounded-full overflow-hidden shrink-0 ${isSelected ? 'ring-2 ring-white/50' : 'opacity-60 dark:opacity-40 grayscale-[50%]'}`}>
+                        {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
+                      </div>
+                      <span className="tracking-tight">{child.name}</span>
+                      {totalIconPending > 0 && (
+                        <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-black shadow-sm shrink-0 ${isSelected ? 'bg-white text-red-500' : 'bg-red-500 text-white dark:border dark:border-slate-900'}`}>
+                          {totalIconPending}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white/80 dark:from-slate-950/80 to-transparent" />
+            </div>
+          </div>
+        )
       )}
 
 
@@ -1391,70 +1557,119 @@ const ParentView: React.FC<ParentViewProps> = ({
         {activeChild ? (
           <div className="animate-fade-in-up">
             {mainView === 'dashboard' && <div className="space-y-8">
-              <section className={`relative bg-gradient-to-br from-${activeChild.colorClass}-400 to-${activeChild.colorClass}-700 rounded-[2.5rem] p-8 text-white shadow-xl shadow-${activeChild.colorClass}-500/25 overflow-hidden transform transition-all hover:scale-[1.01]`}>
-                {/* SVG Background Pattern */}
-                <div className="absolute inset-0 opacity-10 pointer-events-none">
-                  <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="none">
-                    <path d="M0 200C100 150 200 250 400 200V0H0V200Z" fill="white" />
-                    <path d="M0 100C150 50 250 150 400 100V0H0V100Z" fill="white" opacity="0.5" />
-                  </svg>
-                </div>
-
-                <div className="flex justify-between items-start relative z-10 mb-8">
-                  <div className="space-y-1">
-                    <p className="opacity-60 text-[10px] font-black uppercase tracking-[0.2em]">{t.parent.childBalance}</p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-black tracking-tighter tabular-nums leading-none">
-                        {activeChild.balance.toFixed(2)}
-                      </span>
-                      <span className="text-2xl font-black opacity-40">€</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <button onClick={() => setTransactionType('DEPOSIT')} aria-label={language === 'fr' ? 'Ajouter de l\'argent' : 'Add money'} className="w-12 h-12 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90">
-                      <i className="fa-solid fa-plus text-xl" aria-hidden="true"></i>
-                    </button>
-                    <button onClick={() => { setTransactionType('WITHDRAW'); setWithdrawSubtype('PURCHASE'); }} aria-label={language === 'fr' ? 'Retirer de l\'argent' : 'Withdraw money'} className="w-12 h-12 rounded-2xl bg-black/20 hover:bg-black/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90">
-                      <i className="fa-solid fa-minus text-xl" aria-hidden="true"></i>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Liquid Progress Bar — color changes with progress */}
-                {activeChild.goals && activeChild.goals.length > 0 ? (
-                  <div className="relative z-10 pt-4 mt-auto">
-                    <div className="flex justify-between items-end mb-3">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-0.5">{t.parent.childGoal}</span>
-                        <span className="text-sm font-black tracking-tight">{activeChild.goals[0].name}</span>
+              {isAndroid ? (
+                /* ── Android MD3 Balance Card ── */
+                <section className={`relative bg-indigo-600 rounded-2xl p-5 text-white overflow-hidden`}>
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <p className="text-white/70 text-xs font-medium mb-1">{t.parent.childBalance}</p>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-4xl font-bold tracking-tight tabular-nums leading-none">
+                          {activeChild.balance.toFixed(2)}
+                        </span>
+                        <span className="text-xl font-medium opacity-50">€</span>
                       </div>
-                      <span className="text-[10px] font-black opacity-80">
-                        {Math.min(100, Math.round((activeChild.balance / activeChild.goals[0].target) * 100))}%
-                      </span>
                     </div>
-                    <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-1000 ease-out"
-                        style={{
-                          width: `${Math.min(100, (activeChild.balance / activeChild.goals[0].target) * 100)}%`,
-                          background: (() => {
-                            const p = Math.min(100, Math.round((activeChild.balance / activeChild.goals[0].target) * 100));
-                            if (p >= 100) return 'linear-gradient(to right, #fbbf24, #f59e0b)'; // gold
-                            if (p >= 75) return 'linear-gradient(to right, #34d399, #10b981)'; // green
-                            if (p >= 50) return 'linear-gradient(to right, #a3e635, #fde047)'; // lime-yellow
-                            if (p >= 25) return 'linear-gradient(to right, #fb923c, #f97316)'; // orange
-                            return 'linear-gradient(to right, #f87171, #fb7185)';               // red
-                          })()
-                        }}
-                      ></div>
+                    <div className="flex flex-col gap-2">
+                      <button onClick={() => setTransactionType('DEPOSIT')} aria-label={language === 'fr' ? 'Ajouter de l\'argent' : 'Add money'}
+                        className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center active:bg-white/30 transition-colors">
+                        <i className="fa-solid fa-plus text-lg" aria-hidden="true"></i>
+                      </button>
+                      <button onClick={() => { setTransactionType('WITHDRAW'); setWithdrawSubtype('PURCHASE'); }} aria-label={language === 'fr' ? 'Retirer de l\'argent' : 'Withdraw money'}
+                        className="w-11 h-11 rounded-2xl bg-black/20 flex items-center justify-center active:bg-black/30 transition-colors">
+                        <i className="fa-solid fa-minus text-lg" aria-hidden="true"></i>
+                      </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="relative z-10 pt-4 mt-auto opacity-0 pointer-events-none" aria-hidden="true">
-                    <div className="h-10"></div>
+
+                  {activeChild.goals && activeChild.goals.length > 0 ? (
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <div>
+                          <span className="text-white/60 text-[10px] font-medium uppercase block mb-0.5">{t.parent.childGoal}</span>
+                          <span className="text-sm font-medium">{activeChild.goals[0].name}</span>
+                        </div>
+                        <span className="text-sm font-bold">
+                          {Math.min(100, Math.round((activeChild.balance / activeChild.goals[0].target) * 100))}%
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-emerald-400 transition-all duration-1000"
+                          style={{ width: `${Math.min(100, (activeChild.balance / activeChild.goals[0].target) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-8" aria-hidden="true" />
+                  )}
+                </section>
+              ) : (
+                /* ── iOS Balance Card ── */
+                <section className={`relative bg-gradient-to-br from-${activeChild.colorClass}-400 to-${activeChild.colorClass}-700 rounded-[2.5rem] p-8 text-white shadow-xl shadow-${activeChild.colorClass}-500/25 overflow-hidden transform transition-all hover:scale-[1.01]`}>
+                  {/* SVG Background Pattern */}
+                  <div className="absolute inset-0 opacity-10 pointer-events-none">
+                    <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="none">
+                      <path d="M0 200C100 150 200 250 400 200V0H0V200Z" fill="white" />
+                      <path d="M0 100C150 50 250 150 400 100V0H0V100Z" fill="white" opacity="0.5" />
+                    </svg>
                   </div>
-                )}
-              </section>
+
+                  <div className="flex justify-between items-start relative z-10 mb-8">
+                    <div className="space-y-1">
+                      <p className="opacity-60 text-[10px] font-black uppercase tracking-[0.2em]">{t.parent.childBalance}</p>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-5xl font-black tracking-tighter tabular-nums leading-none">
+                          {activeChild.balance.toFixed(2)}
+                        </span>
+                        <span className="text-2xl font-black opacity-40">€</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <button onClick={() => setTransactionType('DEPOSIT')} aria-label={language === 'fr' ? 'Ajouter de l\'argent' : 'Add money'} className="w-12 h-12 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90">
+                        <i className="fa-solid fa-plus text-xl" aria-hidden="true"></i>
+                      </button>
+                      <button onClick={() => { setTransactionType('WITHDRAW'); setWithdrawSubtype('PURCHASE'); }} aria-label={language === 'fr' ? 'Retirer de l\'argent' : 'Withdraw money'} className="w-12 h-12 rounded-2xl bg-black/20 hover:bg-black/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90">
+                        <i className="fa-solid fa-minus text-xl" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Liquid Progress Bar — color changes with progress */}
+                  {activeChild.goals && activeChild.goals.length > 0 ? (
+                    <div className="relative z-10 pt-4 mt-auto">
+                      <div className="flex justify-between items-end mb-3">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-0.5">{t.parent.childGoal}</span>
+                          <span className="text-sm font-black tracking-tight">{activeChild.goals[0].name}</span>
+                        </div>
+                        <span className="text-[10px] font-black opacity-80">
+                          {Math.min(100, Math.round((activeChild.balance / activeChild.goals[0].target) * 100))}%
+                        </span>
+                      </div>
+                      <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-1000 ease-out"
+                          style={{
+                            width: `${Math.min(100, (activeChild.balance / activeChild.goals[0].target) * 100)}%`,
+                            background: (() => {
+                              const p = Math.min(100, Math.round((activeChild.balance / activeChild.goals[0].target) * 100));
+                              if (p >= 100) return 'linear-gradient(to right, #fbbf24, #f59e0b)';
+                              if (p >= 75) return 'linear-gradient(to right, #34d399, #10b981)';
+                              if (p >= 50) return 'linear-gradient(to right, #a3e635, #fde047)';
+                              if (p >= 25) return 'linear-gradient(to right, #fb923c, #f97316)';
+                              return 'linear-gradient(to right, #f87171, #fb7185)';
+                            })()
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative z-10 pt-4 mt-auto opacity-0 pointer-events-none" aria-hidden="true">
+                      <div className="h-10"></div>
+                    </div>
+                  )}
+                </section>
+              )}
 
               <section className="space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

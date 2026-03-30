@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { GlobalState, Language } from '../types';
 import { translations } from '../i18n';
 import HelpModal from './HelpModal';
+import { isAndroid } from '../hooks/usePlatform';
 
 
 interface LoginViewProps {
@@ -27,7 +28,83 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
   const t = translations[data.language];
   const [showHelp, setShowHelp] = useState(false);
 
+  if (isAndroid) {
+    return (
+      /* ── Android MD3 Login Screen ── */
+      <div className="min-h-screen bg-white dark:bg-slate-900 flex flex-col font-sans" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        {/* Top indigo band */}
+        <div className="bg-indigo-600 pt-12 pb-10 px-6 flex flex-col items-center" style={{ paddingTop: 'max(48px, env(safe-area-inset-top))' }}>
+          <div className="w-20 h-20 mb-4 rounded-[1.5rem] overflow-hidden shadow-lg">
+            <img src="/mascot.png" alt="Koiny Logo" className="w-full h-full object-cover" />
+          </div>
+          <h1 className="text-2xl font-medium text-white mb-1">{t.login.welcome}</h1>
+          <p className="text-white/70 text-sm">{t.login.selectProfile}</p>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 px-4 pt-6 pb-4">
+          {data.children.length === 0 ? (
+            <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl text-center mb-6">
+              <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">
+                <i className="fa-solid fa-people-roof"></i>
+              </div>
+              <h2 className="text-base font-medium text-slate-900 dark:text-white mb-1">{t.login.noProfileTitle}</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">{t.login.noProfileDesc}</p>
+              <button onClick={onParentAccess} className="bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-medium w-full active:bg-indigo-700 transition-colors">
+                {t.login.createFirstProfile}
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {data.children.map(child => (
+                <button
+                  key={child.id}
+                  onClick={() => onSelectChild(child.id)}
+                  aria-label={`${child.name} — ${child.balance.toFixed(2)}€`}
+                  className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 active:bg-slate-50 dark:active:bg-slate-700 transition-colors flex flex-col items-center gap-3"
+                >
+                  <div className="w-16 h-16 rounded-full overflow-hidden">
+                    {renderAvatar(child.avatar, child.colorClass)}
+                  </div>
+                  <div className="text-center">
+                    <span className="block font-medium text-slate-900 dark:text-white text-sm mb-1">{child.name}</span>
+                    <span className={`inline-block px-3 py-1 bg-${child.colorClass}-100 dark:bg-${child.colorClass}-900/30 text-${child.colorClass}-700 dark:text-${child.colorClass}-400 rounded-full text-xs font-medium`}>
+                      {child.balance.toFixed(2)} €
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom actions */}
+        {data.children.length > 0 && (
+          <div className="px-4 pb-4">
+            <button onClick={onParentAccess}
+              className="w-full flex items-center justify-center gap-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-2xl text-sm font-medium active:opacity-80 transition-opacity"
+            >
+              <i className="fa-solid fa-lock text-emerald-400" aria-hidden="true"></i>
+              <span>{t.login.parentAccess}</span>
+            </button>
+          </div>
+        )}
+
+        <div className="text-center pb-6">
+          <button onClick={() => { const event = new CustomEvent('openLegalModal'); window.dispatchEvent(event); }}
+            className="text-xs text-slate-400 underline"
+          >
+            {t.legal.link}
+          </button>
+        </div>
+
+        <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} language={data.language} />
+      </div>
+    );
+  }
+
   return (
+    /* ── iOS Login Screen ── */
     <div className="min-h-screen bg-white dark:bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans transition-colors duration-500">
       <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-200 dark:bg-indigo-900 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
       <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200 dark:bg-fuchsia-900 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
@@ -53,7 +130,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
             </div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">{t.login.noProfileTitle}</h2>
             <p className="text-slate-500 dark:text-slate-400 mb-6">{t.login.noProfileDesc}</p>
-            <button               onClick={onParentAccess}
+            <button onClick={onParentAccess}
               className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 w-full transition-all"
             >
               {t.login.createFirstProfile}
@@ -62,12 +139,12 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
         ) : (
           <div className="grid grid-cols-2 gap-4 mb-4">
             {data.children.map(child => (
-              <button                 key={child.id}
+              <button key={child.id}
                 onClick={() => onSelectChild(child.id)}
                 aria-label={`${child.name} — ${child.balance.toFixed(2)}€`}
                 className="bg-white dark:bg-slate-900 p-4 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border-4 border-transparent hover:border-indigo-400 active:scale-95 transition-all group flex flex-col items-center gap-3 relative overflow-hidden"
               >
-                <div className={`w-20 h-20 rounded-full flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden shadow-inner`}>
+                <div className="w-20 h-20 rounded-full flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden shadow-inner">
                   {renderAvatar(child.avatar, child.colorClass)}
                 </div>
                 <div className="text-center">
@@ -83,7 +160,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
 
         {data.children.length > 0 && (
           <div className="text-center mt-auto pt-6">
-            <button               onClick={onParentAccess}
+            <button onClick={onParentAccess}
               className="group inline-flex items-center gap-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-10 py-5 rounded-[2rem] hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-xl hover:shadow-2xl active:scale-95 w-full justify-center"
             >
               <i className="fa-solid fa-lock text-emerald-400 dark:text-emerald-500 group-hover:rotate-12 transition-transform" aria-hidden="true"></i>
@@ -92,9 +169,8 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
           </div>
         )}
 
-        {/* Legal Link */}
         <div className="text-center mt-8">
-          <button             onClick={() => {
+          <button onClick={() => {
               const event = new CustomEvent('openLegalModal');
               window.dispatchEvent(event);
             }}
@@ -104,14 +180,11 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
           </button>
         </div>
 
-        {/* Help Modal */}
         <HelpModal
           isOpen={showHelp}
           onClose={() => setShowHelp(false)}
           language={data.language}
         />
-
-        {/* Legal Modal (Centralized) */}
       </div>
     </div>
   );
