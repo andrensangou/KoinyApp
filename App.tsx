@@ -9,7 +9,7 @@ import OnboardingView from './components/OnboardingView';
 import LegalModal from './components/LegalModal';
 import AlertBanner from './components/AlertBanner';
 import { GlobalState, INITIAL_DATA, HistoryEntry, ChildProfile, Language, Goal, BADGE_THRESHOLDS, ParentBadge, MAX_BALANCE } from './types';
-import { loadData, saveData } from './services/storage';
+import { loadData, saveData, persistentStorage } from './services/storage';
 import { updateWidgetData } from './services/widgetBridge';
 import { getSupabase, updatePassword, deleteAccount, ensureUserProfile } from './services/supabase';
 import { alertService, AppAlert } from './services/alertService';
@@ -212,6 +212,10 @@ const App: React.FC = () => {
         if (subStatus.isSubscribed) {
           localStorage.setItem('koiny_premium_active', 'true');
           setData(prev => ({ ...prev, isPremium: true }));
+        } else {
+          // Explicitly reset premium — prevents stale state from previous user
+          localStorage.removeItem('koiny_premium_active');
+          setData(prev => ({ ...prev, isPremium: false }));
         }
       } catch (e) {
         console.warn('⚠️ [INIT] RevenueCat init failed (non-blocking):', e);
@@ -528,9 +532,19 @@ const App: React.FC = () => {
         // Handles both null (no session) and valid session
         await initialize(session);
       } else if (event === 'SIGNED_OUT') {
-        setView('LANDING');
+        // Clear ALL local state immediately to prevent stale data bleed
         setData(INITIAL_DATA);
         setOwnerId(undefined);
+        setView('LANDING');
+        setActiveChildId(null);
+        // Clear premium state — must be re-validated for next user
+        localStorage.removeItem('koiny_premium_active');
+        // Clear cached data so next login doesn't flash old children
+        localStorage.removeItem('koiny_local_v1');
+        localStorage.removeItem('koiny_last_view');
+        localStorage.removeItem('koiny_last_child_id');
+        persistentStorage.remove('koiny_local_v1').catch(() => {});
+        persistentStorage.remove('koiny_local_v1_backup').catch(() => {});
       }
     });
 
@@ -555,7 +569,7 @@ const App: React.FC = () => {
 
       isSavingRef.current = true;
       try {
-        if (!loading && view !== 'AUTH' && view !== 'LANDING' && !criticalError) {
+        if (!loading && view !== 'AUTH' && view !== 'LANDING' && !criticalError && ownerId !== 'demo') {
           const changes = await saveData(data, ownerId, immediateSave);
           updateWidgetData(data.children, data.language);
 
@@ -1253,11 +1267,12 @@ const App: React.FC = () => {
       localStorage.removeItem('kidbank_data_demo');
       setData(demoData);
       setOwnerId('demo');
-      saveData(demoData, 'demo');
+      // Demo data stays in React state only — do NOT persist to local storage
+      // to prevent demo children from bleeding into real accounts on next login
     } else {
       const result = await loadData();
-    setData(result.data || INITIAL_DATA);
-    setOwnerId(result.ownerId);
+      setData(result.data || INITIAL_DATA);
+      setOwnerId(result.ownerId);
     }
     setLoading(false);
     setView('LOGIN');

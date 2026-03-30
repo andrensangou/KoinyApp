@@ -5,7 +5,10 @@
 
 ## Projet
 
-Koiny est une app mobile iOS d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
+Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
+
+**App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
+**Statut:** Publiée sur l'App Store (version 1.0.0, build 2). Android en cours de finalisation.
 
 ## Regles critiques
 
@@ -50,7 +53,7 @@ Build prend ~24 minutes sur cette machine.
 | `i18n.ts` | Traductions FR/NL/EN |
 | `types.ts` | Interfaces TypeScript + constantes |
 | `services/supabase.ts` | Client Supabase, Auth, CRUD |
-| `services/storage.ts` | loadData/saveData, cache hybride |
+| `services/storage.ts` | loadData/saveData, cache hybride (+ `persistentStorage`) |
 | `services/subscription.ts` | RevenueCat SDK, IAP |
 | `services/pinStorage.ts` | Stockage PIN local + sync |
 | `services/notifications.ts` | Notifications locales |
@@ -58,6 +61,8 @@ Build prend ~24 minutes sur cette machine.
 | `services/widgetBridge.ts` | Bridge JS -> iOS Widget |
 | `services/logger.ts` | Logger sécurisé avec anonymisation |
 | `services/security.ts` | PBKDF2 PIN hashing (100k iterations, SHA-512) |
+| `hooks/usePlatform.ts` | Détection plateforme: `isAndroid`, `isIOS`, `isWeb`, `isNative` |
+| `hooks/useModal.ts` | Hook centralisé body-lock pour modals (iOS-compatible) |
 | `config.ts` | Validation des credentials au startup |
 
 ## Architecture sync
@@ -163,6 +168,13 @@ const t = translations[data.language || 'fr'];
 - ✅ Fix: `waitForInit()` — produits ne chargeaient pas car modal ouvert avant init RevenueCat
 - ✅ Fix: SubscriptionModal retry auto + bouton "Réessayer" + spinner achat + anti double-clic
 
+### Corrections appliquées (30/03/2026)
+- ✅ **Demo data bleed fix (App.tsx)**: Mode démo ne persiste plus dans localStorage/Capacitor Preferences. `saveData()` bloqué quand `ownerId === 'demo'`. Au `SIGNED_OUT`, nettoyage complet: `koiny_local_v1`, `koiny_last_view`, `koiny_last_child_id`, `koiny_premium_active` (localStorage + `persistentStorage.remove`).
+- ✅ **Premium state reset (App.tsx)**: Si RevenueCat retourne `isSubscribed: false`, `isPremium` est explicitement remis à `false` et `koiny_premium_active` supprimé du localStorage. Empêche le stale premium d'un ancien utilisateur.
+- ✅ **Android Material Design 3 (ParentView.tsx)**: Ajout de variantes Android pour les modals (edit mission, transactions, approve/reject, prompt/alert). Pattern: `isAndroid ? (version MD3) : (version iOS)`. Import: `import { isAndroid } from '../hooks/usePlatform'`.
+- ✅ **Build number iOS**: Incrémenté `CURRENT_PROJECT_VERSION` de 1 → 2 dans `project.pbxproj` (4 targets: App Debug/Release, Widget Debug/Release).
+- ✅ **Android Gradle JDK**: `gradleJvm` fixé sur `jbr-21` dans `android/.idea/gradle.xml`.
+
 ### Corrections appliquées (20/03/2026 — session 3)
 - ✅ **`services/pinStorage.ts` — anonymisation logs**: `console.log(userId)` remplacé par `logger.debug(logger.anonymize(userId))` — userId ne s'affiche plus en clair dans les logs Xcode
 - ✅ **`handleFullSignOut` — réactivité bouton**: navigation vers `AUTH` immédiate (optimistic) avant les appels réseau. `getUser()` (réseau) remplacé par `getSession()` (cache local). Supprime le besoin de double-clic
@@ -221,6 +233,12 @@ const t = translations[data.language || 'fr'];
 - Review Apple pour tests externes: 24-48h
 - Xcode incrémente automatiquement le build number à chaque archive
 - Builds: (1) 15/03, (2) 15/03, (3) 16/03, (4+) 16/03 après contrat signé
+- Build actuel: **version 1.0.0, build 2** (30/03/2026 — fix demo data bleed + Android MD3)
+
+**Android:**
+- Gradle JDK: `jbr-21` (configuré dans `android/.idea/gradle.xml`)
+- Build: `cd android && ./gradlew assembleDebug` (~14s)
+- Sync: `npx cap sync android`
 
 **Contrat "Apps payantes":**
 - Statut: "Actif" (signé le 16/03/2026)
@@ -309,3 +327,46 @@ xcrun simctl status_bar $UDID override --time 09:41 --batteryState charged --bat
 
 `tsconfig.json` et `vite.config.ts` excluent: `screenshots/`, `.agent/`, `.agents/`, `.claude/`, `docs/`, `ios/`
 Ces dossiers ne font pas partie du build et ne doivent pas etre inclus.
+
+## Android — Adaptation MD3
+
+**Pattern pour modals adaptatifs iOS/Android:**
+```tsx
+import { isAndroid } from '../hooks/usePlatform';
+
+// Dans le JSX:
+{isAndroid ? (
+  // Version Material Design 3: rounded-[28px], text buttons alignés à droite,
+  // inputs avec border simple (rounded-xl), icônes dans cercles colorés
+  <div className="bg-white dark:bg-slate-900 rounded-[28px] shadow-2xl">
+    <div className="flex justify-end gap-2 px-6 pb-6">
+      <button className="text-sm font-medium text-slate-600 px-4 py-2.5 rounded-full">Cancel</button>
+      <button className="text-sm font-medium text-indigo-600 px-4 py-2.5 rounded-full">Confirm</button>
+    </div>
+  </div>
+) : (
+  // Version iOS: rounded-[2.5rem], boutons plein width, backdrop-blur,
+  // gradients headers, uppercase tracking-widest labels
+  <div className="bg-white/90 rounded-[2.5rem] shadow-2xl">
+    ...
+  </div>
+)}
+```
+
+**Composants Android créés (non traqués):**
+- `components/AndroidBottomNav.tsx`
+- `components/AndroidFAB.tsx`
+- `components/AndroidInput.tsx`
+- `components/AndroidListItem.tsx`
+- `components/AndroidSwitch.tsx`
+- `components/AndroidTopBar.tsx`
+
+**`hooks/usePlatform.ts`:**
+```typescript
+import { Capacitor } from '@capacitor/core';
+const platform = Capacitor.getPlatform();
+export const isAndroid = platform === 'android';
+export const isIOS = platform === 'ios';
+export const isWeb = platform === 'web';
+export const isNative = Capacitor.isNativePlatform();
+```

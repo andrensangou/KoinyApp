@@ -20,6 +20,7 @@ import { getIcon } from '../constants/icons';
 import { checkBiometricAvailability, authenticateWithBiometric, getBiometricLabel, getBiometricIcon } from '../services/biometric';
 import { Capacitor } from '@capacitor/core';
 import { useModal } from '../hooks/useModal';
+import { isAndroid } from '../hooks/usePlatform';
 
 interface ParentViewProps {
   data: GlobalState;
@@ -1181,6 +1182,73 @@ const ParentView: React.FC<ParentViewProps> = ({
 
       {/* Offline Modal — en dehors de la nav pour éviter pointer-events-none du dashboard */}
       {showOfflineModal && (
+        isAndroid ? (
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-6 pointer-events-auto"
+            style={{ background: 'rgba(0,0,0,0.4)' }}
+            onClick={() => setShowOfflineModal(false)}
+          >
+            <div
+              className="bg-white dark:bg-slate-900 rounded-[28px] w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* MD3 header — left-aligned */}
+              <div className="flex items-center gap-3 px-6 pt-6 pb-3">
+                <div className="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center shrink-0">
+                  <i className="fa-solid fa-wifi-slash text-orange-500 text-sm"></i>
+                </div>
+                <h3 className="text-xl font-medium text-slate-900 dark:text-white">
+                  {language === 'fr' ? 'Mode hors ligne' : language === 'nl' ? 'Offline-modus' : 'Offline mode'}
+                </h3>
+              </div>
+
+              <div className="px-6 pb-2">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                  {language === 'fr' ? 'Données sauvegardées localement' : language === 'nl' ? 'Gegevens lokaal opgeslagen' : 'Data saved locally'}
+                </p>
+
+                <div className="mb-3">
+                  <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-1.5">{language === 'fr' ? 'Ce qui fonctionne' : language === 'nl' ? 'Wat werkt' : 'What works'}</p>
+                  <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                    {(language === 'fr'
+                      ? ['Valider des missions', 'Ajouter des missions', 'Transactions manuelles', 'Éditer les profils enfants']
+                      : language === 'nl'
+                        ? ['Missies goedkeuren', 'Missies toevoegen', 'Handmatige transacties', 'Kinderprofielen bewerken']
+                        : ['Approve missions', 'Add missions', 'Manual transactions', 'Edit child profiles']
+                    ).map((item, i) => <li key={i} className="flex items-center gap-2"><i className="fa-solid fa-check text-emerald-500 text-xs"></i> {item}</li>)}
+                  </ul>
+                </div>
+
+                <div className="mb-3">
+                  <p className="text-xs font-semibold text-rose-500 dark:text-rose-400 mb-1.5">{language === 'fr' ? 'Non disponible' : language === 'nl' ? 'Niet beschikbaar' : 'Not available'}</p>
+                  <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                    {(language === 'fr'
+                      ? ['Créer un nouvel enfant', 'Supprimer un enfant', 'Charger de nouvelles données']
+                      : language === 'nl'
+                        ? ['Nieuw kind toevoegen', 'Kind verwijderen', 'Nieuwe gegevens laden']
+                        : ['Create a new child', 'Delete a child', 'Load new data']
+                    ).map((item, i) => <li key={i} className="flex items-center gap-2"><i className="fa-solid fa-xmark text-rose-400 text-xs"></i> {item}</li>)}
+                  </ul>
+                </div>
+
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">
+                  {language === 'fr'
+                    ? 'Les données se synchroniseront automatiquement quand la connexion revient.'
+                    : language === 'nl'
+                      ? 'Gegevens synchroniseren automatisch wanneer de verbinding hersteld is.'
+                      : 'Data will sync automatically when connection returns.'}
+                </p>
+              </div>
+
+              {/* MD3 text button right-aligned */}
+              <div className="flex justify-end px-6 pb-6 pt-3">
+                <button onClick={() => setShowOfflineModal(false)} className="px-4 py-2.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 rounded-full active:bg-indigo-50 dark:active:bg-indigo-900/20 transition-colors">
+                  {t.common.close}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
         <div
           className="fixed inset-0 z-[9999] flex items-end justify-center p-4 pointer-events-auto"
           style={{ background: 'rgba(0,0,0,0.5)' }}
@@ -1242,6 +1310,7 @@ const ParentView: React.FC<ParentViewProps> = ({
             </p>
           </div>
         </div>
+        )
       )}
 
       {/* Hero Section (Dashboard Only, avec enfants) */}
@@ -1563,71 +1632,77 @@ const ParentView: React.FC<ParentViewProps> = ({
 
               {/* ===== EDIT MISSION MODAL ===== */}
               {editingMission && (
-                <div className="fixed inset-0 z-[100] flex items-end justify-center pb-8 pt-12 px-4 sm:items-center" onClick={() => setEditingMission(null)}>
-                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
-                  <div className="relative bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden animate-slide-up sm:animate-pop-in max-h-full overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                    {/* Header violet */}
-                    <div className="bg-gradient-to-br from-indigo-600 to-violet-600 pt-8 pb-7 px-6 flex flex-col items-center text-center relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-                      <div className="w-16 h-16 bg-white/20 rounded-[1.25rem] flex items-center justify-center mb-4 shadow-lg shadow-black/10">
-                        <i className="fa-solid fa-pen-to-square text-2xl text-white"></i>
+                isAndroid ? (
+                  <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setEditingMission(null)}>
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[28px] shadow-2xl overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
+                      <div className="px-6 pt-6 pb-2">
+                        <h3 className="text-xl font-medium text-slate-900 dark:text-white">{t.parent.editMissionTitle}</h3>
                       </div>
-                      <h3 className="text-xl font-black text-white uppercase tracking-wider">{t.parent.editMissionTitle}</h3>
+                      <div className="px-6 pb-2 space-y-4">
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 ml-1 block">{t.parent.formTitleLabel}</label>
+                          <input type="text" value={editMissionTitle} onChange={(e) => setEditMissionTitle(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-3 text-base text-slate-900 dark:text-white focus:border-2 focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all" autoFocus />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 ml-1 block">{t.parent.formAmountLabel}</label>
+                          <input type="number" inputMode="decimal" step="0.5" min="0.5" value={editMissionReward} onChange={(e) => setEditMissionReward(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-3 text-base text-slate-900 dark:text-white focus:border-2 focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all" />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2 px-6 pb-6 pt-2">
+                        <button onClick={() => setEditingMission(null)} className="text-sm font-medium text-slate-600 dark:text-slate-400 px-4 py-2 rounded-full active:bg-slate-100 dark:active:bg-slate-800">{t.common.cancel}</button>
+                        <button onClick={() => {
+                          if (selectedChildId && editMissionTitle.trim() && editMissionTitle.trim().length <= 100) {
+                            const updates: { title?: string; reward?: number } = {};
+                            if (editMissionTitle.trim() !== editingMission.title) updates.title = editMissionTitle.trim();
+                            const newReward = parseFloat(editMissionReward);
+                            if (!isNaN(newReward) && newReward > 0 && newReward <= 100 && newReward !== editingMission.reward) updates.reward = newReward;
+                            if (Object.keys(updates).length > 0) { onEditMission(selectedChildId, editingMission.id, updates); }
+                          }
+                          setEditingMission(null);
+                        }} className="text-sm font-medium text-indigo-600 dark:text-indigo-400 px-4 py-2 rounded-full active:bg-indigo-50 dark:active:bg-indigo-900/20">{t.parent.editMissionSave}</button>
+                      </div>
                     </div>
-
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{t.parent.formTitleLabel}</label>
-                        <input
-                          type="text"
-                          value={editMissionTitle}
-                          onChange={(e) => setEditMissionTitle(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-4 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 transition-all text-sm"
-                          autoFocus
-                        />
+                  </div>
+                ) : (
+                  <div className="fixed inset-0 z-[100] flex items-end justify-center pb-8 pt-12 px-4 sm:items-center" onClick={() => setEditingMission(null)}>
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+                    <div className="relative bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden animate-slide-up sm:animate-pop-in max-h-full overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                      <div className="bg-gradient-to-br from-indigo-600 to-violet-600 pt-8 pb-7 px-6 flex flex-col items-center text-center relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                        <div className="w-16 h-16 bg-white/20 rounded-[1.25rem] flex items-center justify-center mb-4 shadow-lg shadow-black/10">
+                          <i className="fa-solid fa-pen-to-square text-2xl text-white"></i>
+                        </div>
+                        <h3 className="text-xl font-black text-white uppercase tracking-wider">{t.parent.editMissionTitle}</h3>
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{t.parent.formAmountLabel}</label>
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          step="0.5"
-                          min="0.5"
-                          value={editMissionReward}
-                          onChange={(e) => setEditMissionReward(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-4 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 transition-all text-sm"
-                        />
-                      </div>
-
-                      <div className="flex gap-3 pt-2">
-                        <button
-                          onClick={() => setEditingMission(null)}
-                          className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all uppercase tracking-widest text-[10px] active:scale-95"
-                        >
-                          {t.common.cancel}
-                        </button>
-                        <button
-                          onClick={() => {
+                      <div className="p-6 space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{t.parent.formTitleLabel}</label>
+                          <input type="text" value={editMissionTitle} onChange={(e) => setEditMissionTitle(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-4 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 transition-all text-sm" autoFocus />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{t.parent.formAmountLabel}</label>
+                          <input type="number" inputMode="decimal" step="0.5" min="0.5" value={editMissionReward} onChange={(e) => setEditMissionReward(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-4 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 transition-all text-sm" />
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                          <button onClick={() => setEditingMission(null)} className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all uppercase tracking-widest text-[10px] active:scale-95">{t.common.cancel}</button>
+                          <button onClick={() => {
                             if (selectedChildId && editMissionTitle.trim() && editMissionTitle.trim().length <= 100) {
                               const updates: { title?: string; reward?: number } = {};
                               if (editMissionTitle.trim() !== editingMission.title) updates.title = editMissionTitle.trim();
                               const newReward = parseFloat(editMissionReward);
                               if (!isNaN(newReward) && newReward > 0 && newReward <= 100 && newReward !== editingMission.reward) updates.reward = newReward;
-                              if (Object.keys(updates).length > 0) {
-                                onEditMission(selectedChildId, editingMission.id, updates);
-                              }
+                              if (Object.keys(updates).length > 0) { onEditMission(selectedChildId, editingMission.id, updates); }
                             }
                             setEditingMission(null);
-                          }}
-                          className="flex-1 py-4 bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-black rounded-2xl shadow-md shadow-indigo-500/25 dark:shadow-none transition-all uppercase tracking-widest text-[10px] active:scale-95 flex items-center justify-center gap-2"
-                        >
-                          <i className="fa-solid fa-check"></i>
-                          {t.parent.editMissionSave}
-                        </button>
+                          }} className="flex-1 py-4 bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-black rounded-2xl shadow-md shadow-indigo-500/25 dark:shadow-none transition-all uppercase tracking-widest text-[10px] active:scale-95 flex items-center justify-center gap-2">
+                            <i className="fa-solid fa-check"></i>
+                            {t.parent.editMissionSave}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )
               )}
 
               {/* Quick Actions (QR & Premium) - Added for visibility */}
@@ -2340,38 +2415,36 @@ const ParentView: React.FC<ParentViewProps> = ({
 
       {
         transactionType && activeChild && (
-          <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 transition-colors duration-500">
-            <div className="fixed inset-0" onClick={() => setTransactionType(null)}></div>
-            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in text-slate-900 dark:text-white relative z-10 transition-colors duration-500">
-              <div className={`pt-10 pb-8 px-8 text-white relative overflow-hidden ${transactionType === 'DEPOSIT' ? 'bg-emerald-500' : (withdrawSubtype === 'PURCHASE' ? 'bg-slate-900' : 'bg-red-600')}`}>
-                <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-12 -mb-12 blur-2xl"></div>
-                <div className="relative z-10 flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-[1.25rem] flex items-center justify-center mb-4 shadow-lg shadow-black/10">
-                    <i className={`fa-solid ${transactionType === 'DEPOSIT'
-                      ? 'fa-coins'
-                      : withdrawSubtype === 'PURCHASE'
-                        ? 'fa-cart-shopping'
-                        : 'fa-gavel'
-                      } text-2xl`}></i>
+          isAndroid ? (
+            <div className="fixed inset-0 bg-black/40 z-[100] flex items-end" onClick={() => setTransactionType(null)}>
+              <div className="w-full bg-white dark:bg-slate-900 rounded-t-[28px] shadow-2xl animate-slide-up relative" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
+                {/* Handle bar */}
+                <div className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mt-3 mb-2" />
+
+                {/* Header — light surface MD3 */}
+                <div className="flex items-center gap-3 px-5 py-3">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${transactionType === 'DEPOSIT' ? 'bg-emerald-50 dark:bg-emerald-900/20' : (withdrawSubtype === 'PURCHASE' ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'bg-rose-50 dark:bg-rose-900/20')}`}>
+                    <i className={`fa-solid ${transactionType === 'DEPOSIT' ? 'fa-coins text-emerald-500' : withdrawSubtype === 'PURCHASE' ? 'fa-cart-shopping text-indigo-500' : 'fa-gavel text-rose-500'} text-lg`}></i>
                   </div>
-                  <h3 className="text-xl font-black uppercase tracking-wider">{transactionType === 'DEPOSIT' ? t.parent.transactions.labels.deposit : (withdrawSubtype === 'PURCHASE' ? t.parent.transactions.labels.purchase : t.parent.transactions.labels.penalty)}</h3>
-                  <p className="text-white/60 text-[11px] font-bold mt-2 uppercase tracking-widest">{activeChild?.name}</p>
+                  <div>
+                    <h3 className="text-lg font-medium text-slate-900 dark:text-white">{transactionType === 'DEPOSIT' ? t.parent.transactions.labels.deposit : (withdrawSubtype === 'PURCHASE' ? t.parent.transactions.labels.purchase : t.parent.transactions.labels.penalty)}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{activeChild?.name}</p>
+                  </div>
                 </div>
-              </div>
 
-              <form onSubmit={handleTransactionSubmit} className="p-8 space-y-6">
-                {transactionType === 'WITHDRAW' && (
-                  <div className="flex p-1.5 bg-slate-100 dark:bg-slate-800/60 rounded-2xl gap-1.5 mb-2">
-                    <button type="button" onClick={() => setWithdrawSubtype('PURCHASE')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${withdrawSubtype === 'PURCHASE' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-md shadow-slate-900/10' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}><i className="fa-solid fa-cart-shopping"></i> {t.parent.transactions.labels.purchase}</button>
-                    <button type="button" onClick={() => setWithdrawSubtype('PENALTY')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${withdrawSubtype === 'PENALTY' ? 'bg-red-500 text-white shadow-md shadow-red-500/30' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}><i className="fa-solid fa-gavel"></i> {t.parent.transactions.labels.penalty}</button>
-                  </div>
-                )}
+                <form onSubmit={handleTransactionSubmit} className="px-5 pb-2">
+                  {/* Tab switcher MD3 segmented */}
+                  {transactionType === 'WITHDRAW' && (
+                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-1 mt-1 mb-4">
+                      <button type="button" onClick={() => setWithdrawSubtype('PURCHASE')} className={`flex-1 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${withdrawSubtype === 'PURCHASE' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400 dark:text-slate-500'}`}><i className="fa-solid fa-cart-shopping text-xs"></i> {t.parent.transactions.labels.purchase}</button>
+                      <button type="button" onClick={() => setWithdrawSubtype('PENALTY')} className={`flex-1 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${withdrawSubtype === 'PENALTY' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-400 dark:text-slate-500'}`}><i className="fa-solid fa-gavel text-xs"></i> {t.parent.transactions.labels.penalty}</button>
+                    </div>
+                  )}
 
-                <div className="space-y-4">
-                  <div className="relative group">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">{language === 'fr' ? 'Montant à valider' : language === 'nl' ? 'Bedrag' : 'Amount'}</label>
-                    <div className="relative">
+                  {/* Amount field MD3 outlined */}
+                  <div className="mt-3">
+                    <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 ml-1 block">{language === 'fr' ? 'Montant' : language === 'nl' ? 'Bedrag' : 'Amount'}</label>
+                    <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-3 flex items-center focus-within:border-2 focus-within:border-indigo-600 focus-within:bg-white dark:focus-within:bg-slate-900 transition-all">
                       <input
                         type="text"
                         value={transAmount}
@@ -2381,49 +2454,145 @@ const ParentView: React.FC<ParentViewProps> = ({
                             setTransAmount(e.target.value);
                           }
                         }}
-                        className="w-full border-2 border-slate-100 dark:border-slate-800 rounded-[1.5rem] py-5 px-6 text-3xl font-black focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/30 outline-none bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-white transition-all text-center placeholder:opacity-30 shadow-inner"
+                        className="flex-1 text-3xl font-light text-slate-900 dark:text-white bg-transparent text-center focus:outline-none placeholder:text-slate-300 dark:placeholder:text-slate-600"
                         required
                         placeholder="0.00"
                         inputMode="decimal"
                       />
-                      <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-slate-300 dark:text-slate-700 text-xl">€</span>
+                      <span className="text-xl text-slate-400 dark:text-slate-500 ml-2">€</span>
                     </div>
                   </div>
 
-                  <div className="relative group">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">{t.parent.transactions.reason}</label>
+                  {/* Motif field MD3 outlined */}
+                  <div className="mt-4">
+                    <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 ml-1 block">{t.parent.transactions.reason}</label>
                     <input
                       type="text"
                       value={transReason}
                       onChange={(e) => setTransReason(e.target.value)}
-                      className="w-full border-2 border-slate-100 dark:border-slate-800 rounded-[1.5rem] py-4 px-6 text-sm font-bold focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/30 outline-none bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-white transition-all shadow-inner"
-                      placeholder={
-                        transactionType === 'DEPOSIT'
-                          ? t.parent.transactions.placeholders.deposit
-                          : (withdrawSubtype === 'PURCHASE' ? t.parent.transactions.placeholders.purchase : t.parent.transactions.placeholders.penalty)
-                      }
+                      className="w-full border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-3 text-base text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-600 focus:border-2 focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all"
+                      placeholder={transactionType === 'DEPOSIT' ? t.parent.transactions.placeholders.deposit : (withdrawSubtype === 'PURCHASE' ? t.parent.transactions.placeholders.purchase : t.parent.transactions.placeholders.penalty)}
                     />
+                  </div>
+
+                  {/* Action buttons MD3 side-by-side */}
+                  <div className="flex gap-3 mt-6 mb-2">
+                    <button type="button" onClick={() => setTransactionType(null)} className="flex-1 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm font-medium active:bg-slate-50 dark:active:bg-slate-800 transition-colors">{t.common.cancel}</button>
+                    <button type="submit" className="flex-1 py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold active:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
+                      <i className="fa-solid fa-check text-xs"></i>
+                      {t.common.confirm}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          ) : (
+            <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 transition-colors duration-500">
+              <div className="fixed inset-0" onClick={() => setTransactionType(null)}></div>
+              <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in text-slate-900 dark:text-white relative z-10 transition-colors duration-500">
+                <div className={`pt-10 pb-8 px-8 text-white relative overflow-hidden ${transactionType === 'DEPOSIT' ? 'bg-emerald-500' : (withdrawSubtype === 'PURCHASE' ? 'bg-slate-900' : 'bg-red-600')}`}>
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-12 -mb-12 blur-2xl"></div>
+                  <div className="relative z-10 flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-[1.25rem] flex items-center justify-center mb-4 shadow-lg shadow-black/10">
+                      <i className={`fa-solid ${transactionType === 'DEPOSIT'
+                        ? 'fa-coins'
+                        : withdrawSubtype === 'PURCHASE'
+                          ? 'fa-cart-shopping'
+                          : 'fa-gavel'
+                        } text-2xl`}></i>
+                    </div>
+                    <h3 className="text-xl font-black uppercase tracking-wider">{transactionType === 'DEPOSIT' ? t.parent.transactions.labels.deposit : (withdrawSubtype === 'PURCHASE' ? t.parent.transactions.labels.purchase : t.parent.transactions.labels.penalty)}</h3>
+                    <p className="text-white/60 text-[11px] font-bold mt-2 uppercase tracking-widest">{activeChild?.name}</p>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 pt-4">
-                  <button
-                    type="submit"
-                    className={`w-full py-5 text-white font-black uppercase tracking-[0.2em] text-sm rounded-[1.5rem] transition-all active:scale-95 flex items-center justify-center gap-3 ${transactionType === 'DEPOSIT' ? 'bg-emerald-500 shadow-md shadow-emerald-500/30' : (withdrawSubtype === 'PURCHASE' ? 'bg-slate-900 shadow-md shadow-slate-900/30 dark:shadow-black/40' : 'bg-red-500 shadow-md shadow-red-500/30')}`}
-                  >
-                    <i className="fa-solid fa-circle-check"></i>
-                    {t.common.confirm}
-                  </button>
-                  <button type="button" onClick={() => setTransactionType(null)} className="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors">{t.common.cancel}</button>
-                </div>
-              </form>
+                <form onSubmit={handleTransactionSubmit} className="p-8 space-y-6">
+                  {transactionType === 'WITHDRAW' && (
+                    <div className="flex p-1.5 bg-slate-100 dark:bg-slate-800/60 rounded-2xl gap-1.5 mb-2">
+                      <button type="button" onClick={() => setWithdrawSubtype('PURCHASE')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${withdrawSubtype === 'PURCHASE' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-md shadow-slate-900/10' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}><i className="fa-solid fa-cart-shopping"></i> {t.parent.transactions.labels.purchase}</button>
+                      <button type="button" onClick={() => setWithdrawSubtype('PENALTY')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${withdrawSubtype === 'PENALTY' ? 'bg-red-500 text-white shadow-md shadow-red-500/30' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}><i className="fa-solid fa-gavel"></i> {t.parent.transactions.labels.penalty}</button>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <div className="relative group">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">{language === 'fr' ? 'Montant à valider' : language === 'nl' ? 'Bedrag' : 'Amount'}</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={transAmount}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(',', '.');
+                            if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                              setTransAmount(e.target.value);
+                            }
+                          }}
+                          className="w-full border-2 border-slate-100 dark:border-slate-800 rounded-[1.5rem] py-5 px-6 text-3xl font-black focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/30 outline-none bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-white transition-all text-center placeholder:opacity-30 shadow-inner"
+                          required
+                          placeholder="0.00"
+                          inputMode="decimal"
+                        />
+                        <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-slate-300 dark:text-slate-700 text-xl">€</span>
+                      </div>
+                    </div>
+
+                    <div className="relative group">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">{t.parent.transactions.reason}</label>
+                      <input
+                        type="text"
+                        value={transReason}
+                        onChange={(e) => setTransReason(e.target.value)}
+                        className="w-full border-2 border-slate-100 dark:border-slate-800 rounded-[1.5rem] py-4 px-6 text-sm font-bold focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/30 outline-none bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-white transition-all shadow-inner"
+                        placeholder={
+                          transactionType === 'DEPOSIT'
+                            ? t.parent.transactions.placeholders.deposit
+                            : (withdrawSubtype === 'PURCHASE' ? t.parent.transactions.placeholders.purchase : t.parent.transactions.placeholders.penalty)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 pt-4">
+                    <button
+                      type="submit"
+                      className={`w-full py-5 text-white font-black uppercase tracking-[0.2em] text-sm rounded-[1.5rem] transition-all active:scale-95 flex items-center justify-center gap-3 ${transactionType === 'DEPOSIT' ? 'bg-emerald-500 shadow-md shadow-emerald-500/30' : (withdrawSubtype === 'PURCHASE' ? 'bg-slate-900 shadow-md shadow-slate-900/30 dark:shadow-black/40' : 'bg-red-500 shadow-md shadow-red-500/30')}`}
+                    >
+                      <i className="fa-solid fa-circle-check"></i>
+                      {t.common.confirm}
+                    </button>
+                    <button type="button" onClick={() => setTransactionType(null)} className="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors">{t.common.cancel}</button>
+                  </div>
+                </form>
+              </div>
             </div>
-          </div>
+          )
         )
       }
 
       {
         selectedMissionId && (
+          isAndroid ? (
+            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-6" onClick={() => setSelectedMissionId(null)}>
+              <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[28px] shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+                {/* MD3 header */}
+                <div className="flex items-center gap-3 px-6 pt-6 pb-2">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${actionType === 'APPROVE' ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-rose-50 dark:bg-rose-900/20'}`}>
+                    <i className={`fa-solid ${actionType === 'APPROVE' ? 'fa-check text-emerald-500' : 'fa-xmark text-rose-500'} text-sm`}></i>
+                  </div>
+                  <h3 className="text-xl font-medium text-slate-900 dark:text-white">{actionType === 'APPROVE' ? t.parent.approveModalTitle : t.parent.rejectModalTitle}</h3>
+                </div>
+                <div className="px-6 py-4">
+                  <textarea value={note} onChange={(e) => setNote(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 p-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-600 focus:border-2 focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 focus:outline-none resize-none h-24 transition-all" placeholder={t.parent.notePlaceholder}></textarea>
+                </div>
+                {/* MD3 text buttons right-aligned */}
+                <div className="flex justify-end gap-2 px-6 pb-6">
+                  <button onClick={() => setSelectedMissionId(null)} className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 rounded-full active:bg-slate-50 dark:active:bg-slate-800 transition-colors">{t.common.cancel}</button>
+                  <button onClick={confirmAction} className={`px-4 py-2.5 text-sm font-medium rounded-full transition-colors ${actionType === 'APPROVE' ? 'text-emerald-600 dark:text-emerald-400 active:bg-emerald-50 dark:active:bg-emerald-900/20' : 'text-rose-600 dark:text-rose-400 active:bg-rose-50 dark:active:bg-rose-900/20'}`}>{t.common.confirm}</button>
+                </div>
+              </div>
+            </div>
+          ) : (
           <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 w-full max-sm rounded-2xl shadow-2xl overflow-hidden animate-scale-in text-slate-900 dark:text-white font-bold border border-white/10 transition-colors duration-500">
               <div className={`p-6 text-white ${actionType === 'APPROVE' ? 'bg-emerald-500' : 'bg-red-500'}`}>
@@ -2438,6 +2607,7 @@ const ParentView: React.FC<ParentViewProps> = ({
               </div>
             </div>
           </div>
+          )
         )
       }
 
@@ -2470,6 +2640,66 @@ const ParentView: React.FC<ParentViewProps> = ({
       {/* Custom Prompt/Alert Modal - Premium Upgrade */}
       {
         promptConfig.isOpen && (
+          isAndroid ? (
+            <div className="fixed inset-0 z-[250] flex items-center justify-center p-6">
+              <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}></div>
+              <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[28px] shadow-2xl relative z-10 animate-scale-in overflow-hidden">
+                {/* MD3 header with icon */}
+                <div className="px-6 pt-6 pb-2">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 ${promptConfig.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500' :
+                    promptConfig.type === 'warning' || promptConfig.type === 'danger' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' :
+                      'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500'
+                    }`}>
+                    <i className={`fa-solid ${promptConfig.type === 'success' ? 'fa-check-circle' :
+                      promptConfig.type === 'warning' || promptConfig.type === 'danger' ? 'fa-triangle-exclamation' :
+                        promptConfig.type === 'input' ? 'fa-pen-to-square' : 'fa-circle-info'
+                      } text-lg`}></i>
+                  </div>
+                  <h3 className="text-xl font-medium text-slate-900 dark:text-white mb-2">{promptConfig.title}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{promptConfig.message}</p>
+                </div>
+
+                {promptConfig.type === 'input' && (
+                  <div className="px-6 pt-4 pb-2 relative">
+                    <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-3 flex items-center focus-within:border-2 focus-within:border-indigo-600 focus-within:bg-white dark:focus-within:bg-slate-900 transition-all">
+                      <input
+                        autoFocus
+                        type={showPromptPassword ? 'text' : 'password'}
+                        value={promptValue}
+                        onChange={(e) => setPromptValue(e.target.value)}
+                        placeholder={promptConfig.placeholder || '...'}
+                        className="flex-1 text-lg text-slate-900 dark:text-white bg-transparent text-center focus:outline-none placeholder:text-slate-300 dark:placeholder:text-slate-600 tracking-widest"
+                      />
+                      <button type="button" onClick={() => setShowPromptPassword(v => !v)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors ml-2">
+                        <i className={`fa-solid ${showPromptPassword ? 'fa-eye-slash' : 'fa-eye'} text-sm`}></i>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* MD3 text buttons right-aligned */}
+                <div className="flex justify-end gap-2 px-6 pb-6 pt-4">
+                  {promptConfig.type === 'input' && (
+                    <button onClick={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}
+                      className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 rounded-full active:bg-slate-50 dark:active:bg-slate-800 transition-colors"
+                    >
+                      {t.common.cancel}
+                    </button>
+                  )}
+                  <button onClick={() => {
+                    promptConfig.onConfirm(promptValue);
+                    setPromptConfig(prev => ({ ...prev, isOpen: false }));
+                  }}
+                    className={`px-4 py-2.5 text-sm font-medium rounded-full transition-colors ${promptConfig.type === 'success' ? 'text-emerald-600 dark:text-emerald-400 active:bg-emerald-50 dark:active:bg-emerald-900/20' :
+                      'text-indigo-600 dark:text-indigo-400 active:bg-indigo-50 dark:active:bg-indigo-900/20'
+                      }`}
+                  >
+                    {promptConfig.type === 'input' ? t.common.confirm : t.common.close}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
           <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/70 backdrop-blur-xl animate-fade-in" onClick={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}></div>
             <div className="bg-white/90 dark:bg-slate-900/80 w-full max-w-sm rounded-[2.5rem] shadow-[0_30px_100px_-20px_rgba(0,0,0,0.5)] p-8 relative z-10 animate-scale-in border border-white dark:border-white/10 overflow-hidden group">
@@ -2532,6 +2762,7 @@ const ParentView: React.FC<ParentViewProps> = ({
               </div>
             </div>
           </div>
+          )
         )
       }
 
