@@ -19,7 +19,7 @@ const renderAvatar = (avatar: string, colorClass: string = "indigo") => {
   const src = `https://api.dicebear.com/9.x/lorelei/svg?seed=${avatar}`;
   return (
     <div className={`w-full h-full rounded-full bg-gradient-to-br from-${colorClass}-100 to-${colorClass}-300 flex items-center justify-center p-1 overflow-hidden shadow-inner`}>
-      <img src={src} alt="Avatar" className="w-full h-full object-contain scale-110 translate-y-1 drop-shadow-sm" />
+      <img src={src} alt="Avatar" loading="lazy" className="w-full h-full object-contain scale-110 translate-y-1 drop-shadow-sm" />
     </div>
   );
 };

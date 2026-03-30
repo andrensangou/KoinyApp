@@ -85,7 +85,7 @@ const renderAvatar = (avatar: string, sizeClass: string = "w-full h-full", color
 
   return (
     <div className={`${sizeClass} rounded-full overflow-hidden border-2 border-white shadow-md bg-gradient-to-br from-${colorClass}-100 to-${colorClass}-300 flex items-center justify-center p-0.5`}>
-      <img src={src} alt="Avatar" className="w-full h-full object-contain scale-110 translate-y-1 drop-shadow-sm" />
+      <img src={src} alt="Avatar" loading="lazy" className="w-full h-full object-contain scale-110 translate-y-1 drop-shadow-sm" />
     </div>
   );
 };
@@ -581,8 +581,8 @@ const ParentView: React.FC<ParentViewProps> = ({
       onApprove(selectedChildId, selectedMissionId, note);
       if (typeof confetti === 'function') {
         confetti({
-          particleCount: 80,
-          spread: 50,
+          particleCount: isAndroid ? 30 : 80,
+          spread: isAndroid ? 40 : 50,
           origin: { y: 0.8 },
           colors: ['#10b981', '#34d399', '#ffffff']
         });

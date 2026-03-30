@@ -29,7 +29,7 @@ const renderAvatar = (avatar: string, sizeClass: string = "w-full h-full", color
   const src = `https://api.dicebear.com/9.x/lorelei/svg?seed=${avatar}`;
   return (
     <div className={`${sizeClass} rounded-full bg-gradient-to-br from-${colorClass}-100 to-${colorClass}-300 flex items-center justify-center shadow-inner p-1 overflow-hidden`}>
-      <img src={src} alt="Avatar" className="w-full h-full object-contain scale-110 translate-y-1 drop-shadow-sm" />
+      <img src={src} alt="Avatar" loading="lazy" className="w-full h-full object-contain scale-110 translate-y-1 drop-shadow-sm" />
     </div>
   );
 };
@@ -133,7 +133,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
     Haptics.impact({ style: ImpactStyle.Heavy });
     playSound(soundEnabled, '/sounds/mission.mp3');
     if (typeof confetti === 'function') {
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      confetti({ particleCount: isAndroid ? 30 : 100, spread: isAndroid ? 50 : 70, origin: { y: 0.6 } });
     }
     setAnimatingId(id);
     setTimeout(() => {
@@ -147,8 +147,8 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
     playSound(soundEnabled, '/sounds/purchase.mp3');
     if (typeof confetti === 'function') {
       confetti({
-        particleCount: 150,
-        spread: 100,
+        particleCount: isAndroid ? 40 : 150,
+        spread: isAndroid ? 60 : 100,
         origin: { y: 0.5 },
         colors: ['#fbbf24', '#f59e0b', '#ffffff']
       });
