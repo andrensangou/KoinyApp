@@ -168,6 +168,12 @@ const t = translations[data.language || 'fr'];
 - ✅ Fix: `waitForInit()` — produits ne chargeaient pas car modal ouvert avant init RevenueCat
 - ✅ Fix: SubscriptionModal retry auto + bouton "Réessayer" + spinner achat + anti double-clic
 
+### Corrections appliquées (31/03/2026 — session 3)
+- ✅ **Android MD3 — ParentView.tsx top bar**: `AndroidTopBar` intégré en remplacement de la nav iOS (conditionnel `isAndroid`). Overscroll roof iOS désactivé sur Android. `isScrolled` state ajouté (scroll listener existant étendu) — top bar transparente sur hero indigo, blanche après scroll.
+- ✅ **Android MD3 — ParentView.tsx balance card**: Jauge d'objectif dynamique — couleur change selon progression: rouge (0–39%), orange (40–74%), vert (75–99%), or (100%). Hauteur portée à `h-2.5`.
+- ✅ **Android MD3 — SubscriptionModal.tsx**: Handle bar MD3 (`w-10 h-1 bg-slate-300 rounded-full`) ajouté en haut du sheet, Android uniquement.
+- ✅ **Android — suppression FAB ParentView**: Le bouton `+` flottant (`AndroidFAB`) retiré du dashboard parent — le FAB de la bottom nav (`BottomNavigation`) suffit.
+
 ### Corrections appliquées (30/03/2026 — session 2)
 - ✅ **Android MD3 — ChildView.tsx**: Adaptation complète du dashboard enfant. Hero: `bg-indigo-600` plat (pas de gradient, pas de stardust SVG, pas de backdrop-blur), sentence case labels, surface blanche `rounded-t-3xl`. Alerte pénalité: carte tonal `rounded-2xl`. Historique: bottom sheet MD3 (`fixed inset-0`, `rounded-t-[28px]`, handle bar, backdrop dismiss). Objectifs: cartes `rounded-2xl` avec barre orange simple. Missions: liste `rounded-2xl` avec chips tonal status (indigo pending, emerald actif). iOS: code préservé dans `else` branches.
 
@@ -376,8 +382,10 @@ import { isAndroid } from '../hooks/usePlatform';
 | `components/LegalModal.tsx` | ✅ | Bottom sheet avec handle bar |
 | `components/OnboardingView.tsx` | ✅ | Import isAndroid |
 | `components/ParentView.tsx` | ✅ (modals) | Offline, edit mission, transactions, approve/reject, prompt/alert, biometric |
-| `components/SubscriptionModal.tsx` | ⏳ | — |
-| `components/ParentView.tsx` | ⏳ (tabs) | Dashboard tabs, contenu principal |
+| `components/SubscriptionModal.tsx` | ✅ | Handle bar MD3 |
+| `components/ParentView.tsx` | ✅ (nav + hero) | AndroidTopBar, isScrolled, jauge dynamique, overscroll roof iOS-only |
+| `components/LoginView.tsx` | ✅ | Top band indigo, child cards MD3, bottom button |
+| `components/BottomNavigation.tsx` | ✅ | MD3NavButton pill indicator, FAB rounded-2xl |
 
 **`hooks/usePlatform.ts`:**
 ```typescript

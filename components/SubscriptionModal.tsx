@@ -3,6 +3,7 @@ import { subscriptionService, SubscriptionProduct, SubscriptionState } from '../
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { useModal } from '../hooks/useModal';
+import { isAndroid } from '../hooks/usePlatform';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -148,6 +149,13 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end" onClick={onClose}>
       <div className="w-full bg-white dark:bg-slate-900 rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+
+        {/* Android handle bar */}
+        {isAndroid && (
+          <div className="flex justify-center mb-4 -mt-2">
+            <div className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="flex justify-between items-center mb-6">

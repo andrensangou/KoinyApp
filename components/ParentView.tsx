@@ -3,6 +3,8 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { GlobalState, Language, ChildProfile, Goal, ParentBadge } from '../types';
 import TutorialOverlay, { TutorialStep } from './TutorialOverlay';
 import { BottomNavigation } from './BottomNavigation';
+import { AndroidTopBar } from './AndroidTopBar';
+import { AndroidFAB } from './AndroidFAB';
 import { translations } from '../i18n';
 import { getSupabase } from '../services/supabase';
 import { saveParentPinLocally, loadParentPinLocally, deleteParentPinLocally } from '../services/pinStorage';
@@ -286,6 +288,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   const heroRef = useRef<HTMLDivElement>(null);
   const childSelectorScrollRef = useRef<HTMLDivElement>(null);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
   const t = translations[language];
   const activeChild = useMemo(() => data.children ? data.children.find(c => c.id === selectedChildId) : null, [data.children, selectedChildId]);
 
@@ -742,7 +745,9 @@ const ParentView: React.FC<ParentViewProps> = ({
     const handleScroll = () => {
       if (!heroRef.current) return;
       const { bottom } = heroRef.current.getBoundingClientRect();
-      setIsHeroVisible(bottom > 110);
+      const heroGone = bottom <= 110;
+      setIsHeroVisible(!heroGone);
+      setIsScrolled(heroGone);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
@@ -1215,72 +1220,94 @@ const ParentView: React.FC<ParentViewProps> = ({
 
   return (
     <div className={`min-h-screen font-sans pb-10 relative text-slate-900 dark:text-slate-100 transition-colors duration-500 ${isAndroid ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-950'}`}>
-      {/* Overscroll roof: absorbs iOS bounce at top */}
-      <div
-        className={`fixed top-0 left-0 right-0 z-[60] pointer-events-none ${mainView === 'dashboard' ? 'bg-indigo-700 dark:bg-slate-900' : 'bg-white dark:bg-slate-950'}`}
-        style={{ height: 'env(safe-area-inset-top)' }}
-      />
-      {/* Floating Header Premium */}
-      {/* Unified Header for Dashboard & Other Views */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${mainView !== 'dashboard' ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800' : 'pointer-events-none safe-pt'}`}>
-        <div className={`max-w-7xl mx-auto px-4 ${mainView !== 'dashboard' ? 'py-2 safe-pt pb-2' : 'py-4'} flex justify-between items-center gap-4`}>
-          {/* Left: Premium Button */}
-          {!data.isPremium ? (
-            <button onClick={() => setIsSubscriptionModalOpen(true)}
-              className={`flex items-center justify-center w-12 h-12 rounded-2xl pointer-events-auto active:scale-95 transition-transform group shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl' : ''}`}
-            >
-              <div className={`w-full h-full rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-orange-500/30 dark:shadow-orange-500/20 group-hover:scale-110 transition-transform ${mainView !== 'dashboard' ? 'text-sm rounded-lg' : 'text-xl'}`}>
-                <i className="fa-solid fa-crown"></i>
-              </div>
-            </button>
-          ) : (
-            <div className={`shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10' : 'w-12 h-12'}`}></div>
-          )}
+      {/* Overscroll roof: iOS only — absorbs iOS bounce at top */}
+      {!isAndroid && (
+        <div
+          className={`fixed top-0 left-0 right-0 z-[60] pointer-events-none ${mainView === 'dashboard' ? 'bg-indigo-700 dark:bg-slate-900' : 'bg-white dark:bg-slate-950'}`}
+          style={{ height: 'env(safe-area-inset-top)' }}
+        />
+      )}
 
-          {/* Center: Child Selector (Compact for non-dashboard) */}
-          {mainView !== 'dashboard' && (
-            <div className="flex-1 overflow-x-auto no-scrollbar flex gap-2 justify-center pointer-events-auto">
-              {data.children && data.children.map(child => {
-                const totalIconPending = (child.missions?.filter(m => m.status === 'PENDING').length || 0) + (child.giftRequested ? 1 : 0) + (child.missionRequested ? 1 : 0);
-                const isSelected = selectedChildId === child.id;
-                return (
-                  <button key={child.id}
-                    onClick={() => setSelectedChildId(child.id)}
-                    className="flex items-center gap-2 transition-all whitespace-nowrap"
-                  >
-                    <div className={`w-8 h-8 rounded-full overflow-hidden border-2 ${isSelected ? `border-4 scale-110` : 'border-slate-200 opacity-60 grayscale'}`}>
-                      {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
-                    </div>
-                    {isSelected && <span className="text-xs font-black text-slate-700 dark:text-slate-200 tracking-tight">{child.name}</span>}
-                    {totalIconPending > 0 && (
-                      <span className="w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                        {totalIconPending}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+      {/* Android Top Bar (MD3) */}
+      {isAndroid && (
+        <AndroidTopBar
+          mainView={mainView}
+          isPremium={!!data.isPremium}
+          isOfflineMode={isOfflineMode}
+          selectedChildName={activeChild?.name}
+          selectedChildAvatar={activeChild?.avatar}
+          selectedChildColor={activeChild?.colorClass}
+          onPremiumClick={() => setIsSubscriptionModalOpen(true)}
+          onOfflineClick={() => setShowOfflineModal(true)}
+          onExitClick={onExit}
+          t={t}
+          language={language}
+          isScrolled={isScrolled}
+        />
+      )}
 
-          {/* Right: Offline badge + Power Button */}
-          <div className="flex items-center gap-2 pointer-events-auto shrink-0">
-            {isOfflineMode && (
-              <button
-                onClick={() => setShowOfflineModal(true)}
-                className="flex items-center gap-1 bg-orange-500 text-white px-2 py-1 rounded-xl text-xs font-bold shadow-md shadow-orange-500/30 active:scale-95 transition-transform"
+      {/* iOS Unified Header */}
+      {!isAndroid && (
+        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${mainView !== 'dashboard' ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800' : 'pointer-events-none safe-pt'}`}>
+          <div className={`max-w-7xl mx-auto px-4 ${mainView !== 'dashboard' ? 'py-2 safe-pt pb-2' : 'py-4'} flex justify-between items-center gap-4`}>
+            {/* Left: Premium Button */}
+            {!data.isPremium ? (
+              <button onClick={() => setIsSubscriptionModalOpen(true)}
+                className={`flex items-center justify-center w-12 h-12 rounded-2xl pointer-events-auto active:scale-95 transition-transform group shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl' : ''}`}
               >
-                <i className="fa-solid fa-wifi text-[10px]"></i>
-                <span>Offline</span>
+                <div className={`w-full h-full rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-orange-500/30 dark:shadow-orange-500/20 group-hover:scale-110 transition-transform ${mainView !== 'dashboard' ? 'text-sm rounded-lg' : 'text-xl'}`}>
+                  <i className="fa-solid fa-crown"></i>
+                </div>
               </button>
+            ) : (
+              <div className={`shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10' : 'w-12 h-12'}`}></div>
             )}
-            <button onClick={onExit} aria-label={language === 'fr' ? 'Déconnexion' : 'Logout'} className={`bg-rose-500 text-white flex items-center justify-center shadow-md shadow-rose-500/30 dark:shadow-rose-500/20 transition-all active:scale-90 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl' : 'w-12 h-12 rounded-2xl'}`}>
-              <i className={`fa-solid fa-power-off ${mainView !== 'dashboard' ? 'text-sm' : 'text-lg'}`} aria-hidden="true"></i>
-            </button>
-          </div>
 
-        </div>
-      </nav>
+            {/* Center: Child Selector (Compact for non-dashboard) */}
+            {mainView !== 'dashboard' && (
+              <div className="flex-1 overflow-x-auto no-scrollbar flex gap-2 justify-center pointer-events-auto">
+                {data.children && data.children.map(child => {
+                  const totalIconPending = (child.missions?.filter(m => m.status === 'PENDING').length || 0) + (child.giftRequested ? 1 : 0) + (child.missionRequested ? 1 : 0);
+                  const isSelected = selectedChildId === child.id;
+                  return (
+                    <button key={child.id}
+                      onClick={() => setSelectedChildId(child.id)}
+                      className="flex items-center gap-2 transition-all whitespace-nowrap"
+                    >
+                      <div className={`w-8 h-8 rounded-full overflow-hidden border-2 ${isSelected ? `border-4 scale-110` : 'border-slate-200 opacity-60 grayscale'}`}>
+                        {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
+                      </div>
+                      {isSelected && <span className="text-xs font-black text-slate-700 dark:text-slate-200 tracking-tight">{child.name}</span>}
+                      {totalIconPending > 0 && (
+                        <span className="w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                          {totalIconPending}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Right: Offline badge + Power Button */}
+            <div className="flex items-center gap-2 pointer-events-auto shrink-0">
+              {isOfflineMode && (
+                <button
+                  onClick={() => setShowOfflineModal(true)}
+                  className="flex items-center gap-1 bg-orange-500 text-white px-2 py-1 rounded-xl text-xs font-bold shadow-md shadow-orange-500/30 active:scale-95 transition-transform"
+                >
+                  <i className="fa-solid fa-wifi text-[10px]"></i>
+                  <span>Offline</span>
+                </button>
+              )}
+              <button onClick={onExit} aria-label={language === 'fr' ? 'Déconnexion' : 'Logout'} className={`bg-rose-500 text-white flex items-center justify-center shadow-md shadow-rose-500/30 dark:shadow-rose-500/20 transition-all active:scale-90 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl' : 'w-12 h-12 rounded-2xl'}`}>
+                <i className={`fa-solid fa-power-off ${mainView !== 'dashboard' ? 'text-sm' : 'text-lg'}`} aria-hidden="true"></i>
+              </button>
+            </div>
+
+          </div>
+        </nav>
+      )}
 
       {/* Offline Modal — en dehors de la nav pour éviter pointer-events-none du dashboard */}
       {showOfflineModal && (
@@ -1593,9 +1620,18 @@ const ParentView: React.FC<ParentViewProps> = ({
                           {Math.min(100, Math.round((activeChild.balance / activeChild.goals[0].target) * 100))}%
                         </span>
                       </div>
-                      <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-emerald-400 transition-all duration-1000"
-                          style={{ width: `${Math.min(100, (activeChild.balance / activeChild.goals[0].target) * 100)}%` }}
+                      <div className="w-full h-2.5 bg-white/20 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-1000 ease-out"
+                          style={{
+                            width: `${Math.min(100, (activeChild.balance / activeChild.goals[0].target) * 100)}%`,
+                            background: (() => {
+                              const p = Math.min(100, Math.round((activeChild.balance / activeChild.goals[0].target) * 100));
+                              if (p >= 100) return '#fbbf24'; // gold — atteint
+                              if (p >= 75) return '#34d399';  // vert — presque là
+                              if (p >= 40) return '#fb923c';  // orange — en cours
+                              return '#f87171';               // rouge — démarrage
+                            })()
+                          }}
                         />
                       </div>
                     </div>
