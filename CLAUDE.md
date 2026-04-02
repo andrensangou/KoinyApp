@@ -173,6 +173,8 @@ const t = translations[data.language || 'fr'];
 - ✅ **Suppression mode démo**: Bouton "Lancer le Mode Démo" et lien "Continuer sans compte" supprimés de AuthView.tsx. `getDemoData` import retiré. Message "Service indisponible" affiché si Supabase non configuré.
 - ✅ **Re-engagement emails (Supabase Edge Function)**: `supabase/functions/notify-inactive-users/index.ts` déployée. Emails FR/NL/EN à 7j (tu nous manques), 30j (missions en attente), 90j (compte désactivé dans 30j). Table `email_logs` créée (anti-doublons). Cron pg_cron 08h00 UTC quotidien. Secrets: `RESEND_API_KEY` + `SERVICE_ROLE_KEY` configurés dans Supabase.
 - ✅ **tsconfig.json**: dossier `supabase/` exclu du build TypeScript (code Deno incompatible avec le compilateur Node).
+- ✅ **iOS version 1.0.2 build 3**: `MARKETING_VERSION` passé de 1.0.1 → 1.0.2 et `CURRENT_PROJECT_VERSION` de 2 → 3 dans `project.pbxproj`. Soumis pour review Apple Store. Compte test review: `akians237@gmail.com` / `KoinyReview2024` / PIN: 0000.
+- ✅ **App Store Connect**: Nouveautés saisies en FR/NL/EN. Connexion requise cochée avec compte test.
 
 ### Corrections appliquées (31/03/2026 — session 3)
 - ✅ **Android MD3 — ParentView.tsx top bar**: `AndroidTopBar` intégré en remplacement de la nav iOS (conditionnel `isAndroid`). Overscroll roof iOS désactivé sur Android. `isScrolled` state ajouté (scroll listener existant étendu) — top bar transparente sur hero indigo, blanche après scroll.
