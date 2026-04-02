@@ -48,3 +48,6 @@ pnpm-lock.yaml
 
 # Capacitor (si jamais ajouté plus tard)
 /android
+
+# Supabase CLI temp files
+supabase/.temp/

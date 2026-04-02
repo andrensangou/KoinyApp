@@ -11,6 +11,7 @@ import { isAndroid } from '../hooks/usePlatform';
 interface ChildViewProps {
   data: ChildProfile;
   language: Language;
+  currency?: string;
   onCompleteMission: (id: string) => void;
   onLogout: () => void;
   onTutorialComplete: () => void;
@@ -71,7 +72,8 @@ const playSound = (enabled: boolean, url: string, volume: number = 0.5) => {
   } catch (e) { }
 };
 
-const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission, onLogout, onTutorialComplete, onSetPrimaryGoal, soundEnabled, onRequestGift, onRequestMission, onPurchaseGoal }) => {
+const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€', onCompleteMission, onLogout, onTutorialComplete, onSetPrimaryGoal, soundEnabled, onRequestGift, onRequestMission, onPurchaseGoal }) => {
+  const curr = currency;
   const [animatingId, setAnimatingId] = useState<string | null>(null);
   const [isNudging, setIsNudging] = useState(false);
   const [isGoalNudging, setIsGoalNudging] = useState(false);
@@ -170,7 +172,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
               }`}>
               <i className={`fa-solid ${balanceDiff.type === 'GAIN' ? 'fa-circle-plus' : 'fa-circle-minus'} text-4xl mb-1`}></i>
               <span className="text-5xl font-black tracking-tight">
-                {balanceDiff.type === 'GAIN' ? '+' : '-'}{balanceDiff.amount.toFixed(2)}€
+                {balanceDiff.type === 'GAIN' ? '+' : '-'}{balanceDiff.amount.toFixed(2)}{curr}
               </span>
               <span className="text-xs font-bold uppercase tracking-widest opacity-80">
                 {balanceDiff.type === 'PENALTY' ? (language === 'fr' ? 'Oups !' : language === 'nl' ? 'Oeps!' : 'Oops!') : (balanceDiff.type === 'GAIN' ? (language === 'fr' ? 'Bravo !' : language === 'nl' ? 'Goed zo!' : 'Awesome!') : (language === 'fr' ? 'Achat' : language === 'nl' ? 'Aankoop' : 'Purchase'))}
@@ -213,7 +215,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                 <span className="text-6xl font-bold tracking-tight tabular-nums">
                   {data.balance.toFixed(2)}
                 </span>
-                <span className="text-2xl font-medium ml-2 opacity-50">€</span>
+                <span className="text-2xl font-medium ml-2 opacity-50">{curr}</span>
               </div>
 
               <div className="flex justify-center gap-8 mt-8 pb-2">
@@ -281,7 +283,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                 <span className="text-7xl sm:text-8xl font-black tracking-tighter tabular-nums drop-shadow-[0_10px_20px_rgba(0,0,0,0.2)]">
                   {data.balance.toFixed(2)}
                 </span>
-                <span className="text-3xl font-black ml-3 opacity-40">€</span>
+                <span className="text-3xl font-black ml-3 opacity-40">{curr}</span>
               </div>
 
               <div className="flex justify-center gap-8 mt-10 pb-2">
@@ -311,7 +313,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-medium text-amber-900 dark:text-amber-300 mb-0.5">{t.child.penaltyAlertTitle}</h4>
                     <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-                      {getTranslatedTitle(latestPenalty.title, language)} : -{Math.abs(latestPenalty.amount)}€.
+                      {getTranslatedTitle(latestPenalty.title, language)} : -{Math.abs(latestPenalty.amount)}{curr}.
                       {latestPenalty.note ? ` "${latestPenalty.note}"` : ` ${t.child.penaltyAlertDefaultNote}`}
                     </p>
                   </div>
@@ -336,7 +338,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                     <div className="flex-1 pr-6">
                       <h4 className="font-black text-amber-800 dark:text-amber-400 text-sm uppercase tracking-wider mb-1">{t.child.penaltyAlertTitle}</h4>
                       <p className="text-amber-700 dark:text-amber-500 text-xs font-bold leading-relaxed">
-                        {getTranslatedTitle(latestPenalty.title, language)} : <span className="underline">-{Math.abs(latestPenalty.amount)}€</span>.
+                        {getTranslatedTitle(latestPenalty.title, language)} : <span className="underline">-{Math.abs(latestPenalty.amount)}{curr}</span>.
                         {latestPenalty.note ? ` "${latestPenalty.note}"` : ` ${t.child.penaltyAlertDefaultNote}`}
                       </p>
                     </div>
@@ -375,11 +377,11 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                   <div className="grid grid-cols-2 gap-3 px-6 mb-4">
                     <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-3 text-center">
                       <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mb-0.5">{t.child.totalGains}</p>
-                      <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300">+{stats.totalGains.toFixed(2)}€</p>
+                      <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300">+{stats.totalGains.toFixed(2)}{curr}</p>
                     </div>
                     <div className="bg-rose-50 dark:bg-rose-900/20 rounded-2xl p-3 text-center">
                       <p className="text-[10px] text-rose-600 dark:text-rose-400 font-medium mb-0.5">{t.child.totalLosses}</p>
-                      <p className="text-lg font-bold text-rose-700 dark:text-rose-300">-{stats.totalLosses.toFixed(2)}€</p>
+                      <p className="text-lg font-bold text-rose-700 dark:text-rose-300">-{stats.totalLosses.toFixed(2)}{curr}</p>
                     </div>
                   </div>
 
@@ -397,7 +399,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                             <p className="text-xs text-slate-400 dark:text-slate-500">{entry.date}</p>
                           </div>
                           <span className={`text-sm font-bold tabular-nums shrink-0 ${neg ? 'text-rose-500' : 'text-emerald-500'}`}>
-                            {neg ? '-' : '+'}{Math.abs(entry.amount).toFixed(2)}€
+                            {neg ? '-' : '+'}{Math.abs(entry.amount).toFixed(2)}{curr}
                           </span>
                         </div>
                       );
@@ -427,11 +429,11 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="bg-emerald-500 rounded-2xl p-4 text-center shadow-md shadow-emerald-500/25 dark:shadow-none">
                       <p className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">{t.child.totalGains}</p>
-                      <p className="text-xl font-black text-white">+{stats.totalGains.toFixed(2)}€</p>
+                      <p className="text-xl font-black text-white">+{stats.totalGains.toFixed(2)}{curr}</p>
                     </div>
                     <div className="bg-rose-500 rounded-2xl p-4 text-center shadow-md shadow-rose-500/25 dark:shadow-none">
                       <p className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">{t.child.totalLosses}</p>
-                      <p className="text-xl font-black text-white">-{stats.totalLosses.toFixed(2)}€</p>
+                      <p className="text-xl font-black text-white">-{stats.totalLosses.toFixed(2)}{curr}</p>
                     </div>
                   </div>
 
@@ -456,7 +458,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                             </div>
                           </div>
                           <span className={`font-black text-sm tabular-nums shrink-0 mt-1 ${neg ? 'text-rose-500' : 'text-emerald-500'}`}>
-                            {neg ? '-' : '+'}{Math.abs(entry.amount).toFixed(2)}€
+                            {neg ? '-' : '+'}{Math.abs(entry.amount).toFixed(2)}{curr}
                           </span>
                         </div>
                       )
@@ -506,7 +508,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                               </div>
                               <p className="text-xs text-slate-400 dark:text-slate-500">{t.child.goalObjective}</p>
                             </div>
-                            <span className={`text-lg font-bold tabular-nums ${isCompleted ? 'text-emerald-600' : isReached ? 'text-amber-600' : 'text-indigo-600'}`}>{goal.target}€</span>
+                            <span className={`text-lg font-bold tabular-nums ${isCompleted ? 'text-emerald-600' : isReached ? 'text-amber-600' : 'text-indigo-600'}`}>{goal.target}{curr}</span>
                           </div>
 
                           {isCompleted ? (
@@ -525,7 +527,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                           ) : (
                             <div className="space-y-2">
                               <div className="flex justify-between items-center">
-                                <span className="text-xs text-slate-500 tabular-nums">{t.child.remaining} {(goal.target - data.balance).toFixed(2)}€</span>
+                                <span className="text-xs text-slate-500 tabular-nums">{t.child.remaining} {(goal.target - data.balance).toFixed(2)}{curr}</span>
                                 <span className="text-xs font-medium text-indigo-600 tabular-nums">{percentage}%</span>
                               </div>
                               <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -584,7 +586,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-0.5">{t.child.goalObjective}</p>
                               </div>
                             </div>
-                            <span className={`text-xl font-black tabular-nums leading-none ${isCompleted ? 'text-emerald-600' : isReached ? 'text-yellow-600' : `text-${data.colorClass}-600`}`}>{goal.target}€</span>
+                            <span className={`text-xl font-black tabular-nums leading-none ${isCompleted ? 'text-emerald-600' : isReached ? 'text-yellow-600' : `text-${data.colorClass}-600`}`}>{goal.target}{curr}</span>
                           </div>
 
                           <div className="relative z-10 mt-4">
@@ -604,7 +606,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                             ) : (
                               <div className="space-y-2.5">
                                 <div className="flex justify-between items-center">
-                                  <span className="text-xs font-black text-slate-400 tabular-nums">{t.child.remaining} {(goal.target - data.balance).toFixed(2)}€</span>
+                                  <span className="text-xs font-black text-slate-400 tabular-nums">{t.child.remaining} {(goal.target - data.balance).toFixed(2)}{curr}</span>
                                   <span className={`text-xs font-black text-${data.colorClass}-500 tabular-nums`}>{percentage}%</span>
                                 </div>
                                 <div className="w-full h-3 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden p-0.5">
@@ -713,7 +715,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                           )}
                         </div>
                         <span className={`text-sm font-bold tabular-nums shrink-0 ${mission.status === 'PENDING' ? 'text-indigo-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                          +{mission.reward}€
+                          +{mission.reward}{curr}
                         </span>
                       </button>
                     ))
@@ -779,7 +781,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, onCompleteMission
                           </div>
                         </div>
                         <div className={`font-black text-sm px-5 py-2.5 rounded-2xl shadow-sm ${mission.status === 'PENDING' ? 'bg-white dark:bg-slate-800 text-indigo-500 dark:text-indigo-400 border border-indigo-50 dark:border-indigo-900/30' : `bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-600 dark:text-${data.colorClass}-400 border border-${data.colorClass}-100 dark:border-${data.colorClass}-900/30`}`}>
-                          +{mission.reward}€
+                          +{mission.reward}{curr}
                         </div>
                       </button>
                     ))

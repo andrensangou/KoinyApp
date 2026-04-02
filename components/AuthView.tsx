@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { translations } from '../i18n';
-import { Language, GlobalState, getDemoData } from '../types';
+import { Language, GlobalState } from '../types';
 import { getSupabase, signInWithGoogle, signInWithApple } from '../services/supabase';
 import { SUPABASE_URL } from '../config';
 import HelpModal from './HelpModal';
@@ -126,17 +126,6 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
     setError(null);
   };
 
-  const handleDemoLogin = () => {
-    setLoading(true);
-    // Simulation d'un délai réseau pour l'UX
-    setTimeout(() => {
-      const demoData = getDemoData(language);
-      // Note: PIN is now displayed in the UI instead of an alert
-      onLoginSuccess(demoData);
-      setLoading(false);
-    }, 800);
-  };
-
   const triggerLegalModal = () => {
     const event = new CustomEvent('openLegalModal');
     window.dispatchEvent(event);
@@ -183,21 +172,12 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
 
         <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-800 animate-fade-in-up transition-colors duration-500">
           {!isConfigured ? (
-            <div className="space-y-6">
-              <div className="bg-orange-50 dark:bg-orange-950/20 text-orange-800 dark:text-orange-400 p-4 rounded-xl text-sm border border-orange-200 dark:border-orange-900/50">
-                <div className="flex items-center gap-2 mb-2 font-bold">
-                  <i className="fa-solid fa-cloud-slash"></i>
-                  {language === 'en' ? 'Offline Mode' : 'Mode non connecté'}
-                </div>
-                <p>{language === 'en' ? 'To enable online backup, configure Supabase in config.ts.' : 'Pour activer la sauvegarde en ligne, configurez Supabase dans config.ts.'}</p>
+            <div className="bg-orange-50 dark:bg-orange-950/20 text-orange-800 dark:text-orange-400 p-4 rounded-xl text-sm border border-orange-200 dark:border-orange-900/50">
+              <div className="flex items-center gap-2 mb-2 font-bold">
+                <i className="fa-solid fa-cloud-slash"></i>
+                {language === 'en' ? 'Service unavailable' : 'Service indisponible'}
               </div>
-              <div className="bg-indigo-50 dark:bg-indigo-950/20 p-6 rounded-2xl border-2 border-indigo-100 dark:border-indigo-900/50 text-center">
-                <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-2">{language === 'en' ? 'Test immediately?' : 'Tester immédiatement ?'}</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{language === 'en' ? 'Use the app in demo mode. No data will be sent to the cloud.' : 'Utilisez l\'app en mode démo. Aucune donnée n\'est envoyée au cloud.'} <span className="font-bold block mt-1">{language === 'en' ? 'Parent PIN: 0000' : 'Code Parent : 0000'}</span></p>
-                <button onClick={handleDemoLogin} disabled={loading} className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-none active:scale-95 flex items-center justify-center gap-2">
-                  {loading ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <><i className="fa-solid fa-play"></i> {language === 'en' ? 'Launch Demo' : 'Lancer le Mode Démo'}</>}
-                </button>
-              </div>
+              <p>{language === 'en' ? 'Please try again later.' : 'Veuillez réessayer plus tard.'}</p>
             </div>
           ) : emailSent ? (
             <div className="text-center py-4">
@@ -308,10 +288,6 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
               ) : (
                 <div className="flex flex-col gap-4">
                   <button onClick={() => setAuthMode(authMode === 'LOGIN' ? 'SIGNUP' : 'LOGIN')} className="group text-sm font-medium transition-all"><span className="text-slate-500 group-hover:text-slate-600">{authMode === 'LOGIN' ? t.auth.newHere : t.auth.alreadyAccount}</span><span className="text-indigo-600 font-bold ml-1 group-hover:underline">{authMode === 'LOGIN' ? t.auth.noAccount : t.auth.hasAccount}</span></button>
-                  <div className="flex flex-col items-center gap-1">
-                    <button onClick={handleDemoLogin} className="text-xs text-slate-500 hover:text-indigo-600 font-medium underline decoration-slate-300 hover:decoration-indigo-600">{language === 'en' ? 'Continue without account (Demo Mode)' : 'Continuer sans compte (Mode Démo)'}</button>
-                    <span className="text-[10px] font-bold text-slate-400 opacity-80">{t.parent.demoHint}</span>
-                  </div>
                 </div>
               )}
             </div>

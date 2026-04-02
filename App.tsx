@@ -879,6 +879,10 @@ const App: React.FC = () => {
     }));
     localStorage.setItem('koiny_language', lang);
   };
+  const setCurrency = (symbol: string) => {
+    setData(prev => ({ ...prev, currency: symbol, updatedAt: new Date().toISOString() }));
+  };
+
   const handleLogout = () => { setActiveChildId(null); setView('LOGIN'); };
   const handleFullSignOut = async () => {
     const supabase = getSupabase();
@@ -1352,7 +1356,7 @@ const App: React.FC = () => {
       {view === 'CHILD' && (
         data.children.find(c => c.id === activeChildId) ? (
           <ChildView
-            data={data.children.find(c => c.id === activeChildId)!} language={data.language} onCompleteMission={handleMissionComplete} onLogout={handleLogout} onTutorialComplete={handleChildTutorialComplete} onSetPrimaryGoal={(gid) => handleSetGoalPrimary(activeChildId!, gid)} soundEnabled={data.soundEnabled} onPurchaseGoal={(g) => handlePurchaseGoal(activeChildId!, g)} onRequestGift={handleRequestGift} onRequestMission={handleRequestMission}
+            data={data.children.find(c => c.id === activeChildId)!} language={data.language} currency={data.currency || '€'} onCompleteMission={handleMissionComplete} onLogout={handleLogout} onTutorialComplete={handleChildTutorialComplete} onSetPrimaryGoal={(gid) => handleSetGoalPrimary(activeChildId!, gid)} soundEnabled={data.soundEnabled} onPurchaseGoal={(g) => handlePurchaseGoal(activeChildId!, g)} onRequestGift={handleRequestGift} onRequestMission={handleRequestMission}
           />
         ) : (
           <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-6 text-center">
@@ -1377,7 +1381,7 @@ const App: React.FC = () => {
           onDeleteActiveMission={handleDeleteActiveMission} onEditMission={handleEditMission} onManualTransaction={handleManualTransaction} onAddChild={handleAddChild}
           onEditChild={handleEditChild} onDeleteGoal={handleDeleteGoal} onArchiveGoal={handleArchiveGoal} onDeleteChild={handleDeleteChild} onSetPin={handleSetPin} onClearHistory={handleClearHistory}
           onUpdatePassword={async (p) => { await updatePassword(p); }} onDeleteAccount={async () => { await deleteAccount(); localStorage.removeItem('koiny_last_view'); localStorage.removeItem('koiny_last_child_id'); setData(INITIAL_DATA); setOwnerId(undefined); setView('LANDING'); }}
-          onExit={handleLogout} onTutorialComplete={handleParentTutorialComplete} onToggleSound={handleToggleSound} onSetLanguage={setLanguage}
+          onExit={handleLogout} onTutorialComplete={handleParentTutorialComplete} onToggleSound={handleToggleSound} onSetLanguage={setLanguage} onSetCurrency={setCurrency}
           onUpdateMaxBalance={handleUpdateMaxBalance}
           onSetPremium={handleSetPremium}
           notificationAction={notificationAction} onClearNotificationAction={() => setNotificationAction(null)}

@@ -23,6 +23,7 @@ import { checkBiometricAvailability, authenticateWithBiometric, getBiometricLabe
 import { Capacitor } from '@capacitor/core';
 import { useModal } from '../hooks/useModal';
 import { isAndroid } from '../hooks/usePlatform';
+import { CURRENCIES } from '../types';
 
 interface ParentViewProps {
   data: GlobalState;
@@ -47,6 +48,7 @@ interface ParentViewProps {
   clearNotification?: () => void;
   onToggleSound: (enabled: boolean) => void;
   onSetLanguage: (lang: Language) => void;
+  onSetCurrency: (symbol: string) => void;
   onUpdateMaxBalance?: (limit: number) => void;
   notificationAction?: { type: string; childId: string } | null;
   onClearNotificationAction?: () => void;
@@ -132,10 +134,11 @@ const ParentView: React.FC<ParentViewProps> = ({
   data, ownerId, language, onApprove, onReject, onAddMission, onDeleteActiveMission, onEditMission,
   onManualTransaction, onAddChild, onEditChild, onDeleteChild, onSetPin,
   onClearHistory, onUpdatePassword, onDeleteAccount,
-  onExit, onTutorialComplete, onToggleSound, onSetLanguage, onUpdateMaxBalance,
+  onExit, onTutorialComplete, onToggleSound, onSetLanguage, onSetCurrency, onUpdateMaxBalance,
   notificationAction, onClearNotificationAction, onSignOut, onDeleteGoal, onArchiveGoal,
   isOfflineMode = false, onSetPremium
 }) => {
+  const curr = data.currency || '€';
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState('');
   const [showPinEntry, setShowPinEntry] = useState(false);
@@ -1459,11 +1462,11 @@ const ParentView: React.FC<ParentViewProps> = ({
                 <div className="flex gap-6 shrink-0">
                   <div className="text-center">
                     <p className="text-[10px] text-white/60 mb-0.5">{t.parent.history.income}</p>
-                    <p className="text-base font-bold text-emerald-300">+{weeklySummary.income.toFixed(2)}€</p>
+                    <p className="text-base font-bold text-emerald-300">+{weeklySummary.income.toFixed(2)}{curr}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] text-white/60 mb-0.5">{language === 'fr' ? 'Sorties' : 'Outcome'}</p>
-                    <p className="text-base font-bold text-rose-300">-{weeklySummary.expense.toFixed(2)}€</p>
+                    <p className="text-base font-bold text-rose-300">-{weeklySummary.expense.toFixed(2)}{curr}</p>
                   </div>
                 </div>
               </div>
@@ -1490,12 +1493,12 @@ const ParentView: React.FC<ParentViewProps> = ({
                 <div className="flex gap-10 sm:gap-14">
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 opacity-60">{t.parent.history.income}</span>
-                    <span className="text-xl font-black text-emerald-400">+{weeklySummary.income.toFixed(2)}€</span>
+                    <span className="text-xl font-black text-emerald-400">+{weeklySummary.income.toFixed(2)}{curr}</span>
                   </div>
                   <div className="h-10 w-px bg-white/10 self-center"></div>
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 opacity-60">{language === 'fr' ? 'Sorties' : 'Outcome'}</span>
-                    <span className="text-xl font-black text-rose-300">-{weeklySummary.expense.toFixed(2)}€</span>
+                    <span className="text-xl font-black text-rose-300">-{weeklySummary.expense.toFixed(2)}{curr}</span>
                   </div>
                 </div>
               </div>
@@ -1594,7 +1597,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         <span className="text-4xl font-bold tracking-tight tabular-nums leading-none">
                           {activeChild.balance.toFixed(2)}
                         </span>
-                        <span className="text-xl font-medium opacity-50">€</span>
+                        <span className="text-xl font-medium opacity-50">{curr}</span>
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
@@ -1657,7 +1660,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         <span className="text-5xl font-black tracking-tighter tabular-nums leading-none">
                           {activeChild.balance.toFixed(2)}
                         </span>
-                        <span className="text-2xl font-black opacity-40">€</span>
+                        <span className="text-2xl font-black opacity-40">{curr}</span>
                       </div>
                     </div>
                     <div className="flex flex-col gap-3">
@@ -1760,7 +1763,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                               <div>
                                 <p className="font-bold text-sm">{goal.name}</p>
                                 <p className="text-[10px] font-black uppercase tracking-wider opacity-50">
-                                  {goal.status === 'COMPLETED' ? (language === 'fr' ? 'Obtenu' : 'Purchased') : `${percent}% • ${goal.target}€`}
+                                  {goal.status === 'COMPLETED' ? (language === 'fr' ? 'Obtenu' : 'Purchased') : `${percent}% • ${goal.target}${curr}`}
                                 </p>
                               </div>
                             </div>
@@ -1816,7 +1819,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.parent.formAmountLabel}</label>
                         <div className="relative">
                           <input type="number" step="0.5" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} className="w-full pl-5 pr-12 py-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/20 outline-none transition-all text-slate-900 dark:text-white font-black text-sm shadow-inner" placeholder={t.parent.formAmountPlaceholder} required />
-                          <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-300 dark:text-slate-600">€</span>
+                          <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-300 dark:text-slate-600">{curr}</span>
                         </div>
                       </div>
                     </div>
@@ -1847,7 +1850,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{getTranslatedTitle(mission.title, language)}</p>
-                            <p className="text-emerald-500 text-xs font-black">+{mission.reward}€</p>
+                            <p className="text-emerald-500 text-xs font-black">+{mission.reward}{curr}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -1865,7 +1868,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                           <button
                             onClick={() => openConfirm(
                               t.parent.deleteMissionConfirm,
-                              mission.title + ' (+' + mission.reward + '€)',
+                              mission.title + ' (+' + mission.reward + curr + ')',
                               () => selectedChildId && onDeleteActiveMission(selectedChildId, mission.id),
                               'danger'
                             )}
@@ -2048,7 +2051,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         </div>
                         <div>
                           <h3 className="font-bold text-slate-900 dark:text-white text-lg leading-snug">{getTranslatedTitle(mission.title, language)}</h3>
-                          <span className="inline-block mt-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md text-xs font-black">+{mission.reward} €</span>
+                          <span className="inline-block mt-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md text-xs font-black">+{mission.reward}{curr}</span>
                         </div>
                       </div>
                     </div>
@@ -2396,7 +2399,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                                   placeholder="0"
                                   className="w-24 p-3 pr-8 rounded-xl border-2 border-transparent bg-transparent text-sm font-black text-right outline-none focus:border-indigo-100 dark:focus:border-indigo-800 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-900 dark:text-white"
                                 />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 font-black text-slate-300 text-xs pointer-events-none">€</span>
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 font-black text-slate-300 text-xs pointer-events-none">{curr}</span>
                               </div>
                               <button type="button" onClick={() => handleRemoveGoal(goal.id)} aria-label={language === 'fr' ? 'Supprimer l\'objectif' : 'Remove goal'} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 text-rose-300 dark:text-rose-400 flex items-center justify-center hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-600 active:scale-90">
                                 <i className="fa-solid fa-trash-can text-sm" aria-hidden="true"></i>
@@ -2492,7 +2495,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                           </div>
                           <div className="flex flex-col">
                             <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">{language === 'fr' ? 'Limite du portefeuille' : language === 'nl' ? 'Portemonnee limiet' : 'Wallet Limit'}</span>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{(data.maxBalance || 100)}€ Max</span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{(data.maxBalance || 100)}{curr} Max</span>
                           </div>
                         </div>
                         <i className="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 group-hover:translate-x-1 transition-transform"></i>
@@ -2515,6 +2518,37 @@ const ParentView: React.FC<ParentViewProps> = ({
                             </button>
                           ))}
                         </div>
+                      </div>
+
+                      {/* Currency Selector */}
+                      <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center">
+                            <i className="fa-solid fa-coins"></i>
+                          </div>
+                          <div>
+                            <span className="font-bold text-slate-700 dark:text-slate-200 text-sm block">
+                              {language === 'fr' ? 'Devise' : language === 'nl' ? 'Valuta' : 'Currency'}
+                            </span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                              {language === 'fr' ? 'Symbole affiché dans l\'app' : language === 'nl' ? 'Symbool in de app' : 'Symbol shown in app'}
+                            </span>
+                          </div>
+                        </div>
+                        <select
+                          value={CURRENCIES.find(c => c.symbol === curr)?.code || 'EUR'}
+                          onChange={e => {
+                            const c = CURRENCIES.find(x => x.code === e.target.value);
+                            if (c) onSetCurrency(c.symbol);
+                          }}
+                          className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
+                        >
+                          {CURRENCIES.map(c => (
+                            <option key={c.code} value={c.code}>
+                              {c.symbol} — {c.code}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <button onClick={handleResetPin} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 group transition-all hover:shadow-md text-left">
@@ -2710,7 +2744,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         placeholder="0.00"
                         inputMode="decimal"
                       />
-                      <span className="text-xl text-slate-400 dark:text-slate-500 ml-2">€</span>
+                      <span className="text-xl text-slate-400 dark:text-slate-500 ml-2">{curr}</span>
                     </div>
                   </div>
 
@@ -2784,7 +2818,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                           placeholder="0.00"
                           inputMode="decimal"
                         />
-                        <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-slate-300 dark:text-slate-700 text-xl">€</span>
+                        <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-slate-300 dark:text-slate-700 text-xl">{curr}</span>
                       </div>
                     </div>
 

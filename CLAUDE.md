@@ -168,6 +168,12 @@ const t = translations[data.language || 'fr'];
 - ✅ Fix: `waitForInit()` — produits ne chargeaient pas car modal ouvert avant init RevenueCat
 - ✅ Fix: SubscriptionModal retry auto + bouton "Réessayer" + spinner achat + anti double-clic
 
+### Corrections appliquées (02/04/2026)
+- ✅ **Sélecteur de devise**: `currency` ajouté dans `GlobalState` + `INITIAL_DATA`. Constante `CURRENCIES` (23 devises: EUR, USD, GBP, CHF, CAD, AUD, SGD, HKD, NZD, JPY, INR, TRY, KRW, BRL, SEK, NOK, DKK, PLN, ZAR, MAD, AED, HUF, CZK). Dropdown dans settings Profil. `curr` propagé partout dans ParentView + ChildView. Handler `setCurrency()` dans App.tsx.
+- ✅ **Suppression mode démo**: Bouton "Lancer le Mode Démo" et lien "Continuer sans compte" supprimés de AuthView.tsx. `getDemoData` import retiré. Message "Service indisponible" affiché si Supabase non configuré.
+- ✅ **Re-engagement emails (Supabase Edge Function)**: `supabase/functions/notify-inactive-users/index.ts` déployée. Emails FR/NL/EN à 7j (tu nous manques), 30j (missions en attente), 90j (compte désactivé dans 30j). Table `email_logs` créée (anti-doublons). Cron pg_cron 08h00 UTC quotidien. Secrets: `RESEND_API_KEY` + `SERVICE_ROLE_KEY` configurés dans Supabase.
+- ✅ **tsconfig.json**: dossier `supabase/` exclu du build TypeScript (code Deno incompatible avec le compilateur Node).
+
 ### Corrections appliquées (31/03/2026 — session 3)
 - ✅ **Android MD3 — ParentView.tsx top bar**: `AndroidTopBar` intégré en remplacement de la nav iOS (conditionnel `isAndroid`). Overscroll roof iOS désactivé sur Android. `isScrolled` state ajouté (scroll listener existant étendu) — top bar transparente sur hero indigo, blanche après scroll.
 - ✅ **Android MD3 — ParentView.tsx balance card**: Jauge d'objectif dynamique — couleur change selon progression: rouge (0–39%), orange (40–74%), vert (75–99%), or (100%). Hauteur portée à `h-2.5`.

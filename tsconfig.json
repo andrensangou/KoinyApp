@@ -35,6 +35,7 @@
     ".agents",
     ".claude",
     "docs",
-    "ios"
+    "ios",
+    "supabase"
   ]
 }

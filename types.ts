@@ -70,8 +70,35 @@ export interface GlobalState {
   lastReminderSent?: string;
   maxBalance?: number;
   isPremium?: boolean;
+  currency?: string;
   updatedAt?: string;
 }
+
+export const CURRENCIES: { symbol: string; code: string }[] = [
+  { symbol: '€',    code: 'EUR' },
+  { symbol: '$',    code: 'USD' },
+  { symbol: '£',    code: 'GBP' },
+  { symbol: 'CHF',  code: 'CHF' },
+  { symbol: 'CA$',  code: 'CAD' },
+  { symbol: 'A$',   code: 'AUD' },
+  { symbol: 'S$',   code: 'SGD' },
+  { symbol: 'HK$',  code: 'HKD' },
+  { symbol: 'NZ$',  code: 'NZD' },
+  { symbol: '¥',    code: 'JPY' },
+  { symbol: '₹',    code: 'INR' },
+  { symbol: '₺',    code: 'TRY' },
+  { symbol: '₩',    code: 'KRW' },
+  { symbol: 'R$',   code: 'BRL' },
+  { symbol: 'kr',   code: 'SEK' },
+  { symbol: 'kr',   code: 'NOK' },
+  { symbol: 'kr',   code: 'DKK' },
+  { symbol: 'zł',   code: 'PLN' },
+  { symbol: 'R',    code: 'ZAR' },
+  { symbol: 'د.م.', code: 'MAD' },
+  { symbol: 'د.إ',  code: 'AED' },
+  { symbol: 'Ft',   code: 'HUF' },
+  { symbol: 'Kč',   code: 'CZK' },
+];
 
 const getBrowserLanguage = (): Language => {
   if (typeof navigator !== 'undefined') {
@@ -92,6 +119,7 @@ export const INITIAL_DATA: GlobalState = {
   parentBadge: 'NOVICE',
   totalApprovedMissions: 0,
   maxBalance: 100,
+  currency: '€',
   updatedAt: new Date().toISOString()
 };
 
