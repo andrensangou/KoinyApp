@@ -8,7 +8,7 @@
 Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
-**Statut:** Publiée sur l'App Store (version 1.0.0, build 2). Android en cours de finalisation.
+**Statut:** Publiée sur l'App Store (version 1.0.2). Version 1.0.3 soumise pour review Apple (11/04/2026). Android en cours de finalisation.
 
 ## Regles critiques
 
@@ -168,12 +168,30 @@ const t = translations[data.language || 'fr'];
 - ✅ Fix: `waitForInit()` — produits ne chargeaient pas car modal ouvert avant init RevenueCat
 - ✅ Fix: SubscriptionModal retry auto + bouton "Réessayer" + spinner achat + anti double-clic
 
+### Corrections appliquées (21/04/2026)
+**Contexte**: Diagnostic Supabase — 19 profils `parent` au total, dont 8 n'ont jamais créé d'enfant. Conversion par provider: Google 83% (5/6), Apple 50% (6/12). Apple Sign-In convertit 33 pts de moins que Google — flow post-signup pas assez directif. 3/8 drop-offs utilisent Apple Private Relay → emails re-engagement filtrés. Tous les drop-offs ont `full_name = "Parent"` (default jamais modifié) et 7/8 ne sont jamais revenus après le signup.
+- ✅ **FAB intelligent** (`components/ParentView.tsx:3224-3233`): le bouton `+` central de la `BottomNavigation` appelle `startAddChild()` quand `data.children.length === 0` au lieu de scroller vers `missionFormRef` (qui n'existe pas sans enfant). Avant: tap sur `+` → rien de visible → friction pour user frais.
+- ✅ **Crown Premium masquée sur empty state** (`components/ParentView.tsx:1272` + `components/AndroidTopBar.tsx:34`): le bouton doré "Premium" est caché tant que `data.children.length === 0` — évite de prioriser un paywall avant même que le parent ait créé son 1er enfant. Nouveau prop `hasChildren` passé à `AndroidTopBar`. Variable locale `showPremiumCrown = !isPremium && hasChildren` remplace les 2 conditions `!isPremium` dans `AndroidTopBar`.
+- 📊 **Note requête SQL Supabase**: la query saved "Liste des parents sans enfants" utilisait `c.profile_id = p.id` — mauvaise colonne. La bonne est `c.user_id = p.id`. La colonne `children.profile_id` est toujours `NULL` (vestige migration). `children.user_id` est le seul lien vivant, `children.family_id` n'est utilisé que sur 2/13 lignes.
+- ✅ **Email re-engagement `no_children` à J+2** (`supabase/functions/notify-inactive-users/index.ts`): nouveau type d'email ciblé sur les parents sans enfant — "Plus qu'une étape, crée le profil de ton enfant". Filtré via `children.user_id` count = 0. En FR/NL/EN. Bug dead code supprimé (ancien `inactive_email_sent` qui n'existe pas dans `profiles`). Déployé sur Supabase.
+- ✅ **Colonne `language` dans `profiles`** (Supabase prod): `ALTER TABLE profiles ADD COLUMN language text DEFAULT 'fr' CHECK (language IN ('fr', 'nl', 'en'))`. Permet aux emails de re-engagement d'utiliser la langue du profil.
+- ✅ **Sync langue → Supabase** (`App.tsx`): `setLanguage()` persiste la langue dans `profiles` via Supabase fire-and-forget. `initialize()` synce aussi la langue effective au login (pour les profils existants).
+
+### Corrections appliquées (11/04/2026)
+- ✅ **Limites de saisie des montants**: `onChange` bloque la frappe au-delà du max sur tous les champs numériques (reward mission, edit reward, transaction — iOS + Android). Le `max` HTML ne suffit pas, il faut valider dans `onChange`.
+- ✅ **Devise dans LoginView**: `curr = data.currency || '€'` utilisé dans les balances et aria-labels (plus d'€ hardcodé).
+- ✅ **Label Récompense sans devise**: `formAmountLabel` en FR/NL/EN retiré du `(€)` hardcodé dans `i18n.ts`.
+- ✅ **Champ numérique limite cagnottes**: `isNumeric: true` dans promptConfig → clavier numérique, sans œil — corrigé dans les 3 branches (Android MD3, iOS standalone, iOS inline).
+- ✅ **Balance cap dynamique** (`App.tsx`): Respect de `data.maxBalance` au lieu de la constante `MAX_BALANCE` lors des crédits de balance.
+- ✅ **Build**: Vite cache supprimé (`node_modules/.vite` + `dist`) avant rebuild pour éviter que l'ancien bundle soit conservé.
+
 ### Corrections appliquées (02/04/2026)
 - ✅ **Sélecteur de devise**: `currency` ajouté dans `GlobalState` + `INITIAL_DATA`. Constante `CURRENCIES` (23 devises: EUR, USD, GBP, CHF, CAD, AUD, SGD, HKD, NZD, JPY, INR, TRY, KRW, BRL, SEK, NOK, DKK, PLN, ZAR, MAD, AED, HUF, CZK). Dropdown dans settings Profil. `curr` propagé partout dans ParentView + ChildView. Handler `setCurrency()` dans App.tsx.
 - ✅ **Suppression mode démo**: Bouton "Lancer le Mode Démo" et lien "Continuer sans compte" supprimés de AuthView.tsx. `getDemoData` import retiré. Message "Service indisponible" affiché si Supabase non configuré.
 - ✅ **Re-engagement emails (Supabase Edge Function)**: `supabase/functions/notify-inactive-users/index.ts` déployée. Emails FR/NL/EN à 7j (tu nous manques), 30j (missions en attente), 90j (compte désactivé dans 30j). Table `email_logs` créée (anti-doublons). Cron pg_cron 08h00 UTC quotidien. Secrets: `RESEND_API_KEY` + `SERVICE_ROLE_KEY` configurés dans Supabase.
 - ✅ **tsconfig.json**: dossier `supabase/` exclu du build TypeScript (code Deno incompatible avec le compilateur Node).
 - ✅ **iOS version 1.0.2 build 3**: `MARKETING_VERSION` passé de 1.0.1 → 1.0.2 et `CURRENT_PROJECT_VERSION` de 2 → 3 dans `project.pbxproj`. Soumis pour review Apple Store. Compte test review: `akians237@gmail.com` / `KoinyReview2024` / PIN: 0000.
+- ✅ **iOS version 1.0.3 build 4**: `MARKETING_VERSION` → 1.0.3, `CURRENT_PROJECT_VERSION` → 4. Soumis pour review Apple le 11/04/2026.
 - ✅ **App Store Connect**: Nouveautés saisies en FR/NL/EN. Connexion requise cochée avec compte test.
 
 ### Corrections appliquées (31/03/2026 — session 3)
@@ -239,6 +257,25 @@ const t = translations[data.language || 'fr'];
 - **SMTP Supabase:** Service intégré Supabase non adapté à la production — configurer Resend avant launch public
 - **PIN reset pour users OAuth (Apple/Google):** Utilise encore `signInWithPassword` dans ParentView.tsx → à migrer vers OTP email quand Resend est configuré
 
+## Remotion (vidéos promo)
+
+Projet: `/Users/andre/Desktop/koiny-promo`
+
+**Prérequis:** Node 20 requis (Node 24 bloque le démarrage silencieusement)
+
+```bash
+cd ~/Desktop/koiny-promo
+export PATH="/opt/homebrew/opt/node@20/bin:$PATH"
+npm run dev
+# Ouvrir http://localhost:3000 (ou 3001 si 3000 occupé)
+```
+
+**Notes:**
+- Premier démarrage après `rm -rf node_modules/.cache` : lent (recompile le bundle webpack)
+- Premier démarrage sur machine vierge : télécharge Chrome Headless Shell (~90 Mo) silencieusement
+- Le studio affiche `Building...` pendant la compilation — c'est normal, patienter
+- Node 20 installé via `brew install node@20` (coexiste avec Node 24 pour Koiny)
+
 ## TestFlight
 
 **Workflow de déploiement:**
@@ -253,7 +290,7 @@ const t = translations[data.language || 'fr'];
 - Review Apple pour tests externes: 24-48h
 - Xcode incrémente automatiquement le build number à chaque archive
 - Builds: (1) 15/03, (2) 15/03, (3) 16/03, (4+) 16/03 après contrat signé
-- Build actuel: **version 1.0.0, build 2** (30/03/2026 — fix demo data bleed + Android MD3)
+- Build actuel: **version 1.0.3, build 4** (11/04/2026 — limites saisie, devise, champ numérique cagnotte)
 
 **Android:**
 - Gradle JDK: `jbr-21` (configuré dans `android/.idea/gradle.xml`)

@@ -202,6 +202,13 @@ const App: React.FC = () => {
       });
       setOwnerId(result.ownerId);
 
+      // Sync langue → profiles (pour les emails de re-engagement)
+      const supabaseClient = getSupabase();
+      const effectiveLang = savedLanguage || cloudData.language || 'fr';
+      if (supabaseClient && result.ownerId && result.ownerId !== 'local-owner') {
+        supabaseClient.from('profiles').update({ language: effectiveLang }).eq('id', result.ownerId).then(() => {});
+      }
+
       // Initialiser RevenueCat et vérifier le statut premium
       try {
         await subscriptionService.initialize(result.ownerId);
@@ -794,7 +801,7 @@ const App: React.FC = () => {
     // ⭐ 1. PRIORITÉ: Update local state TOUJOURS d'abord (offline-friendly)
     updateChild(childId, (child) => ({
       ...child,
-      balance: Math.max(0, Math.min(MAX_BALANCE, Number((child.balance + effectiveAmount).toFixed(2)))),
+      balance: Math.max(0, Math.min(data.maxBalance === 0 ? Infinity : (data.maxBalance || MAX_BALANCE), Number((child.balance + effectiveAmount).toFixed(2)))),
       history: [{
         id: transactionId,
         date: dateFormatted,
@@ -878,6 +885,11 @@ const App: React.FC = () => {
       updatedAt: new Date().toISOString()
     }));
     localStorage.setItem('koiny_language', lang);
+    // Persist language to profiles table (used by re-engagement emails)
+    const supabase = getSupabase();
+    if (supabase && ownerId) {
+      supabase.from('profiles').update({ language: lang }).eq('id', ownerId).then(() => {});
+    }
   };
   const setCurrency = (symbol: string) => {
     setData(prev => ({ ...prev, currency: symbol, updatedAt: new Date().toISOString() }));

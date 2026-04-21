@@ -26,6 +26,7 @@ const renderAvatar = (avatar: string, colorClass: string = "indigo") => {
 
 const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAccess }) => {
   const t = translations[data.language];
+  const curr = data.currency || '€';
   const [showHelp, setShowHelp] = useState(false);
 
   if (isAndroid) {
@@ -60,7 +61,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
                 <button
                   key={child.id}
                   onClick={() => onSelectChild(child.id)}
-                  aria-label={`${child.name} — ${child.balance.toFixed(2)}€`}
+                  aria-label={`${child.name} — ${child.balance.toFixed(2)}${curr}`}
                   className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 active:bg-slate-50 dark:active:bg-slate-700 transition-colors flex flex-col items-center gap-3"
                 >
                   <div className="w-16 h-16 rounded-full overflow-hidden">
@@ -69,7 +70,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
                   <div className="text-center">
                     <span className="block font-medium text-slate-900 dark:text-white text-sm mb-1">{child.name}</span>
                     <span className={`inline-block px-3 py-1 bg-${child.colorClass}-100 dark:bg-${child.colorClass}-900/30 text-${child.colorClass}-700 dark:text-${child.colorClass}-400 rounded-full text-xs font-medium`}>
-                      {child.balance.toFixed(2)} €
+                      {child.balance.toFixed(2)} {curr}
                     </span>
                   </div>
                 </button>

@@ -1,7 +1,7 @@
 // Koiny — Edge Function: notify-inactive-users
-// Runs daily via pg_cron. Sends re-engagement emails at 7, 30 and 90 days of inactivity.
+// Runs daily via pg_cron. Sends re-engagement emails at 2, 7, 30 and 90 days.
 // Deploy: supabase functions deploy notify-inactive-users
-// Secrets: supabase secrets set RESEND_API_KEY=re_xxx SUPABASE_SERVICE_ROLE_KEY=xxx
+// Secrets: supabase secrets set RESEND_API_KEY=re_xxx SERVICE_ROLE_KEY=xxx
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -14,10 +14,12 @@ const APP_URL = 'https://koiny.app';
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 // Days of inactivity → email config
+// no_children: J+2, only for parents who never created a child
 const SEQUENCES = [
-  { days: 7,  type: 'day7'  },
-  { days: 30, type: 'day30' },
-  { days: 90, type: 'day90' },
+  { days: 2,  type: 'no_children', onlyWithoutChildren: true },
+  { days: 7,  type: 'day7',        onlyWithoutChildren: false },
+  { days: 30, type: 'day30',       onlyWithoutChildren: false },
+  { days: 90, type: 'day90',       onlyWithoutChildren: false },
 ];
 
 async function sendEmail(to: string, subject: string, html: string) {
@@ -39,6 +41,44 @@ function getEmailContent(type: string, language: string, firstName: string): { s
   const name = firstName || (language === 'fr' ? 'là' : language === 'nl' ? 'daar' : 'there');
 
   const templates: Record<string, Record<string, { subject: string; html: string }>> = {
+    no_children: {
+      fr: {
+        subject: `${firstName ? firstName + ', t' : 'T'}u n'as pas encore créé ton premier enfant sur Koiny 👶`,
+        html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+          <img src="${APP_URL}/icon.png" width="48" height="48" style="border-radius:12px;margin-bottom:16px" />
+          <h2 style="color:#312e81">Plus qu'une étape !</h2>
+          <p style="color:#475569">Bonjour ${name},</p>
+          <p style="color:#475569">Tu as créé ton compte Koiny, mais tu n'as pas encore ajouté de profil enfant. C'est la seule étape qui te sépare des missions, cagnottes et objectifs !</p>
+          <p style="color:#475569">Ça prend moins d'une minute : donne un prénom, choisis un avatar, et c'est parti.</p>
+          <a href="${APP_URL}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:10px;text-decoration:none;font-weight:bold">Créer le profil de mon enfant →</a>
+          <p style="color:#94a3b8;font-size:12px;margin-top:32px">Tu reçois cet email car tu as un compte Koiny. <a href="${APP_URL}/unsubscribe" style="color:#94a3b8">Se désabonner</a></p>
+        </div>`,
+      },
+      nl: {
+        subject: `${firstName ? firstName + ', j' : 'J'}e hebt nog geen kindprofiel aangemaakt op Koiny 👶`,
+        html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+          <img src="${APP_URL}/icon.png" width="48" height="48" style="border-radius:12px;margin-bottom:16px" />
+          <h2 style="color:#312e81">Nog één stap!</h2>
+          <p style="color:#475569">Hallo ${name},</p>
+          <p style="color:#475569">Je hebt je Koiny-account aangemaakt, maar je hebt nog geen kindprofiel toegevoegd. Dat is de enige stap die je scheidt van missies, spaarpotjes en doelen!</p>
+          <p style="color:#475569">Het duurt minder dan een minuut: geef een voornaam op, kies een avatar en klaar.</p>
+          <a href="${APP_URL}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:10px;text-decoration:none;font-weight:bold">Kindprofiel aanmaken →</a>
+          <p style="color:#94a3b8;font-size:12px;margin-top:32px">Je ontvangt deze e-mail omdat je een Koiny-account hebt. <a href="${APP_URL}/unsubscribe" style="color:#94a3b8">Uitschrijven</a></p>
+        </div>`,
+      },
+      en: {
+        subject: `${firstName ? firstName + ', y' : 'Y'}ou haven't created your first child profile on Koiny yet 👶`,
+        html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+          <img src="${APP_URL}/icon.png" width="48" height="48" style="border-radius:12px;margin-bottom:16px" />
+          <h2 style="color:#312e81">Just one more step!</h2>
+          <p style="color:#475569">Hi ${name},</p>
+          <p style="color:#475569">You've created your Koiny account, but you haven't added a child profile yet. That's the only thing standing between you and missions, savings jars, and goals!</p>
+          <p style="color:#475569">It takes less than a minute: pick a name, choose an avatar, and you're all set.</p>
+          <a href="${APP_URL}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:10px;text-decoration:none;font-weight:bold">Create my child's profile →</a>
+          <p style="color:#94a3b8;font-size:12px;margin-top:32px">You received this because you have a Koiny account. <a href="${APP_URL}/unsubscribe" style="color:#94a3b8">Unsubscribe</a></p>
+        </div>`,
+      },
+    },
     day7: {
       fr: {
         subject: `${firstName ? firstName + ', t' : 'T'}u nous manques sur Koiny 👋`,
@@ -154,7 +194,6 @@ function getEmailContent(type: string, language: string, firstName: string): { s
 }
 
 Deno.serve(async (req) => {
-  // Allow manual trigger via POST (for testing)
   if (req.method !== 'GET' && req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
@@ -166,33 +205,32 @@ Deno.serve(async (req) => {
     const cutoffEnd = new Date(now);
     cutoffEnd.setDate(cutoffEnd.getDate() - seq.days);
     const cutoffStart = new Date(cutoffEnd);
-    cutoffStart.setDate(cutoffStart.getDate() - 1); // 1-day window to avoid duplicates
+    cutoffStart.setDate(cutoffStart.getDate() - 1); // fenêtre 1 jour pour éviter les doublons
 
-    // Find profiles last updated in the target window
-    const { data: profiles, error } = await supabase
+    // Récupérer les profils parents dont updated_at tombe dans la fenêtre
+    const { data: targetProfiles, error } = await supabase
       .from('profiles')
       .select('id, language, updated_at')
+      .eq('role', 'parent')
       .lt('updated_at', cutoffEnd.toISOString())
-      .gte('updated_at', cutoffStart.toISOString())
-      .eq('inactive_email_sent', seq.type)
-      .is('inactive_email_sent', null); // not yet sent this type
+      .gte('updated_at', cutoffStart.toISOString());
 
-    if (error) {
+    if (error || !targetProfiles) {
       console.error(`Error fetching profiles for ${seq.type}:`, error);
       continue;
     }
 
-    // Actually: query users whose updated_at is exactly in the window AND haven't received this email
-    const { data: targetProfiles, error: err2 } = await supabase
-      .from('profiles')
-      .select('id, language, updated_at')
-      .lt('updated_at', cutoffEnd.toISOString())
-      .gte('updated_at', cutoffStart.toISOString());
-
-    if (err2 || !targetProfiles) continue;
-
     for (const profile of targetProfiles) {
-      // Check not already sent via email_logs table
+      // Filtre no_children : ignorer les parents qui ont déjà des enfants
+      if (seq.onlyWithoutChildren) {
+        const { count } = await supabase
+          .from('children')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', profile.id);
+        if ((count ?? 0) > 0) continue;
+      }
+
+      // Anti-doublon via email_logs
       const { data: existing } = await supabase
         .from('email_logs')
         .select('id')
@@ -200,21 +238,18 @@ Deno.serve(async (req) => {
         .eq('email_type', seq.type)
         .maybeSingle();
 
-      if (existing) continue; // already sent
+      if (existing) continue;
 
-      // Get auth user email
+      // Récupérer l'email auth
       const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
       if (!authUser?.user?.email) continue;
 
       const email = authUser.user.email;
-      const firstName = email.split('@')[0]; // fallback name
       const lang = profile.language || 'en';
-
       const { subject, html } = getEmailContent(seq.type, lang, '');
 
       await sendEmail(email, subject, html);
 
-      // Log the sent email to avoid duplicates
       await supabase.from('email_logs').insert({
         user_id: profile.id,
         email_type: seq.type,

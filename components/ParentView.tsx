@@ -266,6 +266,7 @@ const ParentView: React.FC<ParentViewProps> = ({
     type: 'info' | 'success' | 'warning' | 'danger' | 'input';
     placeholder?: string;
     defaultValue?: string;
+    isNumeric?: boolean;
     onConfirm: (val?: string) => void;
   }>({
     isOpen: false,
@@ -568,7 +569,8 @@ const ParentView: React.FC<ParentViewProps> = ({
       return;
     }
     const amount = parseFloat(newAmount);
-    if (isNaN(amount) || amount <= 0 || amount > 100) return;
+    const _missionMax = data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500);
+    if (isNaN(amount) || amount <= 0 || amount > _missionMax) return;
     if (newTitle.length > 100) return;
     onAddMission(selectedChildId, newTitle.trim(), amount);
     setNewTitle('');
@@ -616,7 +618,8 @@ const ParentView: React.FC<ParentViewProps> = ({
     }
 
     const amount = parseFloat(transAmount.replace(',', '.'));
-    if (isNaN(amount) || amount <= 0 || amount > 1000) return;
+    const _transMax = data.maxBalance === 0 || !data.maxBalance ? 1000 : Math.min(data.maxBalance, 1000);
+    if (isNaN(amount) || amount <= 0 || amount > _transMax) return;
     if (transReason && transReason.length > 200) return;
     const currentMax = data.maxBalance === 0 ? Infinity : (data.maxBalance || 100);
 
@@ -1056,10 +1059,22 @@ const ParentView: React.FC<ParentViewProps> = ({
                 <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mb-10 leading-relaxed px-2">{promptConfig.message}</p>
                 {promptConfig.type === 'input' && (
                   <div className="w-full mb-10 relative group/input">
-                    <input autoFocus type={showPromptPassword ? 'text' : 'password'} value={promptValue} onChange={(e) => setPromptValue(e.target.value)} placeholder={promptConfig.placeholder || '...'} className="w-full p-5 pr-14 bg-black/5 dark:bg-black/40 border-2 border-white/10 dark:border-white/5 rounded-3xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-slate-900 dark:text-white font-black transition-all text-center placeholder:opacity-30 shadow-inner text-xl tracking-widest" />
-                    <button type="button" onClick={() => setShowPromptPassword(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                      <i className={`fa-solid ${showPromptPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                    </button>
+                    <input
+                      autoFocus
+                      type={promptConfig.isNumeric ? 'number' : (showPromptPassword ? 'text' : 'password')}
+                      inputMode={promptConfig.isNumeric ? 'decimal' : undefined}
+                      min={promptConfig.isNumeric ? 0 : undefined}
+                      max={promptConfig.isNumeric ? 10000 : undefined}
+                      value={promptValue}
+                      onChange={(e) => setPromptValue(e.target.value)}
+                      placeholder={promptConfig.placeholder || '...'}
+                      className="w-full p-5 pr-14 bg-black/5 dark:bg-black/40 border-2 border-white/10 dark:border-white/5 rounded-3xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-slate-900 dark:text-white font-black transition-all text-center placeholder:opacity-30 shadow-inner text-xl tracking-widest"
+                    />
+                    {!promptConfig.isNumeric && (
+                      <button type="button" onClick={() => setShowPromptPassword(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                        <i className={`fa-solid ${showPromptPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                    )}
                   </div>
                 )}
                 <div className="flex gap-4 w-full">
@@ -1236,6 +1251,7 @@ const ParentView: React.FC<ParentViewProps> = ({
         <AndroidTopBar
           mainView={mainView}
           isPremium={!!data.isPremium}
+          hasChildren={!!data.children && data.children.length > 0}
           isOfflineMode={isOfflineMode}
           selectedChildName={activeChild?.name}
           selectedChildAvatar={activeChild?.avatar}
@@ -1253,8 +1269,8 @@ const ParentView: React.FC<ParentViewProps> = ({
       {!isAndroid && (
         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${mainView !== 'dashboard' ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800' : 'pointer-events-none safe-pt'}`}>
           <div className={`max-w-7xl mx-auto px-4 ${mainView !== 'dashboard' ? 'py-2 safe-pt pb-2' : 'py-4'} flex justify-between items-center gap-4`}>
-            {/* Left: Premium Button */}
-            {!data.isPremium ? (
+            {/* Left: Premium Button — caché tant que 0 enfants pour ne pas prioriser le paywall sur l'onboarding */}
+            {!data.isPremium && data.children && data.children.length > 0 ? (
               <button onClick={() => setIsSubscriptionModalOpen(true)}
                 className={`flex items-center justify-center w-12 h-12 rounded-2xl pointer-events-auto active:scale-95 transition-transform group shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl' : ''}`}
               >
@@ -1818,7 +1834,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                       <div className="space-y-1.5">
                         <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.parent.formAmountLabel}</label>
                         <div className="relative">
-                          <input type="number" step="0.5" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} className="w-full pl-5 pr-12 py-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/20 outline-none transition-all text-slate-900 dark:text-white font-black text-sm shadow-inner" placeholder={t.parent.formAmountPlaceholder} required />
+                          <input type="number" step="0.5" min="0.5" max={data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500)} value={newAmount} onChange={(e) => { const v = e.target.value; const missionMax = data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500); if (v === '' || (parseFloat(v) <= missionMax && v.length <= 10)) setNewAmount(v); }} className="w-full pl-5 pr-12 py-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/20 outline-none transition-all text-slate-900 dark:text-white font-black text-sm shadow-inner" placeholder={t.parent.formAmountPlaceholder} required />
                           <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-300 dark:text-slate-600">{curr}</span>
                         </div>
                       </div>
@@ -1899,7 +1915,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         </div>
                         <div>
                           <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 ml-1 block">{t.parent.formAmountLabel}</label>
-                          <input type="number" inputMode="decimal" step="0.5" min="0.5" value={editMissionReward} onChange={(e) => setEditMissionReward(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-3 text-base text-slate-900 dark:text-white focus:border-2 focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all" />
+                          <input type="number" inputMode="decimal" step="0.5" min="0.5" max={data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500)} value={editMissionReward} onChange={(e) => { const v = e.target.value; const missionMax = data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500); if (v === '' || (parseFloat(v) <= missionMax && v.length <= 10)) setEditMissionReward(v); }} className="w-full border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-3 text-base text-slate-900 dark:text-white focus:border-2 focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all" />
                         </div>
                       </div>
                       <div className="flex justify-end gap-2 px-6 pb-6 pt-2">
@@ -1909,7 +1925,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                             const updates: { title?: string; reward?: number } = {};
                             if (editMissionTitle.trim() !== editingMission.title) updates.title = editMissionTitle.trim();
                             const newReward = parseFloat(editMissionReward);
-                            if (!isNaN(newReward) && newReward > 0 && newReward <= 100 && newReward !== editingMission.reward) updates.reward = newReward;
+                            if (!isNaN(newReward) && newReward > 0 && newReward <= (data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500)) && newReward !== editingMission.reward) updates.reward = newReward;
                             if (Object.keys(updates).length > 0) { onEditMission(selectedChildId, editingMission.id, updates); }
                           }
                           setEditingMission(null);
@@ -1935,7 +1951,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         </div>
                         <div>
                           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{t.parent.formAmountLabel}</label>
-                          <input type="number" inputMode="decimal" step="0.5" min="0.5" value={editMissionReward} onChange={(e) => setEditMissionReward(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-4 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 transition-all text-sm" />
+                          <input type="number" inputMode="decimal" step="0.5" min="0.5" max={data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500)} value={editMissionReward} onChange={(e) => { const v = e.target.value; const missionMax = data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500); if (v === '' || (parseFloat(v) <= missionMax && v.length <= 10)) setEditMissionReward(v); }} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-4 text-slate-800 dark:text-white font-bold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 transition-all text-sm" />
                         </div>
                         <div className="flex gap-3 pt-2">
                           <button onClick={() => setEditingMission(null)} className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all uppercase tracking-widest text-[10px] active:scale-95">{t.common.cancel}</button>
@@ -1944,7 +1960,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                               const updates: { title?: string; reward?: number } = {};
                               if (editMissionTitle.trim() !== editingMission.title) updates.title = editMissionTitle.trim();
                               const newReward = parseFloat(editMissionReward);
-                              if (!isNaN(newReward) && newReward > 0 && newReward <= 100 && newReward !== editingMission.reward) updates.reward = newReward;
+                              if (!isNaN(newReward) && newReward > 0 && newReward <= (data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500)) && newReward !== editingMission.reward) updates.reward = newReward;
                               if (Object.keys(updates).length > 0) { onEditMission(selectedChildId, editingMission.id, updates); }
                             }
                             setEditingMission(null);
@@ -2479,12 +2495,14 @@ const ParentView: React.FC<ParentViewProps> = ({
                       <button onClick={() => {
                         openPrompt({
                           title: language === 'fr' ? 'Limite des cagnottes' : language === 'nl' ? 'Spaarbeperking' : 'Savings Limit',
-                          message: language === 'fr' ? 'Montant maximum du portefeuille (0 pour illimité)' : language === 'nl' ? 'Maximumbedrag in portemonnee' : 'Maximum wallet balance',
+                          message: language === 'fr' ? 'Montant maximum du portefeuille (0 pour illimité, max 10 000)' : language === 'nl' ? 'Maximumbedrag in portemonnee (0 voor onbeperkt, max 10.000)' : 'Maximum wallet balance (0 for unlimited, max 10,000)',
                           type: 'input',
+                          isNumeric: true,
                           placeholder: (data.maxBalance || 100).toString(),
                           onConfirm: (val) => {
-                            if (val && !isNaN(parseFloat(val))) {
-                              onUpdateMaxBalance?.(parseFloat(val));
+                            const n = parseFloat(val || '');
+                            if (!isNaN(n) && n >= 0 && n <= 10000) {
+                              onUpdateMaxBalance?.(n);
                             }
                           }
                         });
@@ -2735,7 +2753,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                         value={transAmount}
                         onChange={(e) => {
                           const val = e.target.value.replace(',', '.');
-                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          const txMax = data.maxBalance === 0 || !data.maxBalance ? 1000 : Math.min(data.maxBalance, 1000);
+                          if (val === '' || (/^\d*\.?\d*$/.test(val) && (parseFloat(val) || 0) <= txMax && val.length <= 10)) {
                             setTransAmount(e.target.value);
                           }
                         }}
@@ -2809,7 +2828,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                           value={transAmount}
                           onChange={(e) => {
                             const val = e.target.value.replace(',', '.');
-                            if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                            const txMax = data.maxBalance === 0 || !data.maxBalance ? 1000 : Math.min(data.maxBalance, 1000);
+                            if (val === '' || (/^\d*\.?\d*$/.test(val) && (parseFloat(val) || 0) <= txMax && val.length <= 10)) {
                               setTransAmount(e.target.value);
                             }
                           }}
@@ -2949,15 +2969,20 @@ const ParentView: React.FC<ParentViewProps> = ({
                     <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-3 flex items-center focus-within:border-2 focus-within:border-indigo-600 focus-within:bg-white dark:focus-within:bg-slate-900 transition-all">
                       <input
                         autoFocus
-                        type={showPromptPassword ? 'text' : 'password'}
+                        type={promptConfig.isNumeric ? 'number' : (showPromptPassword ? 'text' : 'password')}
+                        inputMode={promptConfig.isNumeric ? 'decimal' : undefined}
+                        min={promptConfig.isNumeric ? 0 : undefined}
+                        max={promptConfig.isNumeric ? 10000 : undefined}
                         value={promptValue}
                         onChange={(e) => setPromptValue(e.target.value)}
                         placeholder={promptConfig.placeholder || '...'}
                         className="flex-1 text-lg text-slate-900 dark:text-white bg-transparent text-center focus:outline-none placeholder:text-slate-300 dark:placeholder:text-slate-600 tracking-widest"
                       />
+                      {!promptConfig.isNumeric && (
                       <button type="button" onClick={() => setShowPromptPassword(v => !v)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors ml-2">
                         <i className={`fa-solid ${showPromptPassword ? 'fa-eye-slash' : 'fa-eye'} text-sm`}></i>
                       </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -3013,15 +3038,20 @@ const ParentView: React.FC<ParentViewProps> = ({
                   <div className="w-full mb-10 relative group/input">
                     <input
                       autoFocus
-                      type={showPromptPassword ? 'text' : 'password'}
+                      type={promptConfig.isNumeric ? 'number' : (showPromptPassword ? 'text' : 'password')}
+                      inputMode={promptConfig.isNumeric ? 'decimal' : undefined}
+                      min={promptConfig.isNumeric ? 0 : undefined}
+                      max={promptConfig.isNumeric ? 10000 : undefined}
                       value={promptValue}
                       onChange={(e) => setPromptValue(e.target.value)}
                       placeholder={promptConfig.placeholder || '...'}
-                      className="w-full p-5 pr-14 bg-black/5 dark:bg-black/40 border-2 border-white/10 dark:border-white/5 rounded-3xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-slate-900 dark:text-white font-black transition-all text-center placeholder:opacity-30 shadow-inner text-xl tracking-widest"
+                      className={`w-full p-5 ${promptConfig.isNumeric ? 'pr-5' : 'pr-14'} bg-black/5 dark:bg-black/40 border-2 border-white/10 dark:border-white/5 rounded-3xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-slate-900 dark:text-white font-black transition-all text-center placeholder:opacity-30 shadow-inner text-xl tracking-widest`}
                     />
+                    {!promptConfig.isNumeric && (
                     <button type="button" onClick={() => setShowPromptPassword(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
                       <i className={`fa-solid ${showPromptPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                     </button>
+                    )}
                   </div>
                 )}
 
@@ -3193,6 +3223,10 @@ const ParentView: React.FC<ParentViewProps> = ({
         activeTab={mainView}
         onTabChange={(tab) => setMainView(tab as any)}
         onAddClick={() => {
+          if (!data.children || data.children.length === 0) {
+            startAddChild();
+            return;
+          }
           setMainView('dashboard');
           setTimeout(() => {
             missionFormRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -3,6 +3,7 @@ import React from 'react';
 interface AndroidTopBarProps {
   mainView: string;
   isPremium: boolean;
+  hasChildren: boolean;
   isOfflineMode: boolean;
   selectedChildName?: string;
   selectedChildAvatar?: string;
@@ -18,6 +19,7 @@ interface AndroidTopBarProps {
 export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
   mainView,
   isPremium,
+  hasChildren,
   isOfflineMode,
   selectedChildName,
   selectedChildAvatar,
@@ -29,6 +31,7 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
   language,
   isScrolled,
 }) => {
+  const showPremiumCrown = !isPremium && hasChildren;
   const isDashboard = mainView === 'dashboard';
 
   const pageTitle = isDashboard
@@ -60,8 +63,8 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
       style={{ paddingTop: 'max(24px, env(safe-area-inset-top))' }}
     >
       <div className="flex items-center h-14 px-3 gap-2">
-        {/* Leading: Premium crown or spacer */}
-        {!isPremium ? (
+        {/* Leading: Premium crown or spacer — caché tant que 0 enfants */}
+        {showPremiumCrown ? (
           <button
             onClick={onPremiumClick}
             className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-orange-500/30 shrink-0 active:scale-95 transition-transform"
@@ -78,7 +81,7 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
             isScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
           }`}>
             {avatarSrc && (
-              <div className={`flex items-center gap-2 ${!isPremium ? 'ml-1' : ''}`}>
+              <div className={`flex items-center gap-2 ${showPremiumCrown ? 'ml-1' : ''}`}>
                 <div className={`w-8 h-8 rounded-full overflow-hidden bg-${selectedChildColor}-100 dark:bg-${selectedChildColor}-900/40 flex items-center justify-center shrink-0`}>
                   <img src={avatarSrc} alt="" className="w-full h-full object-contain scale-110 translate-y-0.5" />
                 </div>
