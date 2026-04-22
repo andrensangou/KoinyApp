@@ -51,3 +51,6 @@ pnpm-lock.yaml
 
 # Supabase CLI temp files
 supabase/.temp/
+
+# Claude Code settings (may contain sensitive tokens)
+.claude/
