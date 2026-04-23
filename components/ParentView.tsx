@@ -2527,12 +2527,6 @@ const ParentView: React.FC<ParentViewProps> = ({
                       <div className="absolute top-[-40px] right-[-40px] w-[140px] h-[140px] rounded-full pointer-events-none" style={{ background: 'rgba(255,255,255,0.08)' }}></div>
                       <div className="relative z-10">
                         <p className="text-[18px] font-black text-white">Parent Space</p>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] bg-white/20">
-                              <i className={`fa-solid ${badgeInfo.icon} text-[10px] text-white`}></i>
-                              <span className="text-[10px] font-black uppercase tracking-[0.08em] text-white">{badgeInfo.label.toUpperCase()}</span>
-                            </div>
-                          </div>
                         </div>
                       </div>
 
@@ -2544,7 +2538,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                           const goalEmojis: Record<string, string> = { 'fa-bicycle': '🚲', 'fa-gamepad': '🎮', 'fa-cube': '🧱', 'fa-rocket': '🚀', 'fa-headphones': '🎧', 'fa-mobile': '📱', 'fa-laptop': '💻', 'fa-book': '📚', 'fa-guitar': '🎸', 'fa-futbol': '⚽' };
                           return (
                             <button key={child.id} type="button" onClick={() => startEditChild(child)} className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors" style={{ borderBottom: i < data.children.length - 1 ? '1px solid #f8fafc' : 'none' }}>
-                              <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">{renderAvatar(child.avatar, "w-full h-full", child.colorClass)}</div>
+                              <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-slate-100 p-0.5">{renderAvatar(child.avatar, "w-full h-full", child.colorClass)}</div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[14px] font-bold text-[#1e293b] dark:text-white">{child.name}</p>
                                 <p className="text-[11px] text-slate-400 font-semibold">{child.balance.toFixed(2)}{curr}</p>
