@@ -1981,7 +1981,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                                 <div className="flex-1 min-w-0">
                                   <p className="text-[13px] font-bold text-slate-800 dark:text-white truncate">{getTranslatedTitle(mission.title, language)}</p>
                                   <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-orange-50 text-orange-600 uppercase tracking-wide">PENDING</span>
+                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-orange-50 text-orange-600 uppercase tracking-wide">{language === 'fr' ? 'EN ATTENTE' : language === 'nl' ? 'IN AFWACHTING' : 'PENDING'}</span>
                                   </div>
                                 </div>
                                 <span className="text-[16px] font-black text-orange-500 shrink-0 tracking-tight">+{mission.reward}{curr}</span>
@@ -2551,19 +2551,24 @@ const ParentView: React.FC<ParentViewProps> = ({
                         {data.children.map((child, i) => {
                           const goalEmojis: Record<string, string> = { 'fa-bicycle': '🚲', 'fa-gamepad': '🎮', 'fa-cube': '🧱', 'fa-rocket': '🚀', 'fa-headphones': '🎧', 'fa-mobile': '📱', 'fa-laptop': '💻', 'fa-book': '📚', 'fa-guitar': '🎸', 'fa-futbol': '⚽' };
                           return (
-                            <button key={child.id} type="button" onClick={() => startEditChild(child)} className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors" style={{ borderBottom: i < data.children.length - 1 ? '1px solid #f8fafc' : 'none' }}>
-                              <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-slate-100 p-0.5">{renderAvatar(child.avatar, "w-full h-full", child.colorClass)}</div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[14px] font-bold text-[#1e293b] dark:text-white">{child.name}</p>
-                                <p className="text-[11px] text-slate-400 font-semibold">{child.balance.toFixed(2)}{curr}</p>
-                              </div>
-                              <div className="flex gap-1.5 mr-2">
-                                {(child.goals || []).slice(0, 3).map(g => (
-                                  <span key={g.id} className="text-base">{goalEmojis[g.icon] || '⭐'}</span>
-                                ))}
-                              </div>
-                              <i className="fa-solid fa-chevron-right text-[11px] text-slate-300 shrink-0"></i>
-                            </button>
+                            <div key={child.id} className="flex items-center" style={{ borderBottom: i < data.children.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+                              <button type="button" onClick={() => startEditChild(child)} className="flex-1 flex items-center gap-3 px-4 py-3 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors min-w-0">
+                                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-slate-100 p-0.5">{renderAvatar(child.avatar, "w-full h-full", child.colorClass)}</div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[14px] font-bold text-[#1e293b] dark:text-white">{child.name}</p>
+                                  <p className="text-[11px] text-slate-400 font-semibold">{child.balance.toFixed(2)}{curr}</p>
+                                </div>
+                                <div className="flex gap-1.5 mr-2">
+                                  {(child.goals || []).slice(0, 3).map(g => (
+                                    <span key={g.id} className="text-base">{goalEmojis[g.icon] || '⭐'}</span>
+                                  ))}
+                                </div>
+                                <i className="fa-solid fa-chevron-right text-[11px] text-slate-300 shrink-0"></i>
+                              </button>
+                              <button type="button" onClick={() => openConfirm(t.parent.deleteTitle, t.parent.deleteMessage, () => onDeleteChild(child.id), 'danger')} aria-label={`${language === 'fr' ? 'Supprimer' : language === 'nl' ? 'Verwijderen' : 'Delete'} ${child.name}`} className="w-10 h-10 rounded-xl bg-rose-50 text-rose-400 flex items-center justify-center active:bg-rose-100 transition-colors shrink-0 mr-3">
+                                <i className="fa-solid fa-trash-can text-xs" aria-hidden="true"></i>
+                              </button>
+                            </div>
                           );
                         })}
                         <button type="button" onClick={startAddChild} className="w-full flex items-center gap-3 px-4 py-3.5 border-t border-slate-50 dark:border-slate-800 active:bg-slate-50 dark:active:bg-slate-800 transition-colors">

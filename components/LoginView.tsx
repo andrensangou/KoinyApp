@@ -136,7 +136,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
             <img src="/mascot.png" alt="Koiny" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div style={{ fontSize: 26, fontWeight: 900, color: '#1e293b', letterSpacing: '-0.8px', lineHeight: 1.3, marginBottom: 10 }}>
-            Welcome to <span style={{ color: '#4f46e5' }}>Koiny</span>
+            {t.login.welcome}
           </div>
           <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             {t.login.selectProfile}
@@ -220,7 +220,6 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
 
         {/* Legal */}
         <div style={{ textAlign: 'center' }}>
-          <span style={{ fontSize: 11, color: '#cbd5e1', fontWeight: 500 }}>Terms &amp; Privacy · </span>
           <button
             onClick={() => { const event = new CustomEvent('openLegalModal'); window.dispatchEvent(event); }}
             style={{ fontSize: 11, color: '#818cf8', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
