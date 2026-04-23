@@ -2259,6 +2259,30 @@ const ParentView: React.FC<ParentViewProps> = ({
             </section>}
 
             {mainView === 'history' && <section className="pt-28 pb-32">
+              {!isAndroid && data.children.length > 1 && (
+                <div className="flex gap-3 px-4 pb-3 overflow-x-auto no-scrollbar">
+                  {data.children.map(c => {
+                    const accentMap: Record<string, string> = { indigo: '#6366f1', pink: '#ec4899', emerald: '#10b981', amber: '#f59e0b', blue: '#3b82f6', rose: '#f43f5e', purple: '#a855f7', violet: '#8b5cf6', cyan: '#06b6d4', teal: '#14b8a6', orange: '#f97316' };
+                    const accent = accentMap[c.colorClass] || '#6366f1';
+                    const isActive = c.id === selectedChildId;
+                    return (
+                      <button key={c.id} onClick={() => setSelectedChildId(c.id)} className="flex flex-col items-center gap-1 shrink-0 transition-all">
+                        <div className="relative">
+                          <div className="w-14 h-14 rounded-full overflow-hidden transition-all" style={{ opacity: isActive ? 1 : 0.45, outline: isActive ? `3px solid ${accent}` : 'none', outlineOffset: '2px' }}>
+                            {renderAvatar(c.avatar, 'w-full h-full', c.colorClass)}
+                          </div>
+                          {c.missions.filter(m => m.status === 'PENDING').length > 0 && (
+                            <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center text-white text-[10px] font-black">
+                              {c.missions.filter(m => m.status === 'PENDING').length}
+                            </div>
+                          )}
+                        </div>
+                        <span className={`text-[11px] font-bold ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>{c.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <div className="sticky z-10 px-4 pb-3 pt-1 bg-white dark:bg-slate-950" style={{ top: 'calc(max(60px, env(safe-area-inset-top)) + 52px)' }}>
                 <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 items-center">
                   <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shrink-0">
@@ -2501,12 +2525,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                     {/* Parent Space gradient card */}
                     <div className="relative overflow-hidden rounded-[24px] p-6" style={{ background: 'linear-gradient(135deg,#818cf8,#4338ca)' }}>
                       <div className="absolute top-[-40px] right-[-40px] w-[140px] h-[140px] rounded-full pointer-events-none" style={{ background: 'rgba(255,255,255,0.08)' }}></div>
-                      <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-14 h-14 rounded-full flex items-center justify-center border-2 border-white/40" style={{ background: 'rgba(255,255,255,0.2)' }}>
-                          <i className="fa-solid fa-user text-white text-[22px]"></i>
-                        </div>
-                        <div>
-                          <p className="text-[18px] font-black text-white">Parent Space</p>
+                      <div className="relative z-10">
+                        <p className="text-[18px] font-black text-white">Parent Space</p>
                           <div className="flex items-center gap-1.5 mt-1">
                             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] bg-white/20">
                               <i className={`fa-solid ${badgeInfo.icon} text-[10px] text-white`}></i>
@@ -2515,7 +2535,6 @@ const ParentView: React.FC<ParentViewProps> = ({
                           </div>
                         </div>
                       </div>
-                    </div>
 
                     {/* FAMILY section */}
                     <div>
@@ -2528,7 +2547,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                               <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">{renderAvatar(child.avatar, "w-full h-full", child.colorClass)}</div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[14px] font-bold text-[#1e293b] dark:text-white">{child.name}</p>
-                                <p className="text-[11px] text-slate-400 font-semibold">{child.balance.toFixed(2)}{curr} balance</p>
+                                <p className="text-[11px] text-slate-400 font-semibold">{child.balance.toFixed(2)}{curr}</p>
                               </div>
                               <div className="flex gap-1.5 mr-2">
                                 {(child.goals || []).slice(0, 3).map(g => (
@@ -2593,7 +2612,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                           </div>
                           <div className="flex-1 text-[14px] font-semibold text-[#1e293b] dark:text-white">{language === 'fr' ? 'Devise' : language === 'nl' ? 'Valuta' : 'Currency'}</div>
                           <select value={CURRENCIES.find(c => c.symbol === curr)?.code || 'EUR'} onChange={e => { const c = CURRENCIES.find(x => x.code === e.target.value); if (c) onSetCurrency(c.symbol); }} className="bg-transparent text-[12px] text-slate-400 font-semibold outline-none cursor-pointer">
-                            {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.symbol} — {c.code}</option>)}
+                            {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>)}
                           </select>
                         </div>
                         {/* Wallet Limit */}
@@ -3035,7 +3054,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         >
                           {CURRENCIES.map(c => (
                             <option key={c.code} value={c.code}>
-                              {c.symbol} — {c.code}
+                              {c.symbol} {c.code}
                             </option>
                           ))}
                         </select>
