@@ -168,6 +168,22 @@ const t = translations[data.language || 'fr'];
 - ✅ Fix: `waitForInit()` — produits ne chargeaient pas car modal ouvert avant init RevenueCat
 - ✅ Fix: SubscriptionModal retry auto + bouton "Réessayer" + spinner achat + anti double-clic
 
+### Corrections appliquées (23/04/2026 — iOS History, Requests, Profile redesign)
+**Contexte**: Suite du redesign iOS (branche `redesign`). Dashboard déjà fait. Scope: iOS uniquement (`!isAndroid`), Android MD3 intact.
+- ✅ **History tab iOS** (`components/ParentView.tsx`): sélecteur d'avatars enfants (multi-enfants, outline accent couleur), badge total montant (vert/rouge), liste dans carte blanche `rounded-[18px]`. `VirtualHistoryList` reécrit avec prop `isIOS` + `curr` — items style carte iOS (icône colorée par type: ⭐ Mission, 🎁 Cadeau, ⚠️ Amende, 🛍️ Achat), label type bold, sous-titre titre+note+date, montant à droite.
+- ✅ **Requests tab iOS** (`components/ParentView.tsx`): header "Demandes" + sous-titre count pending, sélecteur pills enfants colorés (accent couleur enfant, badge rouge pending count).
+- ✅ **Profile tab iOS** (`components/ParentView.tsx`): layout page unique — carte gradient indigo "Parent Space" + badge, section FAMILY (rows enfants avatar+solde+emojis goals+chevron, bouton Ajouter), section SETTINGS (8 rows: Notifs toggle, Son toggle, Langue click-to-cycle, Devise select inline, Wallet Limit prompt, PIN & Sécurité, Koiny Premium, Aide, Contact Support), bouton SIGN OUT rouge, Supprimer compte, Lien légal. Formulaire enfant (edit) accessible depuis les rows FAMILY avec bouton Retour.
+- ✅ **Android profile inchangé**: layout segmenté FAMILY/ACCOUNT préservé tel quel derrière `isAndroid` ternaire.
+- ✅ **Sécurité**: token Supabase CLI (`sbp_a2c8ce...`) exposé dans `.claude/settings.json` → révoqué automatiquement par Supabase (GitHub Secret Scanning). Fichier retiré du tracking git, `.claude/` ajouté au `.gitignore`.
+- 📝 **Branche**: tout le redesign iOS est sur la branche `redesign` (main = v1.0.3 intact).
+
+### Corrections appliquées (22/04/2026 — iOS Parent Dashboard facelift)
+**Contexte**: Import du bundle de design Claude Design (`docs/design-parent-dashboard/`) — prototype hi-fi iOS du parent dashboard. Scope: iOS uniquement (`!isAndroid`), Android MD3 intact.
+- ✅ **iOS Balance Card consolidée** (`components/ParentView.tsx` ~1635): avatar + nom + âge en header, pill `BALANCE` top-right, gros montant, grille 3 colonnes `EARNED / SPENT / FINES` (weekly summary), puis boutons Dépôt/Retrait full-width côte-à-côte. Goal progress bar conservée sous un divider. Remplace l'ancien layout (montant + boutons empilés à droite).
+- ✅ **iOS Weekly Hero dégraissée** (`components/ParentView.tsx` ~1493): stats retirées du hero supérieur puisqu'elles sont maintenant dans la Balance Card. Le `heroRef` reste présent (requis par la logique de scroll du child selector) mais avec un pt-24 pb-4 minimaliste (uniquement backdrop indigo + blobs déco).
+- ✅ **Mission cards iOS accent coloré**: bordure gauche 3px color accent enfant sur les missions ACTIVE (style inline — `border-l-{color}` n'est pas dans le safelist Tailwind), bordure gauche orange-500 sur les missions PENDING. Android MD3 inchangé.
+- 📝 **i18n inline** (patterns CLAUDE.md respectés): nouveaux labels Gains/Verdiend/Earned, Dépenses/Uitgaven/Spent, Amendes/Boetes/Fines, Dépôt/Storting/Deposit, Retrait/Opname/Withdraw, `X ans` / `X jaar` / `X yrs old`.
+
 ### Corrections appliquées (21/04/2026)
 **Contexte**: Diagnostic Supabase — 19 profils `parent` au total, dont 8 n'ont jamais créé d'enfant. Conversion par provider: Google 83% (5/6), Apple 50% (6/12). Apple Sign-In convertit 33 pts de moins que Google — flow post-signup pas assez directif. 3/8 drop-offs utilisent Apple Private Relay → emails re-engagement filtrés. Tous les drop-offs ont `full_name = "Parent"` (default jamais modifié) et 7/8 ne sont jamais revenus après le signup.
 - ✅ **FAB intelligent** (`components/ParentView.tsx:3224-3233`): le bouton `+` central de la `BottomNavigation` appelle `startAddChild()` quand `data.children.length === 0` au lieu de scroller vers `missionFormRef` (qui n'existe pas sans enfant). Avant: tap sur `+` → rien de visible → friction pour user frais.
