@@ -78,6 +78,20 @@ const AVAILABLE_COLORS = [
   'rose', 'purple', 'cyan', 'teal', 'orange'
 ];
 
+const FORM_PAL: Record<string, { from: string; to: string }> = {
+  indigo:  { from: '#818cf8', to: '#4338ca' },
+  emerald: { from: '#34d399', to: '#059669' },
+  rose:    { from: '#fb7185', to: '#be123c' },
+  amber:   { from: '#fbbf24', to: '#d97706' },
+  blue:    { from: '#60a5fa', to: '#2563eb' },
+  pink:    { from: '#f472b6', to: '#db2777' },
+  violet:  { from: '#a78bfa', to: '#7c3aed' },
+  purple:  { from: '#c084fc', to: '#9333ea' },
+  teal:    { from: '#2dd4bf', to: '#0d9488' },
+  cyan:    { from: '#22d3ee', to: '#0891b2' },
+  orange:  { from: '#fb923c', to: '#ea580c' },
+};
+
 const renderAvatar = (avatar: string, sizeClass: string = "w-full h-full", colorClass: string = "indigo") => {
   if (!avatar) return <i className="fa-solid fa-user text-slate-300"></i>;
   if (avatar.startsWith('fa-')) {
@@ -2413,126 +2427,151 @@ const ParentView: React.FC<ParentViewProps> = ({
               /* ── iOS Profile Layout ── */
               <div className="flex-1 overflow-y-auto pb-32 no-scrollbar" style={{ paddingTop: 'max(80px, calc(env(safe-area-inset-top) + 60px))' }}>
                 {settingsView !== 'LIST' ? (
-                  /* iOS child form */
-                  <div className="px-4 max-w-2xl mx-auto">
-                    <button type="button" onClick={() => setSettingsView('LIST')} className="mb-5 flex items-center gap-2 text-indigo-600 font-bold text-sm">
-                      <i className="fa-solid fa-chevron-left text-xs"></i>
-                      {language === 'fr' ? 'Retour' : language === 'nl' ? 'Terug' : 'Back'}
-                    </button>
-                    <form onSubmit={saveChildForm} className="space-y-6 text-slate-900 dark:text-white animate-fade-in-up">
-                      <div className="flex flex-col items-center mb-2">
-                        <div className="bg-white dark:bg-slate-800 p-4 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-50 dark:border-slate-700 flex flex-col items-center w-40 relative overflow-hidden">
-                          <div className={`absolute top-0 left-0 w-full h-1 bg-${formColorClass}-500 opacity-50`}></div>
-                          <div className="w-16 h-16 mb-2">{renderAvatar(formAvatar, "w-full h-full", formColorClass)}</div>
-                          <span className="font-black text-slate-800 dark:text-white text-sm uppercase tracking-widest truncate w-full text-center px-2">{formName || t.parent.childName}</span>
-                        </div>
-                      </div>
-                      <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm p-6 space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.parent.childName}</label>
-                            <input type="text" value={formName} onChange={e => setFormName(e.target.value)} required className="w-full p-4 border-2 border-slate-50 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/30 outline-none text-slate-900 dark:text-white font-black transition-all" placeholder={t.parent.childName} />
+                  /* iOS child form — dark theme */
+                  (() => {
+                    const pal = FORM_PAL[formColorClass] || FORM_PAL.indigo;
+                    const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.09)', borderRadius: 16, height: 52, color: 'rgba(226,232,240,0.92)', fontSize: 15, fontWeight: 700, padding: '0 16px', outline: 'none', width: '100%', WebkitAppearance: 'none', appearance: 'none' };
+                    return (
+                      <div style={{ background: '#0f172a', minHeight: '100%', padding: '0 20px 48px' }}>
+                        {/* Back button */}
+                        <button type="button" onClick={() => setSettingsView('LIST')} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(226,232,240,0.7)', fontWeight: 700, fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 20px' }}>
+                          <i className="fa-solid fa-chevron-left" style={{ fontSize: 11 }}></i>
+                          {language === 'fr' ? 'Retour' : language === 'nl' ? 'Terug' : 'Back'}
+                        </button>
+                        <form onSubmit={saveChildForm} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                          {/* Avatar hero card */}
+                          <div style={{ borderRadius: 28, padding: '28px 20px 22px', background: `linear-gradient(145deg,${pal.from},${pal.to})`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
+                            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', padding: 3, flexShrink: 0 }}>
+                              <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.15)' }}>
+                                {renderAvatar(formAvatar, "w-full h-full", formColorClass)}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <p style={{ fontSize: 20, fontWeight: 900, color: 'white', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{formName || (language === 'fr' ? 'PRÉNOM' : language === 'nl' ? 'NAAM' : 'NAME')}</p>
+                              {formBirthday && (() => { const age = new Date().getFullYear() - parseInt(formBirthday.split('-')[0]); return age > 0 ? <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', fontWeight: 600, marginTop: 4 }}>{language === 'fr' ? `${age} ans` : language === 'nl' ? `${age} jaar` : `${age} yrs`}</p> : null; })()}
+                            </div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.18)', borderRadius: 100, padding: '5px 14px' }}>
+                              <span style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>{formBirthday ? (() => { const child = data.children.find(c => c.id === (editingChildId as any)); return child ? `${child.balance.toFixed(2)} ${curr}` : `0.00 ${curr}`; })() : `0.00 ${curr}`}</span>
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.parent.childBirthday}</label>
-                            <div className="flex gap-2">
-                              <select value={formBirthday ? parseInt(formBirthday.split('-')[2]) : ''} onChange={e => { const d = e.target.value.padStart(2,'0'); const m = formBirthday ? formBirthday.split('-')[1] : '01'; const y = formBirthday ? formBirthday.split('-')[0] : new Date().getFullYear().toString(); setFormBirthday(`${y}-${m}-${d}`); }} className="flex-1 p-4 border-2 border-slate-50 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white font-black transition-all appearance-none">
+
+                          {/* PRÉNOM */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childName}</label>
+                            <input type="text" value={formName} onChange={e => setFormName(e.target.value)} required style={inputStyle} placeholder={t.parent.childName} />
+                          </div>
+
+                          {/* DATE DE NAISSANCE */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childBirthday}</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.4fr', gap: 8 }}>
+                              <select value={formBirthday ? parseInt(formBirthday.split('-')[2]) : ''} onChange={e => { const d = e.target.value.padStart(2,'0'); const m = formBirthday ? formBirthday.split('-')[1] : '01'; const y = formBirthday ? formBirthday.split('-')[0] : new Date().getFullYear().toString(); setFormBirthday(`${y}-${m}-${d}`); }} style={inputStyle}>
                                 <option value="" disabled>J</option>
                                 {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
                               </select>
-                              <select value={formBirthday ? parseInt(formBirthday.split('-')[1]) : ''} onChange={e => { const m = e.target.value.padStart(2,'0'); const d = formBirthday ? formBirthday.split('-')[2] : '01'; const y = formBirthday ? formBirthday.split('-')[0] : new Date().getFullYear().toString(); setFormBirthday(`${y}-${m}-${d}`); }} className="flex-1 p-4 border-2 border-slate-50 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white font-black transition-all appearance-none">
+                              <select value={formBirthday ? parseInt(formBirthday.split('-')[1]) : ''} onChange={e => { const m = e.target.value.padStart(2,'0'); const d = formBirthday ? formBirthday.split('-')[2] : '01'; const y = formBirthday ? formBirthday.split('-')[0] : new Date().getFullYear().toString(); setFormBirthday(`${y}-${m}-${d}`); }} style={inputStyle}>
                                 <option value="" disabled>M</option>
                                 {['Jan','Fev','Mar','Avr','Mai','Juin','Juil','Aou','Sep','Oct','Nov','Dec'].map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
                               </select>
-                              <select value={formBirthday ? parseInt(formBirthday.split('-')[0]) : ''} onChange={e => { const y = e.target.value; const m = formBirthday ? formBirthday.split('-')[1] : '01'; const d = formBirthday ? formBirthday.split('-')[2] : '01'; setFormBirthday(`${y}-${m}-${d}`); }} className="flex-1 p-4 border-2 border-slate-50 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white font-black transition-all appearance-none">
-                                <option value="" disabled>A</option>
+                              <select value={formBirthday ? parseInt(formBirthday.split('-')[0]) : ''} onChange={e => { const y = e.target.value; const m = formBirthday ? formBirthday.split('-')[1] : '01'; const d = formBirthday ? formBirthday.split('-')[2] : '01'; setFormBirthday(`${y}-${m}-${d}`); }} style={inputStyle}>
+                                <option value="" disabled>AAAA</option>
                                 {Array.from({ length: 18 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
                               </select>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                      <div className="space-y-3 relative">
-                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t.parent.childAvatar}</label>
-                        <button type="button" onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)} className="w-full p-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl flex items-center justify-between hover:border-indigo-300 dark:hover:border-indigo-500 transition-all shadow-sm group">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10">{renderAvatar(formAvatar, "w-full h-full", formColorClass)}</div>
-                            <span className="font-bold text-slate-700 dark:text-slate-200 tracking-wide">{formAvatar}</span>
+
+                          {/* AVATAR */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, position: 'relative' }}>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childAvatar}</label>
+                            <button type="button" onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)} style={{ ...inputStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', height: 56, padding: '0 16px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ width: 36, height: 36 }}>{renderAvatar(formAvatar, "w-full h-full", formColorClass)}</div>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(226,232,240,0.9)' }}>{formAvatar}</span>
+                              </div>
+                              <i className={`fa-solid fa-chevron-down transition-transform ${isAvatarDropdownOpen ? 'rotate-180' : ''}`} style={{ fontSize: 12, color: 'rgba(148,163,184,0.6)' }}></i>
+                            </button>
+                            {isAvatarDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-50" onClick={() => setIsAvatarDropdownOpen(false)}></div>
+                                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8, padding: 16, background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18, zIndex: 60, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} className="animate-scale-in">
+                                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-h-[280px] overflow-y-auto no-scrollbar">
+                                    {AVAILABLE_SEEDS.map(seed => (
+                                      <button key={seed} type="button" onClick={() => { setFormAvatar(seed); setIsAvatarDropdownOpen(false); }} style={{ aspectRatio: '1', borderRadius: '50%', overflow: 'hidden', border: formAvatar === seed ? `2.5px solid ${pal.from}` : '2px solid rgba(255,255,255,0.08)', boxShadow: formAvatar === seed ? `0 0 0 1px ${pal.from}44` : 'none', transform: formAvatar === seed ? 'scale(1.08)' : 'scale(1)', transition: 'all 0.15s', cursor: 'pointer', padding: 2 }}>
+                                        {renderAvatar(seed, "w-full h-full", seed === formAvatar ? formColorClass : "slate")}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </>
+                            )}
                           </div>
-                          <i className={`fa-solid fa-chevron-down text-slate-400 transition-transform ${isAvatarDropdownOpen ? 'rotate-180' : ''}`}></i>
-                        </button>
-                        {isAvatarDropdownOpen && (
-                          <>
-                            <div className="fixed inset-0 z-50" onClick={() => setIsAvatarDropdownOpen(false)}></div>
-                            <div className="absolute top-full left-0 right-0 mt-2 p-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-[60] animate-scale-in">
-                              <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 max-h-[300px] overflow-y-auto no-scrollbar p-2">
-                                {AVAILABLE_SEEDS.map(seed => (
-                                  <button key={seed} type="button" onClick={() => { setFormAvatar(seed); setIsAvatarDropdownOpen(false); }} className={`aspect-square rounded-full transition-all overflow-hidden relative ${formAvatar === seed ? `border-4 border-${formColorClass}-500 scale-110 shadow-md shadow-${formColorClass}-500/30 p-0.5 z-10` : 'border-2 border-slate-100 dark:border-slate-700 opacity-50 hover:opacity-100 hover:scale-105 p-0.5'}`}>
-                                    {renderAvatar(seed, "w-full h-full", seed === formAvatar ? formColorClass : "slate")}
+
+                          {/* COULEUR FAVORITE */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childColor}</label>
+                            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: 18, padding: '16px 12px' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12 }}>
+                                {AVAILABLE_COLORS.map(color => {
+                                  const colorVal = FORM_PAL[color]?.from || '#818cf8';
+                                  const isActive = formColorClass === color;
+                                  return (
+                                    <button key={color} type="button" onClick={() => setFormColorClass(color)} title={(t.colors as any)[color]} style={{ aspectRatio: '1', borderRadius: '50%', background: colorVal, cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', transform: isActive ? 'scale(1.18)' : 'scale(1)', boxShadow: isActive ? `0 0 0 3px #0f172a, 0 0 0 5px ${colorVal}, 0 4px 16px ${colorVal}66` : `0 2px 8px ${colorVal}44`, opacity: isActive ? 1 : 0.55 }}>
+                                      {isActive && <i className="fa-solid fa-check" style={{ fontSize: 11, color: 'white' }}></i>}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <p style={{ textAlign: 'center', fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.6)', textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 12 }}>{(t.colors as any)[formColorClass]}</p>
+                            </div>
+                          </div>
+
+                          {/* OBJECTIFS */}
+                          <div ref={formGoalsRef} style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: 18, overflow: 'hidden' }}>
+                            <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ width: 32, height: 32, borderRadius: 10, background: `${pal.from}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <i className="fa-solid fa-bullseye-arrow" style={{ fontSize: 13, color: pal.from }}></i>
+                                </div>
+                                <span style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childGoalsTitle}</span>
+                              </div>
+                              <button type="button" onClick={handleAddGoalToForm} style={{ background: `${pal.from}22`, border: 'none', borderRadius: 10, padding: '6px 12px', fontSize: 10, fontWeight: 900, color: pal.from, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                <i className="fa-solid fa-plus" style={{ fontSize: 10 }}></i> {t.common.add}
+                              </button>
+                            </div>
+                            <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 80 }}>
+                              {formGoals.length === 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8, color: 'rgba(148,163,184,0.3)' }}>
+                                  <i className="fa-solid fa-bullseye" style={{ fontSize: 22 }}></i>
+                                  <p style={{ fontSize: 11, fontStyle: 'italic', fontWeight: 600 }}>{t.parent.goalsEmpty.noneInForm}</p>
+                                </div>
+                              ) : formGoals.map((goal) => (
+                                <div key={goal.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.06)' }} className="animate-scale-in">
+                                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(148,163,184,0.7)', flexShrink: 0 }}>
+                                    <i className={getIcon(goal.icon, 'fa-solid fa-bullseye')} style={{ fontSize: 13 }}></i>
+                                  </div>
+                                  <input type="text" value={goal.name} onChange={e => handleUpdateGoal(goal.id, { name: e.target.value })} placeholder={t.parent.childGoalName} style={{ flex: 1, minWidth: 80, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontWeight: 700, color: 'rgba(226,232,240,0.9)' }} />
+                                  <div style={{ position: 'relative' }}>
+                                    <input type="number" value={goal.target || ''} onChange={e => handleUpdateGoal(goal.id, { target: parseFloat(e.target.value) || 0 })} placeholder="0" style={{ width: 72, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontWeight: 700, color: 'rgba(226,232,240,0.9)', textAlign: 'right', paddingRight: 18 }} />
+                                    <span style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'rgba(148,163,184,0.5)', pointerEvents: 'none', fontWeight: 700 }}>{curr}</span>
+                                  </div>
+                                  <button type="button" onClick={() => handleRemoveGoal(goal.id)} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(244,63,94,0.12)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f43f5e', flexShrink: 0 }}>
+                                    <i className="fa-solid fa-trash-can" style={{ fontSize: 11 }}></i>
                                   </button>
-                                ))}
-                              </div>
+                                </div>
+                              ))}
                             </div>
-                          </>
-                        )}
-                      </div>
-                      <div className="space-y-3">
-                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t.parent.childColor}</label>
-                        <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4">
-                          <div className="grid grid-cols-5 gap-3">
-                            {AVAILABLE_COLORS.map(color => (
-                              <button key={color} type="button" onClick={() => setFormColorClass(color)} className={`aspect-square rounded-full transition-all duration-200 relative flex items-center justify-center ${formColorClass === color ? `bg-${color}-500 scale-110 shadow-md shadow-${color}-500/40 ring-4 ring-offset-2 ring-${color}-400` : `bg-${color}-400 opacity-50 hover:opacity-90 hover:scale-105`}`} title={(t.colors as any)[color]}>
-                                {formColorClass === color && <i className="fa-solid fa-check text-white text-xs drop-shadow-sm"></i>}
-                              </button>
-                            ))}
                           </div>
-                          <p className="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest mt-3">{(t.colors as any)[formColorClass]}</p>
-                        </div>
-                      </div>
-                      <div ref={formGoalsRef} className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
-                        <div className="p-5 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center bg-slate-50/30 dark:bg-slate-900/30">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center"><i className="fa-solid fa-bullseye-arrow"></i></div>
-                            <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">{t.parent.childGoalsTitle}</h4>
-                          </div>
-                          <button type="button" onClick={handleAddGoalToForm} className="bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-md transition-all active:scale-95 flex items-center gap-2 border border-indigo-100 dark:border-indigo-800 shadow-sm">
-                            <i className="fa-solid fa-plus text-xs"></i> {t.common.add}
+
+                          {/* ENREGISTRER */}
+                          <button type="submit" disabled={formGoals.some(g => !g.name || !g.target || g.target <= 0)} style={{ width: '100%', height: 56, borderRadius: 20, background: `linear-gradient(135deg,${pal.from},${pal.to})`, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 12, fontWeight: 900, color: 'white', letterSpacing: '0.15em', textTransform: 'uppercase', boxShadow: `0 8px 32px ${pal.from}55`, opacity: formGoals.some(g => !g.name || !g.target || g.target <= 0) ? 0.5 : 1, transition: 'all 0.2s' }}>
+                            <i className="fa-solid fa-check" style={{ fontSize: 14 }}></i>
+                            {language === 'fr' ? 'ENREGISTRER' : language === 'nl' ? 'OPSLAAN' : 'SAVE'}
                           </button>
-                        </div>
-                        <div className="p-5 space-y-3 min-h-[100px]">
-                          {formGoals.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-6 text-slate-300 gap-2">
-                              <i className="fa-solid fa-bullseye text-2xl opacity-20"></i>
-                              <p className="text-xs font-bold italic">{t.parent.goalsEmpty.noneInForm}</p>
-                            </div>
-                          ) : formGoals.map((goal) => (
-                            <div key={goal.id} className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-3 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-slate-100/50 dark:border-slate-700 animate-scale-in group">
-                              <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-600 flex items-center justify-center text-slate-400 group-focus-within:text-indigo-500 transition-colors">
-                                <i className={getIcon(goal.icon, 'fa-solid fa-bullseye')}></i>
-                              </div>
-                              <input type="text" value={goal.name} onChange={e => handleUpdateGoal(goal.id, { name: e.target.value })} placeholder={t.parent.childGoalName} className="flex-1 min-w-[120px] p-3 rounded-xl border-2 border-transparent bg-transparent text-sm font-black outline-none focus:border-indigo-100 dark:focus:border-indigo-800 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-900 dark:text-white" />
-                              <div className="relative">
-                                <input type="number" value={goal.target || ''} onChange={e => handleUpdateGoal(goal.id, { target: parseFloat(e.target.value) || 0 })} placeholder="0" className="w-24 p-3 pr-8 rounded-xl border-2 border-transparent bg-transparent text-sm font-black text-right outline-none focus:border-indigo-100 dark:focus:border-indigo-800 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-900 dark:text-white" />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 font-black text-slate-300 text-xs pointer-events-none">{curr}</span>
-                              </div>
-                              <button type="button" onClick={() => handleRemoveGoal(goal.id)} aria-label={language === 'fr' ? 'Supprimer l\'objectif' : 'Remove goal'} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 text-rose-300 dark:text-rose-400 flex items-center justify-center hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-600 active:scale-90">
-                                <i className="fa-solid fa-trash-can text-sm" aria-hidden="true"></i>
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                        </form>
                       </div>
-                      <div className="flex flex-col sm:flex-row gap-3 pt-6">
-                        <button type="submit" disabled={formGoals.some(g => !g.name || !g.target || g.target <= 0)} className="w-full sm:flex-[2] py-5 bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-[1.5rem] shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 order-1 sm:order-2">
-                          <i className="fa-solid fa-cloud-arrow-up text-indigo-300"></i>
-                          {t.common.save}
-                        </button>
-                        <button type="button" onClick={() => setSettingsView('LIST')} className="w-full sm:flex-1 py-5 text-slate-400 font-black uppercase tracking-[0.2em] text-[10px] hover:text-slate-600 rounded-[1.5rem] transition-all order-2 sm:order-1">
-                          {t.common.cancel}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
+                    );
+                  })()
                 ) : (
                   /* iOS profile list view */
                   <div className="px-4 max-w-2xl mx-auto space-y-5 pb-6">
