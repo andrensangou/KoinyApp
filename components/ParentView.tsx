@@ -2284,31 +2284,45 @@ const ParentView: React.FC<ParentViewProps> = ({
                 </div>
               )}
               <div className="sticky z-10 px-4 pb-3 pt-1 bg-white dark:bg-slate-950" style={{ top: 'calc(max(60px, env(safe-area-inset-top)) + 52px)' }}>
-                <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 items-center">
-                  <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shrink-0">
-                    <button onClick={() => setHistoryView('LIST')} aria-label={language === 'fr' ? 'Vue liste' : 'List view'} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'LIST' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-list" aria-hidden="true"></i></button>
-                    <button onClick={() => setHistoryView('CHART')} aria-label={language === 'fr' ? 'Vue graphique' : 'Chart view'} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'CHART' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-chart-simple" aria-hidden="true"></i></button>
+                {isAndroid ? (
+                  /* Android: full filter bar with list/chart toggle + trash */
+                  <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 items-center">
+                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shrink-0">
+                      <button onClick={() => setHistoryView('LIST')} aria-label={language === 'fr' ? 'Vue liste' : 'List view'} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'LIST' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-list" aria-hidden="true"></i></button>
+                      <button onClick={() => setHistoryView('CHART')} aria-label={language === 'fr' ? 'Vue graphique' : 'Chart view'} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'CHART' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-chart-simple" aria-hidden="true"></i></button>
+                    </div>
+                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 flex-1 h-11">
+                      <button onClick={() => setHistoryFilter('THIS_MONTH')} className={`flex-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'THIS_MONTH' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}>{t.parent.history.thisMonth}</button>
+                      <button onClick={() => setHistoryFilter('ALL')} className={`flex-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'ALL' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}>{t.parent.history.all}</button>
+                    </div>
+                    {hasAnyHistory &&
+                      <button onClick={() => openConfirm(t.parent.history.clearTitle, t.parent.history.clearMessage, () => onClearHistory(activeChild.id), 'warning')} aria-label={t.parent.history.clearTitle} className="w-11 h-11 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl transition-colors shrink-0 border border-rose-100 dark:border-rose-900/50 shadow-sm">
+                        <i className="fa-solid fa-trash-can" aria-hidden="true"></i>
+                      </button>
+                    }
                   </div>
-
-                  <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 flex-1 h-11">
-                    <button onClick={() => setHistoryFilter('THIS_MONTH')} className={`flex-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'THIS_MONTH' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}>{t.parent.history.thisMonth}</button>
-                    <button onClick={() => setHistoryFilter('ALL')} className={`flex-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'ALL' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}>{t.parent.history.all}</button>
+                ) : (
+                  /* iOS: simplified — THIS MONTH / ALL + amount + trash */
+                  <div className="flex items-center gap-3 px-1">
+                    <div className="flex bg-slate-100 rounded-xl p-1 h-10">
+                      <button onClick={() => setHistoryFilter('THIS_MONTH')} className={`px-4 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'THIS_MONTH' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>{t.parent.history.thisMonth}</button>
+                      <button onClick={() => setHistoryFilter('ALL')} className={`px-4 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'ALL' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>{t.parent.history.all}</button>
+                    </div>
+                    {filteredHistory.length > 0 && (() => {
+                      const tot = filteredHistory.reduce((s, i) => s + i.amount, 0);
+                      return (
+                        <span className="shrink-0 px-3 py-1.5 rounded-[10px] text-[13px] font-black ml-auto" style={{ background: tot >= 0 ? '#ecfdf5' : '#fff1f2', color: tot >= 0 ? '#15803d' : '#be123c' }}>
+                          {tot >= 0 ? '+' : ''}{tot.toFixed(2)}{curr}
+                        </span>
+                      );
+                    })()}
+                    {hasAnyHistory &&
+                      <button onClick={() => openConfirm(t.parent.history.clearTitle, t.parent.history.clearMessage, () => onClearHistory(activeChild.id), 'warning')} aria-label={t.parent.history.clearTitle} className="w-10 h-10 flex items-center justify-center bg-rose-50 text-rose-500 active:bg-rose-100 rounded-xl transition-colors shrink-0">
+                        <i className="fa-solid fa-trash-can text-xs" aria-hidden="true"></i>
+                      </button>
+                    }
                   </div>
-
-                  {!isAndroid && filteredHistory.length > 0 && (() => {
-                    const tot = filteredHistory.reduce((s, i) => s + i.amount, 0);
-                    return (
-                      <span className="shrink-0 px-3 py-1.5 rounded-[10px] text-[13px] font-black" style={{ background: tot >= 0 ? '#ecfdf5' : '#fff1f2', color: tot >= 0 ? '#15803d' : '#be123c' }}>
-                        {tot >= 0 ? '+' : ''}{tot.toFixed(2)}{curr}
-                      </span>
-                    );
-                  })()}
-                  {hasAnyHistory &&
-                    <button onClick={() => openConfirm(t.parent.history.clearTitle, t.parent.history.clearMessage, () => onClearHistory(activeChild.id), 'warning')} aria-label={t.parent.history.clearTitle} className="w-11 h-11 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl transition-colors shrink-0 border border-rose-100 dark:border-rose-900/50 shadow-sm">
-                      <i className="fa-solid fa-trash-can" aria-hidden="true"></i>
-                    </button>
-                  }
-                </div>
+                )}
               </div>
 
               <div className={`overflow-hidden min-h-[400px] mt-3 ${!isAndroid ? 'bg-white rounded-[18px] shadow-sm mx-4' : 'bg-transparent'}`}>
@@ -2532,7 +2546,7 @@ const ParentView: React.FC<ParentViewProps> = ({
 
                     {/* FAMILY section */}
                     <div>
-                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.12em] mb-2 px-1">FAMILY</p>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.12em] mb-2 px-1">{language === 'fr' ? 'FAMILLE' : language === 'nl' ? 'FAMILIE' : 'FAMILY'}</p>
                       <div className="bg-white dark:bg-slate-900 rounded-[20px] overflow-hidden" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
                         {data.children.map((child, i) => {
                           const goalEmojis: Record<string, string> = { 'fa-bicycle': '🚲', 'fa-gamepad': '🎮', 'fa-cube': '🧱', 'fa-rocket': '🚀', 'fa-headphones': '🎧', 'fa-mobile': '📱', 'fa-laptop': '💻', 'fa-book': '📚', 'fa-guitar': '🎸', 'fa-futbol': '⚽' };
@@ -2563,7 +2577,7 @@ const ParentView: React.FC<ParentViewProps> = ({
 
                     {/* SETTINGS section */}
                     <div>
-                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.12em] mb-2 px-1">SETTINGS</p>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.12em] mb-2 px-1">{language === 'fr' ? 'PARAMÈTRES' : language === 'nl' ? 'INSTELLINGEN' : 'SETTINGS'}</p>
                       <div className="bg-white dark:bg-slate-900 rounded-[20px] overflow-hidden" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
                         {/* Notifications */}
                         <div className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: '1px solid #f8fafc' }}>

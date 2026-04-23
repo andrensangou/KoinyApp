@@ -299,8 +299,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
       {/* Status bar spacer */}
       <div style={{ height: 'env(safe-area-inset-top)', minHeight: 44 }} />
 
-      {/* Close button */}
-      <div style={{ padding: '2px 20px 0', position: 'relative', zIndex: 5 }}>
+      {/* Close button — absolute above scroll layer */}
+      <div style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 8px)', left: 20, zIndex: 10 }}>
         <button onClick={onClose} style={{ width: 40, height: 40, borderRadius: 14, background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>
           <i className="fa-solid fa-xmark" style={{ fontSize: 16 }} />
         </button>
