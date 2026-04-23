@@ -2268,7 +2268,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                     return (
                       <button key={c.id} onClick={() => setSelectedChildId(c.id)} className="flex flex-col items-center gap-1 shrink-0 transition-all">
                         <div className="relative">
-                          <div className="w-14 h-14 rounded-full overflow-hidden transition-all" style={{ opacity: isActive ? 1 : 0.45, outline: isActive ? `3px solid ${accent}` : 'none', outlineOffset: '2px' }}>
+                          <div className="w-14 h-14 rounded-full overflow-hidden transition-all bg-slate-100 p-1" style={{ opacity: isActive ? 1 : 0.45, outline: isActive ? `3px solid ${accent}` : 'none', outlineOffset: '2px' }}>
                             {renderAvatar(c.avatar, 'w-full h-full', c.colorClass)}
                           </div>
                           {c.missions.filter(m => m.status === 'PENDING').length > 0 && (
