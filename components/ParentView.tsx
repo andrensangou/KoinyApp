@@ -746,16 +746,24 @@ const ParentView: React.FC<ParentViewProps> = ({
     if (!child) return;
 
     if (notificationAction.type === 'GIFT') {
-      console.log('🔔 [PARENT VIEW] Opening gift configuration');
       setTimeout(() => {
         setSelectedChildId(child.id);
-        startEditChild(child);
-        setTimeout(() => {
-          setTriggerAddGoal(true);
+        if (!isAndroid) {
+          // iOS: open inline goal sheet directly
+          setDashGoalId(null);
+          setDashGoalName('');
+          setDashGoalTarget('');
+          setDashGoalIcon('gift');
+          setDashGoalSheetOpen(true);
+        } else {
+          startEditChild(child);
           setTimeout(() => {
-            formGoalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTriggerAddGoal(true);
+            setTimeout(() => {
+              formGoalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
           }, 300);
-        }, 300);
+        }
       }, 200);
       onClearNotificationAction?.();
     }
@@ -834,7 +842,7 @@ const ParentView: React.FC<ParentViewProps> = ({
     if (isNaN(targetVal) || targetVal <= 0) return;
     const updatedGoals = dashGoalId
       ? (activeChild.goals || []).map(g => g.id === dashGoalId ? { ...g, name: dashGoalName.trim(), target: targetVal, icon: dashGoalIcon } : g)
-      : [...(activeChild.goals || []), { id: crypto.randomUUID(), name: dashGoalName.trim(), target: targetVal, icon: dashGoalIcon }];
+      : [...(activeChild.goals || []), { id: Date.now().toString(), name: dashGoalName.trim(), target: targetVal, icon: dashGoalIcon }];
     onEditChild(activeChild.id, { goals: updatedGoals });
     setDashGoalSheetOpen(false);
   };
