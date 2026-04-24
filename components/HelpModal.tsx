@@ -22,88 +22,104 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
       steps: [
         {
           id: 1,
+          icon: 'fa-rocket',
+          color: 'from-violet-400 to-indigo-600',
+          title: 'Démarrer en 3 étapes',
+          text: 'Tout se fait en quelques minutes :',
+          items: [
+            '① Créez votre compte parent (Google, Apple ou email).',
+            '② Appuyez sur le bouton + pour ajouter votre premier enfant (prénom, couleur, avatar).',
+            '③ Créez une première mission — votre enfant reçoit une notification immédiatement !'
+          ]
+        },
+        {
+          id: 2,
           icon: 'fa-table-columns',
           color: 'from-indigo-400 to-purple-600',
           title: 'Navigation',
           text: '4 onglets en bas de l\'écran :',
           items: [
-            'Maison : Vue d\'ensemble et ajout rapide de missions.',
-            'Horloge : Historique des transactions et graphiques.',
-            'Bulles : Valider les missions et les demandes de cadeaux.',
-            'Profil : Gérer les enfants, objectifs et réglages.'
-          ]
-        },
-        {
-          id: 2,
-          icon: 'fa-lock',
-          color: 'from-rose-400 to-pink-600',
-          title: 'Espace Parents — Sécurité',
-          text: 'Accès protégé de deux façons :',
-          items: [
-            'Code PIN à 4 chiffres défini à la première utilisation.',
-            'Face ID / Touch ID si activé sur votre appareil.',
-            'Oubli du PIN : saisissez votre mot de passe Koiny pour le réinitialiser.'
+            'Dashboard : Solde, objectifs et missions de l\'enfant sélectionné.',
+            'Historique : Journal de toutes les transactions par enfant.',
+            'Demandes : Valider les missions accomplies et les demandes de cadeaux.',
+            'Profil : Gérer les enfants, la devise, la langue et la sécurité.'
           ]
         },
         {
           id: 3,
-          icon: 'fa-child',
-          color: 'from-emerald-400 to-teal-600',
-          title: 'Gérer les Enfants',
-          text: 'Dans l\'onglet Profil :',
+          icon: 'fa-lock',
+          color: 'from-rose-400 to-pink-600',
+          title: 'Espace Parents — Sécurité',
+          text: 'Votre espace est protégé séparément de l\'espace enfant :',
           items: [
-            'Ajoutez un enfant : prénom, couleur, photo (optionnel).',
-            'Modifiez le solde manuellement via les boutons + / −.',
-            'Ajoutez des objectifs (ex : vélo à 150€) pour motiver l\'épargne.'
+            'Code PIN à 4 chiffres défini à la première utilisation.',
+            'Face ID / Touch ID si activé sur votre appareil.',
+            'L\'enfant ne peut pas accéder à votre espace — il ne voit que son profil.',
+            'Oubli du PIN : saisissez votre mot de passe Koiny pour le réinitialiser.'
           ]
         },
         {
           id: 4,
+          icon: 'fa-child',
+          color: 'from-emerald-400 to-teal-600',
+          title: 'Gérer les Enfants',
+          text: 'Depuis le Dashboard (onglet Maison) :',
+          items: [
+            'Sélectionnez un enfant en haut de l\'écran pour voir son tableau de bord.',
+            'Appuyez sur + Dépôt ou − Retrait pour ajuster le solde manuellement.',
+            'Ajoutez un objectif via le bouton "+ Ajouter" dans la section Objectifs.',
+            'Modifiez le profil d\'un enfant depuis l\'onglet Profil → section FAMILLE.'
+          ]
+        },
+        {
+          id: 5,
           icon: 'fa-check-double',
           color: 'from-blue-400 to-indigo-600',
           title: 'Les Missions',
           text: 'Cycle complet d\'une mission :',
           items: [
-            'Création : Le parent crée une mission avec titre et récompense.',
-            'Action : L\'enfant clique sur "C\'est fait !" dans son espace.',
-            'Validation : Le parent approuve ou demande une correction.',
-            'Paiement : La récompense est automatiquement ajoutée au solde.'
+            'Création : Appuyez sur + dans le Dashboard, choisissez un titre et une récompense.',
+            'Action : L\'enfant voit la mission dans son espace et clique "C\'est fait !".',
+            'Notification : Vous recevez une alerte dans l\'onglet Demandes.',
+            'Validation : Approuvez ou rejetez — la récompense est ajoutée automatiquement.'
           ]
         },
         {
-          id: 5,
+          id: 6,
           icon: 'fa-gift',
           color: 'from-amber-400 to-orange-600',
           title: 'Objectifs & Cadeaux',
           text: 'Système d\'épargne intégré :',
           items: [
-            'L\'enfant suit sa progression via la jauge colorée.',
-            'Quand le solde atteint l\'objectif, un bouton "Réclamer" apparaît.',
-            'Le parent confirme dans l\'onglet Bulles — le solde est déduit.'
-          ]
-        },
-        {
-          id: 6,
-          icon: 'fa-piggy-bank',
-          color: 'from-amber-400 to-yellow-500',
-          title: 'Limites de Solde',
-          text: 'Pour rester réaliste et pédagogique :',
-          items: [
-            'Le solde est plafonné à 100€ par enfant.',
-            'Si une récompense dépasse ce plafond, le paiement est bloqué.',
-            'C\'est l\'occasion d\'expliquer l\'épargne et la dépense réelle !'
+            'Ajoutez un objectif (nom + montant cible) depuis le Dashboard de l\'enfant.',
+            'L\'enfant suit sa progression via la barre colorée dans son espace.',
+            'Quand le solde atteint l\'objectif, l\'enfant envoie une demande de cadeau.',
+            'Vous confirmez dans l\'onglet Demandes — le solde est automatiquement déduit.'
           ]
         },
         {
           id: 7,
-          icon: 'fa-eye',
+          icon: 'fa-clock-rotate-left',
           color: 'from-cyan-400 to-blue-500',
-          title: 'Mode Démo',
-          text: 'Information sur le compte d\'essai :',
+          title: 'Historique & Journal',
+          text: 'Suivi complet des transactions :',
           items: [
-            'Si vous testez Koiny en mode démo, pensez à vous déconnecter.',
-            'Pour utiliser l\'application avec votre propre famille, il faudra créer un vrai compte.',
-            'Vos données en mode démo ne sont pas transférables.'
+            'Onglet Historique : sélectionnez un enfant pour voir ses entrées/sorties.',
+            'Filtres CE MOIS / TOUT pour affiner la période.',
+            'L\'enfant peut aussi consulter son journal d\'argent dans son espace.',
+            'Chaque transaction affiche le type (mission, cadeau, dépôt, retrait) et la date.'
+          ]
+        },
+        {
+          id: 8,
+          icon: 'fa-piggy-bank',
+          color: 'from-amber-400 to-yellow-500',
+          title: 'Limites & Devise',
+          text: 'Pour rester réaliste et pédagogique :',
+          items: [
+            'Le solde est plafonné (100€ par défaut, modifiable dans Profil → Limite du portefeuille).',
+            'Choisissez votre devise dans Profil → Paramètres → Devise (23 devises disponibles).',
+            'Si une récompense dépasse le plafond, le paiement est bloqué — bonne occasion d\'expliquer l\'épargne !'
           ]
         }
       ],
@@ -116,88 +132,104 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
       steps: [
         {
           id: 1,
+          icon: 'fa-rocket',
+          color: 'from-violet-400 to-indigo-600',
+          title: 'Get started in 3 steps',
+          text: 'Everything takes just a few minutes:',
+          items: [
+            '① Create your parent account (Google, Apple or email).',
+            '② Tap the + button to add your first child (name, colour, avatar).',
+            '③ Create a first mission — your child gets a notification immediately!'
+          ]
+        },
+        {
+          id: 2,
           icon: 'fa-table-columns',
           color: 'from-indigo-400 to-purple-600',
           title: 'Navigation',
           text: '4 tabs at the bottom of the screen:',
           items: [
-            'Home: Overview and quick mission adding.',
-            'Clock: Transaction history and charts.',
-            'Bubbles: Approve missions and gift requests.',
-            'Profile: Manage children, goals and settings.'
-          ]
-        },
-        {
-          id: 2,
-          icon: 'fa-lock',
-          color: 'from-rose-400 to-pink-600',
-          title: 'Parent Space — Security',
-          text: 'Protected in two ways:',
-          items: [
-            '4-digit PIN code set on first use.',
-            'Face ID / Touch ID if enabled on your device.',
-            'Forgot PIN: enter your Koiny password to reset it.'
+            'Dashboard: Balance, goals and missions for the selected child.',
+            'History: Full transaction log per child.',
+            'Requests: Approve completed missions and gift requests.',
+            'Profile: Manage children, currency, language and security.'
           ]
         },
         {
           id: 3,
-          icon: 'fa-child',
-          color: 'from-emerald-400 to-teal-600',
-          title: 'Managing Children',
-          text: 'In the Profile tab:',
+          icon: 'fa-lock',
+          color: 'from-rose-400 to-pink-600',
+          title: 'Parent Space — Security',
+          text: 'Your space is protected separately from the child\'s space:',
           items: [
-            'Add a child: name, color, optional photo.',
-            'Manually adjust balance with + / − buttons.',
-            'Add goals (e.g. bike at €150) to motivate saving.'
+            '4-digit PIN code set on first use.',
+            'Face ID / Touch ID if enabled on your device.',
+            'The child cannot access your space — they only see their own profile.',
+            'Forgot PIN: enter your Koiny password to reset it.'
           ]
         },
         {
           id: 4,
+          icon: 'fa-child',
+          color: 'from-emerald-400 to-teal-600',
+          title: 'Managing Children',
+          text: 'From the Dashboard (Home tab):',
+          items: [
+            'Select a child at the top of the screen to view their dashboard.',
+            'Tap + Deposit or − Withdraw to manually adjust the balance.',
+            'Add a goal using the "+ Add" button in the Goals section.',
+            'Edit a child\'s profile from the Profile tab → FAMILY section.'
+          ]
+        },
+        {
+          id: 5,
           icon: 'fa-check-double',
           color: 'from-blue-400 to-indigo-600',
           title: 'Missions',
           text: 'Full mission cycle:',
           items: [
-            'Create: Parent adds a mission with a title and reward.',
-            'Action: Child taps "Done!" in their space.',
-            'Validation: Parent approves or requests a correction.',
-            'Payment: Reward is automatically added to the balance.'
+            'Create: Tap + on the Dashboard, choose a title and reward.',
+            'Action: Child sees the mission in their space and taps "Done!".',
+            'Notification: You receive an alert in the Requests tab.',
+            'Approval: Approve or reject — reward is added automatically.'
           ]
         },
         {
-          id: 5,
+          id: 6,
           icon: 'fa-gift',
           color: 'from-amber-400 to-orange-600',
           title: 'Goals & Gifts',
           text: 'Built-in savings system:',
           items: [
-            'Child tracks progress via the coloured gauge.',
-            'When balance reaches the goal, a "Claim" button appears.',
-            'Parent confirms in the Bubbles tab — balance is deducted.'
-          ]
-        },
-        {
-          id: 6,
-          icon: 'fa-piggy-bank',
-          color: 'from-amber-400 to-yellow-500',
-          title: 'Balance Limits',
-          text: 'To stay realistic and educational:',
-          items: [
-            'Balance is capped at €100 per child.',
-            'If a reward exceeds this limit, payment is blocked.',
-            'A great opportunity to talk about real saving and spending!'
+            'Add a goal (name + target amount) from the child\'s Dashboard.',
+            'Child tracks progress via the coloured bar in their space.',
+            'When the balance reaches the goal, the child sends a gift request.',
+            'You confirm in the Requests tab — balance is automatically deducted.'
           ]
         },
         {
           id: 7,
-          icon: 'fa-eye',
+          icon: 'fa-clock-rotate-left',
           color: 'from-cyan-400 to-blue-500',
-          title: 'Demo Mode',
-          text: 'Information about the trial account:',
+          title: 'History & Journal',
+          text: 'Full transaction tracking:',
           items: [
-            'If you are testing Koiny via demo mode, remember to log out.',
-            'To use the app with your own family, you will need to create a real account.',
-            'Your data in demo mode is not transferable.'
+            'History tab: select a child to see their income/expenses.',
+            'THIS MONTH / ALL filters to narrow the period.',
+            'The child can also view their money journal in their own space.',
+            'Each transaction shows type (mission, gift, deposit, withdrawal) and date.'
+          ]
+        },
+        {
+          id: 8,
+          icon: 'fa-piggy-bank',
+          color: 'from-amber-400 to-yellow-500',
+          title: 'Limits & Currency',
+          text: 'Staying realistic and educational:',
+          items: [
+            'Balance is capped (€100 by default, editable in Profile → Wallet Limit).',
+            'Choose your currency in Profile → Settings → Currency (23 currencies available).',
+            'If a reward exceeds the limit, payment is blocked — a great chance to talk about saving!'
           ]
         }
       ],
@@ -210,88 +242,104 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
       steps: [
         {
           id: 1,
+          icon: 'fa-rocket',
+          color: 'from-violet-400 to-indigo-600',
+          title: 'Starten in 3 stappen',
+          text: 'Alles is klaar in een paar minuten:',
+          items: [
+            '① Maak je ouderaccount aan (Google, Apple of e-mail).',
+            '② Tik op de + knop om je eerste kind toe te voegen (naam, kleur, avatar).',
+            '③ Maak een eerste missie — je kind ontvangt meteen een melding!'
+          ]
+        },
+        {
+          id: 2,
           icon: 'fa-table-columns',
           color: 'from-indigo-400 to-purple-600',
           title: 'Navigatie',
           text: '4 tabbladen onderaan het scherm:',
           items: [
-            'Huis: Overzicht en snel missies toevoegen.',
-            'Klok: Transactiegeschiedenis en grafieken.',
-            'Bellen: Missies en cadeauverzoeken goedkeuren.',
-            'Profiel: Kinderen, doelen en instellingen beheren.'
-          ]
-        },
-        {
-          id: 2,
-          icon: 'fa-lock',
-          color: 'from-rose-400 to-pink-600',
-          title: 'Ouderomgeving — Beveiliging',
-          text: 'Op twee manieren beveiligd:',
-          items: [
-            '4-cijferige PIN-code ingesteld bij eerste gebruik.',
-            'Face ID / Touch ID als ingesteld op uw toestel.',
-            'PIN vergeten: voer uw Koiny-wachtwoord in om het te resetten.'
+            'Dashboard: Saldo, doelen en missies van het geselecteerde kind.',
+            'Geschiedenis: Volledig transactielogboek per kind.',
+            'Verzoeken: Voltooide missies en cadeauverzoeken goedkeuren.',
+            'Profiel: Kinderen, valuta, taal en beveiliging beheren.'
           ]
         },
         {
           id: 3,
-          icon: 'fa-child',
-          color: 'from-emerald-400 to-teal-600',
-          title: 'Kinderen beheren',
-          text: 'In het tabblad Profiel:',
+          icon: 'fa-lock',
+          color: 'from-rose-400 to-pink-600',
+          title: 'Ouderomgeving — Beveiliging',
+          text: 'Jouw ruimte is apart beveiligd van de kinderomgeving:',
           items: [
-            'Voeg een kind toe: naam, kleur, optionele foto.',
-            'Pas het saldo handmatig aan met + / − knoppen.',
-            'Voeg doelen toe (bijv. fiets voor €150) om sparen te motiveren.'
+            '4-cijferige PIN-code ingesteld bij eerste gebruik.',
+            'Face ID / Touch ID als ingesteld op uw toestel.',
+            'Het kind heeft geen toegang tot jouw ruimte — het ziet alleen zijn eigen profiel.',
+            'PIN vergeten: voer uw Koiny-wachtwoord in om het te resetten.'
           ]
         },
         {
           id: 4,
+          icon: 'fa-child',
+          color: 'from-emerald-400 to-teal-600',
+          title: 'Kinderen beheren',
+          text: 'Vanuit het Dashboard (tabblad Thuis):',
+          items: [
+            'Selecteer een kind bovenaan om hun dashboard te zien.',
+            'Tik op + Storting of − Opname om het saldo handmatig aan te passen.',
+            'Voeg een doel toe via de "+ Toevoegen" knop in de sectie Doelen.',
+            'Bewerk een kindprofiel via Profiel → sectie GEZIN.'
+          ]
+        },
+        {
+          id: 5,
           icon: 'fa-check-double',
           color: 'from-blue-400 to-indigo-600',
           title: 'Missies',
           text: 'Volledige missiecyclus:',
           items: [
-            'Aanmaken: Ouder maakt een missie met titel en beloning.',
-            'Actie: Kind tikt op "Klaar!" in zijn/haar ruimte.',
-            'Validatie: Ouder keurt goed of vraagt correctie.',
-            'Betaling: Beloning wordt automatisch aan het saldo toegevoegd.'
+            'Aanmaken: Tik op + in het Dashboard, kies titel en beloning.',
+            'Actie: Kind ziet de missie in zijn ruimte en tikt "Klaar!".',
+            'Melding: Je ontvangt een alert in het tabblad Verzoeken.',
+            'Goedkeuring: Keur goed of weiger — beloning wordt automatisch toegevoegd.'
           ]
         },
         {
-          id: 5,
+          id: 6,
           icon: 'fa-gift',
           color: 'from-amber-400 to-orange-600',
           title: 'Doelen & Cadeaus',
           text: 'Ingebouwd spaarsysteem:',
           items: [
-            'Kind volgt voortgang via de kleurrijke balk.',
-            'Wanneer saldo het doel bereikt, verschijnt een "Opvragen"-knop.',
-            'Ouder bevestigt in het tabblad Bellen — saldo wordt afgetrokken.'
-          ]
-        },
-        {
-          id: 6,
-          icon: 'fa-piggy-bank',
-          color: 'from-amber-400 to-yellow-500',
-          title: 'Saldolimieten',
-          text: 'Realistisch en educatief blijven:',
-          items: [
-            'Saldo is geplafonneerd op €100 per kind.',
-            'Als een beloning dit plafond overschrijdt, wordt de betaling geblokkeerd.',
-            'Een mooie gelegenheid om over echt sparen en uitgeven te praten!'
+            'Voeg een doel toe (naam + doelbedrag) vanuit het Dashboard van het kind.',
+            'Kind volgt voortgang via de kleurrijke balk in zijn/haar ruimte.',
+            'Wanneer saldo het doel bereikt, stuurt het kind een cadeauverzoek.',
+            'Jij bevestigt in Verzoeken — saldo wordt automatisch afgetrokken.'
           ]
         },
         {
           id: 7,
-          icon: 'fa-eye',
+          icon: 'fa-clock-rotate-left',
           color: 'from-cyan-400 to-blue-500',
-          title: 'Demo Modus',
-          text: 'Informatie over het proefaccount:',
+          title: 'Geschiedenis & Dagboek',
+          text: 'Volledig transactieoverzicht:',
           items: [
-            'Als je Koiny via de demo modus test, vergeet dan niet uit te loggen.',
-            'Om de app met je eigen gezin te gebruiken, moet je een echt account aanmaken.',
-            'Je gegevens in de demo modus kunnen niet worden overgezet.'
+            'Tabblad Geschiedenis: selecteer een kind om inkomsten/uitgaven te zien.',
+            'Filters DEZE MAAND / ALLES om de periode te verfijnen.',
+            'Het kind kan ook zijn geldendagboek bekijken in zijn eigen ruimte.',
+            'Elke transactie toont type (missie, cadeau, storting, opname) en datum.'
+          ]
+        },
+        {
+          id: 8,
+          icon: 'fa-piggy-bank',
+          color: 'from-amber-400 to-yellow-500',
+          title: 'Limieten & Valuta',
+          text: 'Realistisch en educatief blijven:',
+          items: [
+            'Saldo heeft een plafond (standaard €100, aanpasbaar in Profiel → Portefeuillelimiet).',
+            'Kies je valuta in Profiel → Instellingen → Valuta (23 valuta\'s beschikbaar).',
+            'Als een beloning het plafond overschrijdt, wordt betaling geblokkeerd — een mooie gelegenheid!'
           ]
         }
       ],
