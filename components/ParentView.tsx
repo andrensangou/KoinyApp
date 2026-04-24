@@ -23,6 +23,7 @@ import { checkBiometricAvailability, authenticateWithBiometric, getBiometricLabe
 import { Capacitor } from '@capacitor/core';
 import { useModal } from '../hooks/useModal';
 import { isAndroid } from '../hooks/usePlatform';
+import { useDarkMode } from '../hooks/useDarkMode';
 import { CURRENCIES } from '../types';
 
 interface ParentViewProps {
@@ -77,6 +78,20 @@ const AVAILABLE_COLORS = [
   'indigo', 'pink', 'emerald', 'amber', 'blue',
   'rose', 'purple', 'cyan', 'teal', 'orange'
 ];
+
+const FORM_PAL: Record<string, { from: string; to: string }> = {
+  indigo:  { from: '#818cf8', to: '#4338ca' },
+  emerald: { from: '#34d399', to: '#059669' },
+  rose:    { from: '#fb7185', to: '#be123c' },
+  amber:   { from: '#fbbf24', to: '#d97706' },
+  blue:    { from: '#60a5fa', to: '#2563eb' },
+  pink:    { from: '#f472b6', to: '#db2777' },
+  violet:  { from: '#a78bfa', to: '#7c3aed' },
+  purple:  { from: '#c084fc', to: '#9333ea' },
+  teal:    { from: '#2dd4bf', to: '#0d9488' },
+  cyan:    { from: '#22d3ee', to: '#0891b2' },
+  orange:  { from: '#fb923c', to: '#ea580c' },
+};
 
 const renderAvatar = (avatar: string, sizeClass: string = "w-full h-full", colorClass: string = "indigo") => {
   if (!avatar) return <i className="fa-solid fa-user text-slate-300"></i>;
@@ -182,6 +197,13 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [formColorClass, setFormColorClass] = useState(AVAILABLE_COLORS[0]);
   const [formGoals, setFormGoals] = useState<Goal[]>([]);
   const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
+
+  /* DASHBOARD GOAL SHEET (iOS) */
+  const [dashGoalSheetOpen, setDashGoalSheetOpen] = useState(false);
+  const [dashGoalId, setDashGoalId] = useState<string | null>(null); // null = new
+  const [dashGoalName, setDashGoalName] = useState('');
+  const [dashGoalTarget, setDashGoalTarget] = useState('');
+  const [dashGoalIcon, setDashGoalIcon] = useState('gift');
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
   const [localPin, setLocalPin] = useState<string | null>(null);
   const [biometricStatus, setBiometricStatus] = useState<{ isAvailable: boolean; biometryType: 'face' | 'fingerprint' | 'none' } | null>(null);
@@ -294,6 +316,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [isHeroVisible, setIsHeroVisible] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
   const t = translations[language];
+  const isDark = useDarkMode();
   const activeChild = useMemo(() => data.children ? data.children.find(c => c.id === selectedChildId) : null, [data.children, selectedChildId]);
 
   // Sync Listeners
@@ -541,8 +564,12 @@ const ParentView: React.FC<ParentViewProps> = ({
     icon: string;
   } | null>(null);
 
+  const [showAddMissionSheet, setShowAddMissionSheet] = useState(false);
+  const [sheetTitle, setSheetTitle] = useState('');
+  const [sheetAmount, setSheetAmount] = useState('');
+
   // Lock body scroll when any inline modal is open
-  const _anyInlineModalOpen = showOfflineModal || !!editingMission || !!transactionType || !!selectedMissionId || promptConfig.isOpen || !!(biometricChoice?.isOpen);
+  const _anyInlineModalOpen = showOfflineModal || !!editingMission || !!transactionType || !!selectedMissionId || promptConfig.isOpen || !!(biometricChoice?.isOpen) || showAddMissionSheet;
   useModal(_anyInlineModalOpen);
 
   const handleResetPin = async () => {
@@ -719,16 +746,24 @@ const ParentView: React.FC<ParentViewProps> = ({
     if (!child) return;
 
     if (notificationAction.type === 'GIFT') {
-      console.log('🔔 [PARENT VIEW] Opening gift configuration');
       setTimeout(() => {
         setSelectedChildId(child.id);
-        startEditChild(child);
-        setTimeout(() => {
-          setTriggerAddGoal(true);
+        if (!isAndroid) {
+          // iOS: open inline goal sheet directly
+          setDashGoalId(null);
+          setDashGoalName('');
+          setDashGoalTarget('');
+          setDashGoalIcon('gift');
+          setDashGoalSheetOpen(true);
+        } else {
+          startEditChild(child);
           setTimeout(() => {
-            formGoalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTriggerAddGoal(true);
+            setTimeout(() => {
+              formGoalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
           }, 300);
-        }, 300);
+        }
       }, 200);
       onClearNotificationAction?.();
     }
@@ -771,9 +806,51 @@ const ParentView: React.FC<ParentViewProps> = ({
   }, [selectedChildId]);
 
   const startAddGoal = () => {
-    if (activeChild) {
+    if (!activeChild) return;
+    if (!isAndroid) {
+      // iOS: inline dashboard sheet
+      if (!data.isPremium && (activeChild.goals || []).filter(g => g.status !== 'ARCHIVED').length >= FREE_GOALS_LIMIT) {
+        openPrompt({
+          title: t.parent.premium.limitTitle || 'Koiny Premium',
+          message: t.parent.premium.goalsLimitMessage || `Limite de ${FREE_GOALS_LIMIT} objectif atteinte. Passez au Premium pour en créer plus !`,
+          type: 'info',
+          onConfirm: () => setIsSubscriptionModalOpen(true)
+        });
+        return;
+      }
+      setDashGoalId(null);
+      setDashGoalName('');
+      setDashGoalTarget('');
+      setDashGoalIcon('gift');
+      setDashGoalSheetOpen(true);
+    } else {
       startEditChild(activeChild, true);
     }
+  };
+
+  const openDashGoalEdit = (goal: Goal) => {
+    setDashGoalId(goal.id);
+    setDashGoalName(goal.name);
+    setDashGoalTarget(goal.target ? String(goal.target) : '');
+    setDashGoalIcon(goal.icon || 'gift');
+    setDashGoalSheetOpen(true);
+  };
+
+  const saveDashGoal = () => {
+    if (!activeChild || !dashGoalName.trim()) return;
+    const targetVal = parseFloat(dashGoalTarget);
+    if (isNaN(targetVal) || targetVal <= 0) return;
+    const updatedGoals = dashGoalId
+      ? (activeChild.goals || []).map(g => g.id === dashGoalId ? { ...g, name: dashGoalName.trim(), target: targetVal, icon: dashGoalIcon } : g)
+      : [...(activeChild.goals || []), { id: Date.now().toString(), name: dashGoalName.trim(), target: targetVal, icon: dashGoalIcon }];
+    onEditChild(activeChild.id, { goals: updatedGoals });
+    setDashGoalSheetOpen(false);
+  };
+
+  const deleteDashGoal = (goalId: string) => {
+    if (!activeChild) return;
+    onDeleteGoal?.(activeChild.id, goalId);
+    setDashGoalSheetOpen(false);
   };
 
   const saveChildForm = (e: React.FormEvent) => {
@@ -1241,7 +1318,7 @@ const ParentView: React.FC<ParentViewProps> = ({
       {/* Overscroll roof: iOS only — absorbs iOS bounce at top */}
       {!isAndroid && (
         <div
-          className={`fixed top-0 left-0 right-0 z-[60] pointer-events-none ${mainView === 'dashboard' ? 'bg-indigo-700 dark:bg-slate-900' : 'bg-white dark:bg-slate-950'}`}
+          className="fixed top-0 left-0 right-0 z-[60] pointer-events-none bg-white dark:bg-slate-950"
           style={{ height: 'env(safe-area-inset-top)' }}
         />
       )}
@@ -1265,67 +1342,55 @@ const ParentView: React.FC<ParentViewProps> = ({
         />
       )}
 
-      {/* iOS Unified Header */}
+      {/* iOS Header — Koiny wordmark + bell + exit */}
       {!isAndroid && (
-        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${mainView !== 'dashboard' ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800' : 'pointer-events-none safe-pt'}`}>
-          <div className={`max-w-7xl mx-auto px-4 ${mainView !== 'dashboard' ? 'py-2 safe-pt pb-2' : 'py-4'} flex justify-between items-center gap-4`}>
-            {/* Left: Premium Button — caché tant que 0 enfants pour ne pas prioriser le paywall sur l'onboarding */}
-            {!data.isPremium && data.children && data.children.length > 0 ? (
-              <button onClick={() => setIsSubscriptionModalOpen(true)}
-                className={`flex items-center justify-center w-12 h-12 rounded-2xl pointer-events-auto active:scale-95 transition-transform group shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl' : ''}`}
-              >
-                <div className={`w-full h-full rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-orange-500/30 dark:shadow-orange-500/20 group-hover:scale-110 transition-transform ${mainView !== 'dashboard' ? 'text-sm rounded-lg' : 'text-xl'}`}>
-                  <i className="fa-solid fa-crown"></i>
-                </div>
-              </button>
-            ) : (
-              <div className={`shrink-0 ${mainView !== 'dashboard' ? 'w-10 h-10' : 'w-12 h-12'}`}></div>
-            )}
-
-            {/* Center: Child Selector (Compact for non-dashboard) */}
-            {mainView !== 'dashboard' && (
-              <div className="flex-1 overflow-x-auto no-scrollbar flex gap-2 justify-center pointer-events-auto">
-                {data.children && data.children.map(child => {
-                  const totalIconPending = (child.missions?.filter(m => m.status === 'PENDING').length || 0) + (child.giftRequested ? 1 : 0) + (child.missionRequested ? 1 : 0);
-                  const isSelected = selectedChildId === child.id;
-                  return (
-                    <button key={child.id}
-                      onClick={() => setSelectedChildId(child.id)}
-                      className="flex items-center gap-2 transition-all whitespace-nowrap"
-                    >
-                      <div className={`w-8 h-8 rounded-full overflow-hidden border-2 ${isSelected ? `border-4 scale-110` : 'border-slate-200 opacity-60 grayscale'}`}>
-                        {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
-                      </div>
-                      {isSelected && <span className="text-xs font-black text-slate-700 dark:text-slate-200 tracking-tight">{child.name}</span>}
-                      {totalIconPending > 0 && (
-                        <span className="w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                          {totalIconPending}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+        <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <div className="px-5 py-3 flex items-center justify-between gap-3">
+            {/* Left: Koiny wordmark */}
+            <div className="flex-1 min-w-0">
+              <div className="text-[22px] font-black leading-none tracking-tight text-slate-800 dark:text-white">
+                <span className="text-indigo-600">K</span>oiny
               </div>
-            )}
-
-            {/* Right: Offline badge + Power Button */}
-            <div className="flex items-center gap-2 pointer-events-auto shrink-0">
-              {isOfflineMode && (
-                <button
-                  onClick={() => setShowOfflineModal(true)}
-                  className="flex items-center gap-1 bg-orange-500 text-white px-2 py-1 rounded-xl text-xs font-bold shadow-md shadow-orange-500/30 active:scale-95 transition-transform"
-                >
-                  <i className="fa-solid fa-wifi text-[10px]"></i>
-                  <span>Offline</span>
-                </button>
-              )}
-              <button onClick={onExit} aria-label={language === 'fr' ? 'Déconnexion' : 'Logout'} className={`bg-rose-500 text-white flex items-center justify-center shadow-md shadow-rose-500/30 dark:shadow-rose-500/20 transition-all active:scale-90 ${mainView !== 'dashboard' ? 'w-10 h-10 rounded-xl' : 'w-12 h-12 rounded-2xl'}`}>
-                <i className={`fa-solid fa-power-off ${mainView !== 'dashboard' ? 'text-sm' : 'text-lg'}`} aria-hidden="true"></i>
-              </button>
+              <div className="text-[11px] font-semibold text-slate-400 mt-0.5">
+                {language === 'fr' ? 'Espace Parent' : language === 'nl' ? 'Ouderruimte' : 'Parent Dashboard'}
+              </div>
             </div>
 
+            {/* Right: premium crown + offline + bell + exit */}
+            <div className="flex items-center gap-2 shrink-0">
+              {!data.isPremium && data.children && data.children.length > 0 && (
+                <button onClick={() => setIsSubscriptionModalOpen(true)} aria-label="Premium"
+                  className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-sm shadow-orange-500/30 active:scale-90 transition-transform">
+                  <i className="fa-solid fa-crown text-sm"></i>
+                </button>
+              )}
+              {isOfflineMode && (
+                <button onClick={() => setShowOfflineModal(true)}
+                  className="flex items-center gap-1 bg-orange-500 text-white px-2 py-1 rounded-xl text-xs font-bold shadow-sm active:scale-95 transition-transform">
+                  <i className="fa-solid fa-wifi-slash text-[10px]"></i>
+                </button>
+              )}
+              {/* Bell — navigates to requests */}
+              <div className="relative">
+                <button onClick={() => setMainView('requests')}
+                  className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-transform">
+                  <i className="fa-regular fa-bell text-slate-500 dark:text-slate-400 text-sm"></i>
+                </button>
+                {totalPendingCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-950 leading-none">
+                    {totalPendingCount > 9 ? '9+' : totalPendingCount}
+                  </span>
+                )}
+              </div>
+              {/* Exit */}
+              <button onClick={onExit} aria-label={language === 'fr' ? 'Déconnexion' : 'Logout'}
+                className="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-sm shadow-rose-500/30 active:scale-90 transition-transform">
+                <i className="fa-solid fa-power-off text-sm" aria-hidden="true"></i>
+              </button>
+            </div>
           </div>
-        </nav>
+        </div>
       )}
 
       {/* Offline Modal — en dehors de la nav pour éviter pointer-events-none du dashboard */}
@@ -1489,36 +1554,11 @@ const ParentView: React.FC<ParentViewProps> = ({
             </div>
           </div>
         ) : (
-          /* ── iOS Hero Stats ── */
-          <div ref={heroRef} className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-indigo-800 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 pt-28 pb-10 px-6 relative overflow-hidden transition-colors duration-500">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full -mr-64 -mt-64 blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-500/20 rounded-full -ml-32 -mb-32 blur-2xl"></div>
-
-            <div className="max-w-7xl mx-auto relative z-10">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-8 bg-black/10 dark:bg-black/30 backdrop-blur-md rounded-[2.5rem] p-8 shadow-xl">
-                <div className="flex items-center gap-5">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-xl ring-1 ring-white/10">
-                    <i className="fa-solid fa-chart-pie text-2xl text-white"></i>
-                  </div>
-                  <div>
-                    <h2 className="text-white text-lg font-black tracking-tight">{t.parent.dashboard.weeklyBilling}</h2>
-                    <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest opacity-80">{language === 'fr' ? 'Sept derniers jours' : 'Last seven days'}</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-10 sm:gap-14">
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 opacity-60">{t.parent.history.income}</span>
-                    <span className="text-xl font-black text-emerald-400">+{weeklySummary.income.toFixed(2)}{curr}</span>
-                  </div>
-                  <div className="h-10 w-px bg-white/10 self-center"></div>
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 opacity-60">{language === 'fr' ? 'Sorties' : 'Outcome'}</span>
-                    <span className="text-xl font-black text-rose-300">-{weeklySummary.expense.toFixed(2)}{curr}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          /* ── iOS Hero Backdrop (stats now inside Balance Card) ── */
+          <div ref={heroRef} className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-indigo-800 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 pb-4 px-6 relative overflow-hidden transition-colors duration-500"
+            style={{ paddingTop: 'calc(env(safe-area-inset-top) + 68px)' }}>
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full -mr-64 -mt-64 blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-500/20 rounded-full -ml-32 -mb-32 blur-2xl pointer-events-none"></div>
           </div>
         )
       )}
@@ -1560,12 +1600,13 @@ const ParentView: React.FC<ParentViewProps> = ({
             </div>
           </div>
         ) : (
-          /* ── iOS Child Selector ── */
-          <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky sticky-safe-top z-30 pt-5 pb-4 transition-colors duration-500">
+          /* ── iOS Child Selector — circular avatars with name below ── */
+          <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky z-30 pt-3 pb-3 transition-colors duration-500"
+            style={{ top: 'calc(env(safe-area-inset-top) + 64px)' }}>
             <div className="relative">
               <div
                 ref={childSelectorScrollRef}
-                className={`max-w-7xl mx-auto overflow-x-auto no-scrollbar flex gap-3 items-center transition-all duration-300 snap-x snap-mandatory ${!isHeroVisible && !data.isPremium ? 'pl-20' : 'pl-6'} pr-20`}
+                className="max-w-7xl mx-auto overflow-x-auto no-scrollbar flex gap-4 items-start snap-x snap-mandatory pl-4 pr-16"
               >
                 {data.children.map(child => {
                   const childPending = child.missions ? child.missions.filter(m => m.status === 'PENDING').length : 0;
@@ -1577,22 +1618,33 @@ const ParentView: React.FC<ParentViewProps> = ({
                     <button key={child.id}
                       data-active={isSelected ? 'true' : 'false'}
                       onClick={() => setSelectedChildId(child.id)}
-                      className={`snap-start shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl font-black text-xs transition-all whitespace-nowrap relative border-2 min-w-[120px] ${isSelected ? `bg-${child.colorClass}-600 border-${child.colorClass}-600 text-white shadow-md shadow-${child.colorClass}-500/25 dark:shadow-none -translate-y-0.5` : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:border-slate-200 dark:hover:border-slate-700'}`}
+                      className="snap-start shrink-0 flex flex-col items-center gap-1.5 p-1.5 rounded-2xl transition-all active:scale-95"
+                      style={isSelected ? { background: 'rgba(99,102,241,0.08)' } : undefined}
                     >
-                      <div className={`w-9 h-9 rounded-full overflow-hidden shrink-0 ${isSelected ? 'ring-2 ring-white/50' : 'opacity-60 dark:opacity-40 grayscale-[50%]'}`}>
-                        {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
+                      {/* Avatar circle with gradient ring when selected */}
+                      <div className="relative">
+                        <div className={`w-14 h-14 rounded-full p-[2.5px] transition-all ${isSelected ? `bg-gradient-to-br from-${child.colorClass}-400 to-${child.colorClass}-600 shadow-md` : 'bg-slate-200 dark:bg-slate-700'}`}>
+                          <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-slate-900">
+                            <div className={`w-full h-full transition-all ${isSelected ? '' : 'opacity-50 grayscale-[40%]'}`}>
+                              {renderAvatar(child.avatar, "w-full h-full", child.colorClass)}
+                            </div>
+                          </div>
+                        </div>
+                        {totalIconPending > 0 && (
+                          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-black bg-red-500 text-white border-2 border-white dark:border-slate-950">
+                            {totalIconPending > 9 ? '9+' : totalIconPending}
+                          </span>
+                        )}
                       </div>
-                      <span className="tracking-tight">{child.name}</span>
-                      {totalIconPending > 0 && (
-                        <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-black shadow-sm shrink-0 ${isSelected ? 'bg-white text-red-500' : 'bg-red-500 text-white dark:border dark:border-slate-900'}`}>
-                          {totalIconPending}
-                        </span>
-                      )}
+                      {/* Name */}
+                      <span className={`text-[11px] font-black tracking-tight transition-colors ${isSelected ? `text-${child.colorClass}-600 dark:text-${child.colorClass}-400` : 'text-slate-400 dark:text-slate-500'}`}>
+                        {child.name}
+                      </span>
                     </button>
                   );
                 })}
               </div>
-              <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white/80 dark:from-slate-950/80 to-transparent" />
+              <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white/80 dark:from-slate-950/80 to-transparent" />
             </div>
           </div>
         )
@@ -1659,245 +1711,404 @@ const ParentView: React.FC<ParentViewProps> = ({
                   )}
                 </section>
               ) : (
-                /* ── iOS Balance Card ── */
-                <section className={`relative bg-gradient-to-br from-${activeChild.colorClass}-400 to-${activeChild.colorClass}-700 rounded-[2.5rem] p-8 text-white shadow-xl shadow-${activeChild.colorClass}-500/25 overflow-hidden transform transition-all hover:scale-[1.01]`}>
-                  {/* SVG Background Pattern */}
-                  <div className="absolute inset-0 opacity-10 pointer-events-none">
-                    <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="none">
-                      <path d="M0 200C100 150 200 250 400 200V0H0V200Z" fill="white" />
-                      <path d="M0 100C150 50 250 150 400 100V0H0V100Z" fill="white" opacity="0.5" />
-                    </svg>
-                  </div>
+                /* ── iOS Balance Card (consolidated hero) ── */
+                (() => {
+                  const age = (() => {
+                    if (!activeChild.birthday) return null;
+                    const b = new Date(activeChild.birthday), n = new Date();
+                    let a = n.getFullYear() - b.getFullYear();
+                    if (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) a--;
+                    return a >= 0 && a < 120 ? a : null;
+                  })();
+                  const ageLabel = age === null ? null : (language === 'fr' ? `${age} ans` : language === 'nl' ? `${age} jaar` : `${age} yrs old`);
+                  const earnedLabel = language === 'fr' ? 'Gains' : language === 'nl' ? 'Verdiend' : 'Earned';
+                  const spentLabel = language === 'fr' ? 'Dépenses' : language === 'nl' ? 'Uitgaven' : 'Spent';
+                  const finesLabel = language === 'fr' ? 'Amendes' : language === 'nl' ? 'Boetes' : 'Fines';
+                  const depositLabel = language === 'fr' ? 'Dépôt' : language === 'nl' ? 'Storting' : 'Deposit';
+                  const withdrawLabel = language === 'fr' ? 'Retrait' : language === 'nl' ? 'Opname' : 'Withdraw';
+                  return (
+                  <section className={`relative bg-gradient-to-br from-${activeChild.colorClass}-400 to-${activeChild.colorClass}-700 rounded-[2rem] p-6 text-white shadow-xl shadow-${activeChild.colorClass}-500/25 overflow-hidden`}>
+                    {/* Decorative circles */}
+                    <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-white/[0.07] pointer-events-none"></div>
+                    <div className="absolute -bottom-16 -left-10 w-56 h-56 rounded-full bg-white/[0.04] pointer-events-none"></div>
 
-                  <div className="flex justify-between items-start relative z-10 mb-8">
-                    <div className="space-y-1">
-                      <p className="opacity-60 text-[10px] font-black uppercase tracking-[0.2em]">{t.parent.childBalance}</p>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-black tracking-tighter tabular-nums leading-none">
-                          {activeChild.balance.toFixed(2)}
-                        </span>
-                        <span className="text-2xl font-black opacity-40">{curr}</span>
+                    {/* Header: avatar + name + age + BALANCE pill */}
+                    <div className="flex items-center gap-3 mb-4 relative z-10">
+                      <div className="w-12 h-12 shrink-0">
+                        {renderAvatar(activeChild.avatar, "w-full h-full", activeChild.colorClass)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[17px] font-black leading-tight truncate">{activeChild.name}</div>
+                        {ageLabel && <div className="text-[11px] font-semibold opacity-70 mt-0.5">{ageLabel}</div>}
+                      </div>
+                      <div className="bg-white/20 backdrop-blur-md rounded-lg px-2.5 py-1 shrink-0">
+                        <span className="text-[9px] font-black tracking-[0.14em] opacity-95">{t.parent.childBalance.toUpperCase()}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-3">
-                      <button onClick={() => setTransactionType('DEPOSIT')} aria-label={language === 'fr' ? 'Ajouter de l\'argent' : 'Add money'} className="w-12 h-12 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90">
-                        <i className="fa-solid fa-plus text-xl" aria-hidden="true"></i>
-                      </button>
-                      <button onClick={() => { setTransactionType('WITHDRAW'); setWithdrawSubtype('PURCHASE'); }} aria-label={language === 'fr' ? 'Retirer de l\'argent' : 'Withdraw money'} className="w-12 h-12 rounded-2xl bg-black/20 hover:bg-black/30 flex items-center justify-center backdrop-blur-md shadow-lg transition-all active:scale-90">
-                        <i className="fa-solid fa-minus text-xl" aria-hidden="true"></i>
-                      </button>
-                    </div>
-                  </div>
 
-                  {/* Liquid Progress Bar — color changes with progress */}
-                  {activeChild.goals && activeChild.goals.length > 0 ? (
-                    <div className="relative z-10 pt-4 mt-auto">
-                      <div className="flex justify-between items-end mb-3">
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-0.5">{t.parent.childGoal}</span>
-                          <span className="text-sm font-black tracking-tight">{activeChild.goals[0].name}</span>
+                    {/* Balance amount */}
+                    <div className="flex items-baseline gap-1 mb-4 relative z-10">
+                      <span className="text-[44px] font-black tracking-tighter tabular-nums leading-none">
+                        {activeChild.balance.toFixed(2)}
+                      </span>
+                      <span className="text-2xl font-bold opacity-80">{curr}</span>
+                    </div>
+
+                    {/* Weekly stats grid */}
+                    <div className="grid grid-cols-3 gap-2 mb-4 relative z-10">
+                      {[
+                        { label: earnedLabel, val: weeklySummary.income, cls: 'text-white' },
+                        { label: spentLabel, val: weeklySummary.expense, cls: 'text-white/80' },
+                        { label: finesLabel, val: weeklySummary.penalty, cls: 'text-rose-100' },
+                      ].map(s => (
+                        <div key={s.label} className="bg-white/[0.14] backdrop-blur-md rounded-xl px-2.5 py-2">
+                          <div className="text-[8px] font-black tracking-[0.14em] opacity-60 mb-0.5 uppercase">{s.label}</div>
+                          <div className={`text-sm font-black tabular-nums ${s.cls}`}>{s.val.toFixed(2)}{curr}</div>
                         </div>
-                        <span className="text-[10px] font-black opacity-80">
-                          {Math.min(100, Math.round((activeChild.balance / activeChild.goals[0].target) * 100))}%
+                      ))}
+                    </div>
+
+                    {/* Action buttons: full-width side-by-side */}
+                    <div className="grid grid-cols-2 gap-2.5 relative z-10">
+                      <button onClick={() => setTransactionType('DEPOSIT')} aria-label={language === 'fr' ? 'Ajouter de l\'argent' : 'Add money'}
+                        className="h-11 rounded-2xl bg-white/25 hover:bg-white/30 backdrop-blur-md flex items-center justify-center gap-1.5 text-xs font-black tracking-[0.05em] active:scale-[0.97] transition-all">
+                        <i className="fa-solid fa-plus text-[11px]" aria-hidden="true"></i>
+                        <span className="uppercase">{depositLabel}</span>
+                      </button>
+                      <button onClick={() => { setTransactionType('WITHDRAW'); setWithdrawSubtype('PURCHASE'); }} aria-label={language === 'fr' ? 'Retirer de l\'argent' : 'Withdraw money'}
+                        className="h-11 rounded-2xl bg-black/20 hover:bg-black/25 backdrop-blur-md flex items-center justify-center gap-1.5 text-xs font-black tracking-[0.05em] opacity-90 active:scale-[0.97] transition-all">
+                        <i className="fa-solid fa-minus text-[11px]" aria-hidden="true"></i>
+                        <span className="uppercase">{withdrawLabel}</span>
+                      </button>
+                    </div>
+
+                  </section>
+                  );
+                })()
+              )}
+
+              {isAndroid ? (
+                /* Android: original goals section */
+                <section className="space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest ml-1">
+                      {t.parent.childGoalsTitle}
+                    </h2>
+                    <div className="bg-white p-1 rounded-2xl flex gap-1 shadow-sm border border-slate-100 w-full sm:w-auto">
+                      {(['ALL', 'READY', 'ONGOING'] as GoalsFilter[]).map(f => (
+                        <button key={f} onClick={() => setGoalsFilter(f)}
+                          className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${goalsFilter === f ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25' : 'text-slate-400'}`}
+                        >
+                          {f === 'ALL' ? t.parent.goalsFilter.all : f === 'READY' ? t.parent.goalsFilter.reached : t.parent.goalsFilter.progress}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm p-8 flex flex-col items-center text-center min-h-[200px] justify-center space-y-4">
+                    {filteredGoals.length === 0 ? (
+                      <>
+                        <p className="text-slate-400 font-medium text-sm">{goalsFilter === 'ALL' ? t.parent.goalsEmpty.none : (goalsFilter === 'READY' ? t.parent.goalsEmpty.reached : t.parent.goalsEmpty.progress)}</p>
+                        <button onClick={startAddGoal} className="bg-indigo-50 text-indigo-600 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest active:scale-95">{t.parent.addGoalAction}</button>
+                      </>
+                    ) : (
+                      <div className="w-full space-y-3">
+                        {filteredGoals.map(goal => {
+                          const percent = Math.min(100, Math.round((activeChild.balance / goal.target) * 100));
+                          const isReady = activeChild.balance >= goal.target;
+                          return (
+                            <div key={goal.id} className={`w-full p-4 rounded-2xl border flex items-center justify-between text-left ${goal.status === 'COMPLETED' ? 'bg-emerald-50 border-emerald-200' : isReady ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-slate-200 shadow-sm'}`}>
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${goal.status === 'COMPLETED' ? 'bg-emerald-500 text-white' : isReady ? 'bg-yellow-400 text-white' : 'bg-white text-slate-400'}`}>
+                                  <i className={getIcon(goal.icon)}></i>
+                                </div>
+                                <div>
+                                  <p className="font-bold text-sm">{goal.name}</p>
+                                  <p className="text-[10px] font-black uppercase tracking-wider opacity-50">{goal.status === 'COMPLETED' ? (language === 'fr' ? 'Obtenu' : 'Purchased') : `${percent}% • ${goal.target}${curr}`}</p>
+                                </div>
+                              </div>
+                              {goal.status === 'COMPLETED' ? (
+                                <button onClick={() => onArchiveGoal?.(activeChild.id, goal.id)} className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><i className="fa-solid fa-box-archive"></i></button>
+                              ) : isReady ? (
+                                <span className="bg-yellow-400 text-white text-[10px] font-black px-2 py-1 rounded-full animate-pulse">{t.child.available}</span>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                        <button onClick={startAddGoal} className="w-full py-3 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs font-bold">+ {t.parent.addGoalAction}</button>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              ) : (
+                /* iOS: GoalCard design */
+                (() => {
+                  const goalIconEmoji: Record<string, string> = {
+                    gamepad: '🎮', trophy: '🏆', gift: '🎁', cart: '🛒', music: '🎵',
+                    plane: '✈️', bike: '🚲', book: '📚', shirt: '👕', futbol: '⚽',
+                    bullseye: '🎯', wand: '✨', gavel: '🔨',
+                  };
+                  const accent: Record<string, string> = { indigo: '#6366f1', pink: '#ec4899', emerald: '#10b981', amber: '#f59e0b', blue: '#3b82f6', rose: '#f43f5e', purple: '#a855f7', violet: '#8b5cf6', cyan: '#06b6d4', teal: '#14b8a6', orange: '#f97316' };
+                  const accentColor = accent[activeChild.colorClass] || '#6366f1';
+                  const accentFrom = accentColor;
+                  const visibleGoals = activeChild.goals ? activeChild.goals.filter(g => g.status !== 'ARCHIVED') : [];
+                  return (
+                    <section className="space-y-3">
+                      {/* Section header */}
+                      <div className="flex items-center justify-between px-0.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
+                          {language === 'fr' ? 'OBJECTIFS' : language === 'nl' ? 'DOELEN' : 'SAVINGS GOALS'}
                         </span>
+                        <button onClick={startAddGoal} className="text-[12px] font-bold text-indigo-600 active:opacity-70">
+                          + {language === 'fr' ? 'Ajouter' : language === 'nl' ? 'Toevoegen' : 'Add'}
+                        </button>
                       </div>
-                      <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-1000 ease-out"
-                          style={{
-                            width: `${Math.min(100, (activeChild.balance / activeChild.goals[0].target) * 100)}%`,
-                            background: (() => {
-                              const p = Math.min(100, Math.round((activeChild.balance / activeChild.goals[0].target) * 100));
-                              if (p >= 100) return 'linear-gradient(to right, #fbbf24, #f59e0b)';
-                              if (p >= 75) return 'linear-gradient(to right, #34d399, #10b981)';
-                              if (p >= 50) return 'linear-gradient(to right, #a3e635, #fde047)';
-                              if (p >= 25) return 'linear-gradient(to right, #fb923c, #f97316)';
-                              return 'linear-gradient(to right, #f87171, #fb7185)';
-                            })()
-                          }}
-                        ></div>
+
+                      {visibleGoals.length === 0 ? (
+                        <div className="bg-white dark:bg-slate-900 rounded-[18px] p-6 text-center" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                          <div className="text-3xl mb-2">🌟</div>
+                          <p className="text-[13px] font-bold text-slate-400">{t.parent.goalsEmpty.none}</p>
+                          <button onClick={startAddGoal} className="mt-3 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[11px] font-black uppercase tracking-widest active:scale-95 transition-transform">{t.parent.addGoalAction}</button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {visibleGoals.map(goal => {
+                            const percent = Math.min(100, Math.round((activeChild.balance / goal.target) * 100));
+                            const isReady = activeChild.balance >= goal.target;
+                            const isCompleted = goal.status === 'COMPLETED';
+                            const emoji = goalIconEmoji[goal.icon || ''] || '🌟';
+                            const remaining = Math.max(0, goal.target - activeChild.balance).toFixed(2);
+                            const subtitleColor = isCompleted ? '#15803d' : isReady ? '#d97706' : '#94a3b8';
+                            const iconBg = isCompleted ? '#ecfdf5' : isReady ? '#fef9c3' : accentColor + '18';
+                            return (
+                              <div key={goal.id} className="bg-white dark:bg-slate-900 rounded-[18px] overflow-hidden active:scale-[0.98] transition-transform cursor-pointer"
+                                style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+                                onClick={() => openDashGoalEdit(goal)}>
+                                <div className="p-4 flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-[12px] flex items-center justify-center text-[18px] shrink-0 flex-shrink-0"
+                                    style={{ background: iconBg }}>
+                                    {emoji}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[13px] font-bold text-slate-800 dark:text-white truncate">{goal.name}</p>
+                                    <p className="text-[11px] font-semibold mt-0.5" style={{ color: subtitleColor }}>
+                                      {isCompleted
+                                        ? (language === 'fr' ? '✅ Acheté !' : language === 'nl' ? '✅ Gekocht!' : '✅ Purchased!')
+                                        : isReady
+                                          ? (language === 'fr' ? '🎉 Prêt à acheter !' : language === 'nl' ? '🎉 Klaar om te kopen!' : '🎉 Ready to buy!')
+                                          : `${remaining}${curr} ${language === 'fr' ? 'restants' : language === 'nl' ? 'te gaan' : 'to go'}`}
+                                    </p>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <p className="text-[15px] font-black" style={{ color: isCompleted ? '#15803d' : '#1e293b' }}>{percent}%</p>
+                                    <p className="text-[10px] font-semibold text-slate-400">{goal.target}{curr}</p>
+                                  </div>
+                                  {isCompleted && (
+                                    <button onClick={() => onArchiveGoal?.(activeChild.id, goal.id)}
+                                      className="w-8 h-8 rounded-[10px] bg-emerald-50 text-emerald-600 flex items-center justify-center active:scale-90 shrink-0">
+                                      <i className="fa-solid fa-box-archive text-xs"></i>
+                                    </button>
+                                  )}
+                                </div>
+                                {/* Progress bar */}
+                                <div className="mx-4 mb-4 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full transition-all duration-700"
+                                    style={{
+                                      width: `${percent}%`,
+                                      background: isCompleted
+                                        ? 'linear-gradient(90deg,#34d399,#059669)'
+                                        : isReady
+                                          ? 'linear-gradient(90deg,#fbbf24,#d97706)'
+                                          : `linear-gradient(90deg,${accentFrom},${accentFrom}bb)`,
+                                      boxShadow: percent > 0 ? `0 0 8px ${accentFrom}55` : 'none',
+                                    }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })()
+              )}
+
+              {isAndroid && (
+                <section ref={missionFormRef} className="space-y-4">
+                  <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                        <i className="fa-solid fa-circle-plus"></i>
+                      </div>
+                      <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">{t.parent.addMissionTitle}</h2>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden p-6 space-y-6 transition-colors duration-500">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-3 tracking-[0.15em] ml-1">{t.parent.templatesTitle}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => applyTemplate(t.parent.templates.room, 2)} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100/50 dark:border-slate-700/50 rounded-xl text-[11px] font-black text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-200 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all uppercase tracking-widest">🧹 {t.parent.templates.room}</button>
+                        <button type="button" onClick={() => applyTemplate(t.parent.templates.table, 1)} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100/50 dark:border-slate-700/50 rounded-xl text-[11px] font-black text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-200 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all uppercase tracking-widest">🍽️ {t.parent.templates.table}</button>
                       </div>
                     </div>
-                  ) : (
-                    <div className="relative z-10 pt-4 mt-auto opacity-0 pointer-events-none" aria-hidden="true">
-                      <div className="h-10"></div>
-                    </div>
-                  )}
+
+                    <form onSubmit={handleAddSubmit} className="space-y-5 pt-5 border-t border-slate-50 dark:border-slate-800">
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.parent.formTitleLabel}</label>
+                          <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-full px-5 py-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/20 outline-none transition-all text-slate-900 dark:text-white font-black text-sm shadow-inner" placeholder={t.parent.formTitlePlaceholder} required />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.parent.formAmountLabel}</label>
+                          <div className="relative">
+                            <input type="number" step="0.5" min="0.5" max={data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500)} value={newAmount} onChange={(e) => { const v = e.target.value; const missionMax = data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500); if (v === '' || (parseFloat(v) <= missionMax && v.length <= 10)) setNewAmount(v); }} className="w-full pl-5 pr-12 py-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/20 outline-none transition-all text-slate-900 dark:text-white font-black text-sm shadow-inner" placeholder={t.parent.formAmountPlaceholder} required />
+                            <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-300 dark:text-slate-600">{curr}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button type="submit" className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-md shadow-slate-500/20 dark:shadow-none hover:bg-slate-800 dark:hover:bg-slate-100 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
+                        <i className="fa-solid fa-paper-plane text-emerald-400 dark:text-emerald-500"></i>
+                        {t.parent.addButton} {activeChild.name}
+                      </button>
+                    </form>
+                  </div>
                 </section>
               )}
 
-              <section className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest ml-1">
-                    {t.parent.childGoalsTitle}
-                  </h2>
-                  <div className="bg-white p-1 rounded-2xl flex gap-1 shadow-sm border border-slate-100 w-full sm:w-auto">
-                    <button onClick={() => setGoalsFilter('ALL')}
-                      className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${goalsFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      {t.parent.goalsFilter.all}
-                    </button>
-                    <button onClick={() => setGoalsFilter('READY')}
-                      className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${goalsFilter === 'READY' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      {t.parent.goalsFilter.reached}
-                    </button>
-                    <button onClick={() => setGoalsFilter('ONGOING')}
-                      className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${goalsFilter === 'ONGOING' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      {t.parent.goalsFilter.progress}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm p-8 flex flex-col items-center text-center min-h-[240px] justify-center space-y-4 transition-colors duration-500">
-                  {filteredGoals.length === 0 ? (
-                    <>
-                      <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-200 dark:text-slate-700 text-3xl">
-                        <i className={getIcon('gift')}></i>
+              {/* ===== MISSIONS SECTION ===== */}
+              {isAndroid ? (
+                /* Android: active missions only (pending handled in requests tab) */
+                activeChild && activeChild.missions && activeChild.missions.filter(m => m.status === 'ACTIVE').length > 0 && (
+                  <section className="space-y-4 pt-2">
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t.parent.activeMissions}</h2>
+                        <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-black">{activeChild.missions.filter(m => m.status === 'ACTIVE').length}</span>
                       </div>
-                      <p className="text-slate-400 dark:text-slate-500 font-medium text-sm leading-relaxed max-w-[200px]">
-                        {goalsFilter === 'ALL' ? t.parent.goalsEmpty.none : (goalsFilter === 'READY' ? t.parent.goalsEmpty.reached : t.parent.goalsEmpty.progress)}
-                      </p>
-                      <button onClick={startAddGoal}
-                        className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all active:scale-95"
-                      >
-                        {t.parent.addGoalAction}
-                      </button>
-                    </>
-                  ) : (
-                    <div className="w-full space-y-3">
-                      {filteredGoals.map(goal => {
-                        const percent = Math.min(100, Math.round((activeChild.balance / goal.target) * 100));
-                        const isReady = activeChild.balance >= goal.target;
-                        return (
-                          <div key={goal.id} className={`w-full p-4 rounded-2xl border flex items-center justify-between text-left transition-colors duration-300 ${goal.status === 'COMPLETED' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50' : (isReady ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700/50 text-slate-800 dark:text-yellow-100' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm')}`}>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm ${goal.status === 'COMPLETED' ? 'bg-emerald-500 text-white' : (isReady ? 'bg-yellow-400 text-white' : 'bg-white dark:bg-slate-700 text-slate-400 dark:text-slate-500')}`}>
-                                <i className={getIcon(goal.icon)}></i>
-                              </div>
-                              <div>
-                                <p className="font-bold text-sm">{goal.name}</p>
-                                <p className="text-[10px] font-black uppercase tracking-wider opacity-50">
-                                  {goal.status === 'COMPLETED' ? (language === 'fr' ? 'Obtenu' : 'Purchased') : `${percent}% • ${goal.target}${curr}`}
-                                </p>
-                              </div>
+                      <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1 ml-3"></div>
+                    </div>
+                    <div className="space-y-3">
+                      {activeChild.missions.filter(m => m.status === 'ACTIVE').map(mission => (
+                        <div key={mission.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className={`w-10 h-10 rounded-xl bg-${activeChild.colorClass}-50 dark:bg-${activeChild.colorClass}-900/20 text-${activeChild.colorClass}-500 flex items-center justify-center text-lg shrink-0`}>
+                              <i className={getIcon(mission.icon, 'fa-solid fa-star')}></i>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {goal.status === 'COMPLETED' ? (
-                                <button onClick={() => onArchiveGoal?.(activeChild.id, goal.id)}
-                                  className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
-                                  title={language === 'fr' ? 'Archiver' : 'Archive'}
-                                >
-                                  <i className="fa-solid fa-box-archive"></i>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{getTranslatedTitle(mission.title, language)}</p>
+                              <p className="text-emerald-500 text-xs font-black">+{mission.reward}{curr}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button onClick={() => { setEditingMission({ id: mission.id, title: mission.title, reward: mission.reward }); setEditMissionTitle(mission.title); setEditMissionReward(mission.reward.toString()); }}
+                              className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 flex items-center justify-center active:scale-90">
+                              <i className="fa-solid fa-pen text-xs"></i>
+                            </button>
+                            <button onClick={() => openConfirm(t.parent.deleteMissionConfirm, mission.title, () => selectedChildId && onDeleteActiveMission(selectedChildId, mission.id), 'danger')}
+                              className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-500 flex items-center justify-center active:scale-90">
+                              <i className="fa-solid fa-trash text-xs"></i>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )
+              ) : (
+                /* iOS: unified MISSIONS section — pending first with APPROVE/REJECT, then active */
+                (() => {
+                  const accent: Record<string, string> = { indigo: '#6366f1', pink: '#ec4899', emerald: '#10b981', amber: '#f59e0b', blue: '#3b82f6', rose: '#f43f5e', purple: '#a855f7', violet: '#8b5cf6', cyan: '#06b6d4', teal: '#14b8a6', orange: '#f97316' };
+                  const accentColor = accent[activeChild.colorClass] || '#6366f1';
+                  const pendingMissions = activeChild.missions ? activeChild.missions.filter(m => m.status === 'PENDING') : [];
+                  const activeMissions = activeChild.missions ? activeChild.missions.filter(m => m.status === 'ACTIVE') : [];
+                  const allMissions = [...pendingMissions, ...activeMissions];
+                  return (
+                    <section className="space-y-3 pt-2">
+                      {/* Section header */}
+                      <div className="flex items-center justify-between px-0.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
+                          {language === 'fr' ? 'MISSIONS' : language === 'nl' ? 'MISSIES' : 'MISSIONS'}
+                        </span>
+                        {allMissions.length > 0 && (
+                          <span className="text-[11px] font-bold text-indigo-600">
+                            {allMissions.length} {language === 'fr' ? 'active' + (allMissions.length > 1 ? 's' : '') : language === 'nl' ? 'actief' : 'active'}
+                          </span>
+                        )}
+                      </div>
+
+                      {allMissions.length === 0 ? (
+                        <div className="bg-white dark:bg-slate-900 rounded-[18px] p-6 text-center shadow-sm" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                          <div className="text-3xl mb-2">🎯</div>
+                          <p className="text-[13px] font-bold text-slate-400">{language === 'fr' ? 'Aucune mission pour l\'instant' : language === 'nl' ? 'Nog geen missies' : 'No missions yet'}</p>
+                          <p className="text-[11px] text-slate-300 mt-1">{language === 'fr' ? 'Appuie sur + pour en créer une' : language === 'nl' ? 'Tik op + om er een te maken' : 'Tap + to add a mission'}</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {/* PENDING missions with APPROVE/REJECT */}
+                          {pendingMissions.map(mission => (
+                            <div key={mission.id} className="bg-white dark:bg-slate-900 rounded-[18px] overflow-hidden"
+                              style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)', borderLeft: '3px solid #f97316' }}>
+                              <div className="p-3 flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-[10px] bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center shrink-0">
+                                  <i className="fa-solid fa-clock text-[13px] text-orange-500"></i>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[13px] font-bold text-slate-800 dark:text-white truncate">{getTranslatedTitle(mission.title, language)}</p>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-orange-50 text-orange-600 uppercase tracking-wide">{language === 'fr' ? 'EN ATTENTE' : language === 'nl' ? 'IN AFWACHTING' : 'PENDING'}</span>
+                                  </div>
+                                </div>
+                                <span className="text-[16px] font-black text-orange-500 shrink-0 tracking-tight">+{mission.reward}{curr}</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 px-3 pb-3">
+                                <button onClick={() => openActionModal(mission.id, 'APPROVE')}
+                                  className="h-9 rounded-[10px] flex items-center justify-center gap-1.5 text-[11px] font-black tracking-[0.05em]"
+                                  style={{ background: '#ecfdf5', color: '#15803d' }}>
+                                  <i className="fa-solid fa-check text-[10px]"></i>
+                                  {language === 'fr' ? 'VALIDER' : language === 'nl' ? 'GOEDKEUREN' : 'APPROVE'}
                                 </button>
-                              ) : isReady && (
-                                <span className="bg-yellow-400 text-white text-[10px] font-black px-2 py-1 rounded-full animate-pulse shadow-sm">{t.child.available}</span>
-                              )}
+                                <button onClick={() => openActionModal(mission.id, 'REJECT')}
+                                  className="h-9 rounded-[10px] flex items-center justify-center gap-1.5 text-[11px] font-black tracking-[0.05em]"
+                                  style={{ background: '#fff1f2', color: '#be123c' }}>
+                                  <i className="fa-solid fa-xmark text-[10px]"></i>
+                                  {language === 'fr' ? 'REJETER' : language === 'nl' ? 'AFWIJZEN' : 'REJECT'}
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        )
-                      })}
-                      <button onClick={startAddGoal} className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 dark:text-slate-600 text-xs font-bold hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all">
-                        + {t.parent.addGoalAction}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </section>
+                          ))}
 
-              <section ref={missionFormRef} className="space-y-4">
-                <div className="flex items-center justify-between px-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
-                      <i className="fa-solid fa-circle-plus"></i>
-                    </div>
-                    <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">{t.parent.addMissionTitle}</h2>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden p-6 space-y-6 transition-colors duration-500">
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-3 tracking-[0.15em] ml-1">{t.parent.templatesTitle}</p>
-                    <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={() => applyTemplate(t.parent.templates.room, 2)} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100/50 dark:border-slate-700/50 rounded-xl text-[11px] font-black text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-200 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all uppercase tracking-widest">🧹 {t.parent.templates.room}</button>
-                      <button type="button" onClick={() => applyTemplate(t.parent.templates.table, 1)} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100/50 dark:border-slate-700/50 rounded-xl text-[11px] font-black text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-200 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all uppercase tracking-widest">🍽️ {t.parent.templates.table}</button>
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleAddSubmit} className="space-y-5 pt-5 border-t border-slate-50 dark:border-slate-800">
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.parent.formTitleLabel}</label>
-                        <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-full px-5 py-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/20 outline-none transition-all text-slate-900 dark:text-white font-black text-sm shadow-inner" placeholder={t.parent.formTitlePlaceholder} required />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.parent.formAmountLabel}</label>
-                        <div className="relative">
-                          <input type="number" step="0.5" min="0.5" max={data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500)} value={newAmount} onChange={(e) => { const v = e.target.value; const missionMax = data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500); if (v === '' || (parseFloat(v) <= missionMax && v.length <= 10)) setNewAmount(v); }} className="w-full pl-5 pr-12 py-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/20 outline-none transition-all text-slate-900 dark:text-white font-black text-sm shadow-inner" placeholder={t.parent.formAmountPlaceholder} required />
-                          <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-300 dark:text-slate-600">{curr}</span>
+                          {/* ACTIVE missions with edit/delete */}
+                          {activeMissions.map(mission => (
+                            <div key={mission.id} className="bg-white dark:bg-slate-900 rounded-[18px] p-3 flex items-center gap-2.5"
+                              style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)', borderLeft: `3px solid ${accentColor}` }}>
+                              <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+                                style={{ background: accentColor + '18' }}>
+                                <i className={`${getIcon(mission.icon, 'fa-solid fa-star')} text-[13px]`} style={{ color: accentColor }}></i>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[13px] font-bold text-slate-800 dark:text-white truncate">{getTranslatedTitle(mission.title, language)}</p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wide" style={{ background: accentColor + '18', color: accentColor }}>ACTIVE</span>
+                                </div>
+                              </div>
+                              <span className="text-[16px] font-black shrink-0 tracking-tight" style={{ color: accentColor }}>+{mission.reward}{curr}</span>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button onClick={() => { setEditingMission({ id: mission.id, title: mission.title, reward: mission.reward }); setEditMissionTitle(mission.title); setEditMissionReward(mission.reward.toString()); }}
+                                  className="w-8 h-8 rounded-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 flex items-center justify-center active:scale-90">
+                                  <i className="fa-solid fa-pen text-[10px]"></i>
+                                </button>
+                                <button onClick={() => openConfirm(t.parent.deleteMissionConfirm, mission.title, () => selectedChildId && onDeleteActiveMission(selectedChildId, mission.id), 'danger')}
+                                  className="w-8 h-8 rounded-[10px] bg-rose-50 dark:bg-rose-900/30 text-rose-500 flex items-center justify-center active:scale-90">
+                                  <i className="fa-solid fa-trash text-[10px]"></i>
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                    </div>
-                    <button type="submit" className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-md shadow-slate-500/20 dark:shadow-none hover:bg-slate-800 dark:hover:bg-slate-100 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
-                      <i className="fa-solid fa-paper-plane text-emerald-400 dark:text-emerald-500"></i>
-                      {t.parent.addButton} {activeChild.name}
-                    </button>
-                  </form>
-                </div>
-              </section>
-
-              {/* ===== ACTIVE MISSIONS SECTION ===== */}
-              {activeChild && activeChild.missions && activeChild.missions.filter(m => m.status === 'ACTIVE').length > 0 && (
-                <section className="space-y-4 pt-2">
-                  <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t.parent.activeMissions}</h2>
-                      <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-black">{activeChild.missions.filter(m => m.status === 'ACTIVE').length}</span>
-                    </div>
-                    <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1 ml-3"></div>
-                  </div>
-                  <div className="space-y-3">
-                    {activeChild.missions.filter(m => m.status === 'ACTIVE').map(mission => (
-                      <div key={mission.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 group hover:shadow-md transition-all">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className={`w-10 h-10 rounded-xl bg-${activeChild.colorClass}-50 dark:bg-${activeChild.colorClass}-900/20 text-${activeChild.colorClass}-500 dark:text-${activeChild.colorClass}-400 flex items-center justify-center text-lg shrink-0`}>
-                            <i className={getIcon(mission.icon, 'fa-solid fa-star')}></i>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{getTranslatedTitle(mission.title, language)}</p>
-                            <p className="text-emerald-500 text-xs font-black">+{mission.reward}{curr}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            onClick={() => {
-                              setEditingMission({ id: mission.id, title: mission.title, reward: mission.reward });
-                              setEditMissionTitle(mission.title);
-                              setEditMissionReward(mission.reward.toString());
-                            }}
-                            aria-label={t.parent.editMissionTitle}
-                            className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors active:scale-90"
-                          >
-                            <i className="fa-solid fa-pen text-xs"></i>
-                          </button>
-                          <button
-                            onClick={() => openConfirm(
-                              t.parent.deleteMissionConfirm,
-                              mission.title + ' (+' + mission.reward + curr + ')',
-                              () => selectedChildId && onDeleteActiveMission(selectedChildId, mission.id),
-                              'danger'
-                            )}
-                            aria-label={t.parent.deleteMissionConfirm}
-                            className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 flex items-center justify-center hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors active:scale-90"
-                          >
-                            <i className="fa-solid fa-trash text-xs"></i>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
+                      )}
+                    </section>
+                  );
+                })()
               )}
 
               {/* ===== EDIT MISSION MODAL ===== */}
@@ -1975,51 +2186,85 @@ const ParentView: React.FC<ParentViewProps> = ({
                 )
               )}
 
-              {/* Quick Actions (QR & Premium) - Added for visibility */}
-              <section className="space-y-4 pt-2">
-                <div className="flex items-center gap-2 mb-2 px-1">
-                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t.parent.shortcuts}</h2>
-                  <div className="h-px bg-slate-200 flex-1"></div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => !data.isPremium && (setActiveTab('ACCOUNT'), setMainView('profile'))}
-                    disabled={data.isPremium}
-                    className={`p-3 rounded-2xl shadow-md flex flex-col items-center justify-center gap-2 text-white text-center py-6 relative overflow-hidden group border transition-all ${data.isPremium
-                      ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25 border-emerald-400/20 opacity-90 cursor-default'
-                      : 'bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-violet-500/25 border-violet-400/20 hover:translate-y-[-2px]'
-                      }`}
-                  >
-                    <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl transition-colors ${data.isPremium
-                      ? 'bg-white/10'
-                      : 'bg-white/20 group-hover:bg-white/30'
-                      }`}></div>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm shadow-inner mb-1 ring-2 relative z-10 ${data.isPremium
-                      ? 'bg-white/20 ring-emerald-300/20 text-white'
-                      : 'bg-white/20 ring-white/30 text-yellow-300'
-                      }`}>
-                      <i className={`fa-solid ${data.isPremium ? 'fa-check' : 'fa-crown'} text-xl drop-shadow-sm`}></i>
-                    </div>
-                    <div className="relative z-10">
-                      <p className="font-black text-xs leading-tight mb-1 uppercase tracking-wider">Premium</p>
-                      <p className="text-[10px] text-white/90 font-medium">
-                        {data.isPremium ? t.parent.messages.premiumThankYou : t.parent.premium.upgrade}
-                      </p>
-                    </div>
-                  </button>
-                </div>
-              </section>
+              {/* Quick Actions (QR & Premium) - Android only */}
+              {isAndroid && (
+                <section className="space-y-4 pt-2">
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t.parent.shortcuts}</h2>
+                    <div className="h-px bg-slate-200 flex-1"></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => !data.isPremium && (setActiveTab('ACCOUNT'), setMainView('profile'))}
+                      disabled={data.isPremium}
+                      className={`p-3 rounded-2xl shadow-md flex flex-col items-center justify-center gap-2 text-white text-center py-6 relative overflow-hidden group border transition-all ${data.isPremium
+                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25 border-emerald-400/20 opacity-90 cursor-default'
+                        : 'bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-violet-500/25 border-violet-400/20 hover:translate-y-[-2px]'
+                        }`}
+                    >
+                      <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl transition-colors ${data.isPremium
+                        ? 'bg-white/10'
+                        : 'bg-white/20 group-hover:bg-white/30'
+                        }`}></div>
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm shadow-inner mb-1 ring-2 relative z-10 ${data.isPremium
+                        ? 'bg-white/20 ring-emerald-300/20 text-white'
+                        : 'bg-white/20 ring-white/30 text-yellow-300'
+                        }`}>
+                        <i className={`fa-solid ${data.isPremium ? 'fa-check' : 'fa-crown'} text-xl drop-shadow-sm`}></i>
+                      </div>
+                      <div className="relative z-10">
+                        <p className="font-black text-xs leading-tight mb-1 uppercase tracking-wider">Premium</p>
+                        <p className="text-[10px] text-white/90 font-medium">
+                          {data.isPremium ? t.parent.messages.premiumThankYou : t.parent.premium.upgrade}
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </section>
+              )}
             </div>}
 
             {/* Content that was previously side-by-side is now managed via tabs */}
             {/* START REQUESTS VIEW */}
             {mainView === 'requests' && <section className="pt-24 space-y-4 pb-24">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{t.parent.pendingValidations}</h2>
-                  {activeChildPendingCount > 0 && <span className="bg-orange-500 text-white px-2.5 py-1 rounded-full text-xs font-black shadow-md">{activeChildPendingCount}</span>}
+              {!isAndroid ? (
+                <div className="px-4">
+                  <h2 className="text-[22px] font-black text-[#1e293b] dark:text-white tracking-tight" style={{ letterSpacing: '-0.5px' }}>
+                    {language === 'fr' ? 'Demandes' : language === 'nl' ? 'Aanvragen' : 'Requests'}
+                  </h2>
+                  <p className="text-[12px] text-slate-400 font-semibold mt-0.5">
+                    {totalPendingCount > 0
+                      ? `${totalPendingCount} ${language === 'fr' ? 'en attente' : language === 'nl' ? 'in afwachting' : 'pending approval'}`
+                      : language === 'fr' ? 'Tout est à jour ✓' : language === 'nl' ? 'Alles bijgewerkt ✓' : 'All caught up ✓'}
+                  </p>
+                  {data.children.length > 1 && (
+                    <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
+                      {data.children.map(c => {
+                        const accentMap: Record<string, string> = { indigo: '#6366f1', pink: '#ec4899', emerald: '#10b981', amber: '#f59e0b', blue: '#3b82f6', rose: '#f43f5e', purple: '#a855f7', violet: '#8b5cf6', cyan: '#06b6d4', teal: '#14b8a6', orange: '#f97316' };
+                        const accent = accentMap[c.colorClass] || '#6366f1';
+                        const isActive = c.id === selectedChildId;
+                        const p = c.missions.filter(m => m.status === 'PENDING').length;
+                        return (
+                          <button key={c.id} onClick={() => setSelectedChildId(c.id)} className="flex items-center gap-2 px-3.5 py-2 rounded-[14px] shrink-0 transition-all" style={{ background: isActive ? accent : '#f1f5f9', color: isActive ? 'white' : '#64748b' }}>
+                            <div className="w-6 h-6 rounded-full overflow-hidden shrink-0">{renderAvatar(c.avatar, 'w-full h-full', c.colorClass)}</div>
+                            <span className="text-[12px] font-bold">{c.name}</span>
+                            {p > 0 && (
+                              <div className="w-[18px] h-[18px] rounded-full flex items-center justify-center text-white text-[9px] font-black" style={{ background: isActive ? 'rgba(255,255,255,0.3)' : '#f43f5e' }}>{p}</div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center justify-between px-2">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{t.parent.pendingValidations}</h2>
+                    {activeChildPendingCount > 0 && <span className="bg-orange-500 text-white px-2.5 py-1 rounded-full text-xs font-black shadow-md">{activeChildPendingCount}</span>}
+                  </div>
+                </div>
+              )}
               <div className="space-y-4">
                 {activeChild.giftRequested && (
                   <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-4">
@@ -2059,7 +2304,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                 )}
 
                 {activeChild.missions && activeChild.missions.filter(m => m.status === 'PENDING').map(mission => (
-                  <div key={mission.id} className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-6">
+                  <div key={mission.id} className={`bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 ${isAndroid ? '' : 'border-l-4 border-l-orange-500'} flex flex-col gap-6`}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-slate-50 dark:bg-slate-800 rounded-full p-1 overflow-hidden shrink-0">
@@ -2088,27 +2333,73 @@ const ParentView: React.FC<ParentViewProps> = ({
             </section>}
 
             {mainView === 'history' && <section className="pt-28 pb-32">
-              <div className="sticky z-10 px-4 pb-3 pt-1 bg-white dark:bg-slate-950" style={{ top: 'calc(max(60px, env(safe-area-inset-top)) + 52px)' }}>
-                <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 items-center">
-                  <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shrink-0">
-                    <button onClick={() => setHistoryView('LIST')} aria-label={language === 'fr' ? 'Vue liste' : 'List view'} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'LIST' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-list" aria-hidden="true"></i></button>
-                    <button onClick={() => setHistoryView('CHART')} aria-label={language === 'fr' ? 'Vue graphique' : 'Chart view'} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'CHART' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-chart-simple" aria-hidden="true"></i></button>
-                  </div>
-
-                  <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 flex-1 h-11">
-                    <button onClick={() => setHistoryFilter('THIS_MONTH')} className={`flex-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'THIS_MONTH' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}>{t.parent.history.thisMonth}</button>
-                    <button onClick={() => setHistoryFilter('ALL')} className={`flex-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'ALL' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}>{t.parent.history.all}</button>
-                  </div>
-
-                  {hasAnyHistory &&
-                    <button onClick={() => openConfirm(t.parent.history.clearTitle, t.parent.history.clearMessage, () => onClearHistory(activeChild.id), 'warning')} aria-label={t.parent.history.clearTitle} className="w-11 h-11 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl transition-colors shrink-0 border border-rose-100 dark:border-rose-900/50 shadow-sm">
-                      <i className="fa-solid fa-trash-can" aria-hidden="true"></i>
-                    </button>
-                  }
+              {!isAndroid && data.children.length > 1 && (
+                <div className="flex gap-3 px-4 pb-3 overflow-x-auto no-scrollbar">
+                  {data.children.map(c => {
+                    const accentMap: Record<string, string> = { indigo: '#6366f1', pink: '#ec4899', emerald: '#10b981', amber: '#f59e0b', blue: '#3b82f6', rose: '#f43f5e', purple: '#a855f7', violet: '#8b5cf6', cyan: '#06b6d4', teal: '#14b8a6', orange: '#f97316' };
+                    const accent = accentMap[c.colorClass] || '#6366f1';
+                    const isActive = c.id === selectedChildId;
+                    return (
+                      <button key={c.id} onClick={() => setSelectedChildId(c.id)} className="flex flex-col items-center gap-1 shrink-0 transition-all">
+                        <div className="relative">
+                          <div className="w-14 h-14 rounded-full overflow-hidden transition-all bg-slate-100 p-1" style={{ opacity: isActive ? 1 : 0.45, outline: isActive ? `3px solid ${accent}` : 'none', outlineOffset: '2px' }}>
+                            {renderAvatar(c.avatar, 'w-full h-full', c.colorClass)}
+                          </div>
+                          {c.missions.filter(m => m.status === 'PENDING').length > 0 && (
+                            <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center text-white text-[10px] font-black">
+                              {c.missions.filter(m => m.status === 'PENDING').length}
+                            </div>
+                          )}
+                        </div>
+                        <span className={`text-[11px] font-bold ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>{c.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
+              )}
+              <div className="sticky z-10 px-4 pb-3 pt-1 bg-white dark:bg-slate-950" style={{ top: 'calc(max(60px, env(safe-area-inset-top)) + 52px)' }}>
+                {isAndroid ? (
+                  /* Android: full filter bar with list/chart toggle + trash */
+                  <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 items-center">
+                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shrink-0">
+                      <button onClick={() => setHistoryView('LIST')} aria-label={language === 'fr' ? 'Vue liste' : 'List view'} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'LIST' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-list" aria-hidden="true"></i></button>
+                      <button onClick={() => setHistoryView('CHART')} aria-label={language === 'fr' ? 'Vue graphique' : 'Chart view'} className={`w-10 h-9 rounded-lg flex items-center justify-center transition-all ${historyView === 'CHART' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}><i className="fa-solid fa-chart-simple" aria-hidden="true"></i></button>
+                    </div>
+                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 flex-1 h-11">
+                      <button onClick={() => setHistoryFilter('THIS_MONTH')} className={`flex-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'THIS_MONTH' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}>{t.parent.history.thisMonth}</button>
+                      <button onClick={() => setHistoryFilter('ALL')} className={`flex-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'ALL' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}>{t.parent.history.all}</button>
+                    </div>
+                    {hasAnyHistory &&
+                      <button onClick={() => openConfirm(t.parent.history.clearTitle, t.parent.history.clearMessage, () => onClearHistory(activeChild.id), 'warning')} aria-label={t.parent.history.clearTitle} className="w-11 h-11 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl transition-colors shrink-0 border border-rose-100 dark:border-rose-900/50 shadow-sm">
+                        <i className="fa-solid fa-trash-can" aria-hidden="true"></i>
+                      </button>
+                    }
+                  </div>
+                ) : (
+                  /* iOS: simplified — THIS MONTH / ALL + amount + trash */
+                  <div className="flex items-center gap-3 px-1">
+                    <div className="flex bg-slate-100 rounded-xl p-1 h-10">
+                      <button onClick={() => setHistoryFilter('THIS_MONTH')} className={`px-4 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'THIS_MONTH' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>{t.parent.history.thisMonth}</button>
+                      <button onClick={() => setHistoryFilter('ALL')} className={`px-4 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'ALL' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>{t.parent.history.all}</button>
+                    </div>
+                    {filteredHistory.length > 0 && (() => {
+                      const tot = filteredHistory.reduce((s, i) => s + i.amount, 0);
+                      return (
+                        <span className="shrink-0 px-3 py-1.5 rounded-[10px] text-[13px] font-black ml-auto" style={{ background: tot >= 0 ? '#ecfdf5' : '#fff1f2', color: tot >= 0 ? '#15803d' : '#be123c' }}>
+                          {tot >= 0 ? '+' : ''}{tot.toFixed(2)}{curr}
+                        </span>
+                      );
+                    })()}
+                    {hasAnyHistory &&
+                      <button onClick={() => openConfirm(t.parent.history.clearTitle, t.parent.history.clearMessage, () => onClearHistory(activeChild.id), 'warning')} aria-label={t.parent.history.clearTitle} className="w-10 h-10 flex items-center justify-center bg-rose-50 text-rose-500 active:bg-rose-100 rounded-xl transition-colors shrink-0">
+                        <i className="fa-solid fa-trash-can text-xs" aria-hidden="true"></i>
+                      </button>
+                    }
+                  </div>
+                )}
               </div>
 
-              <div className="bg-transparent overflow-hidden min-h-[400px] mt-3">
+              <div className={`overflow-hidden min-h-[400px] mt-3 ${!isAndroid ? 'bg-white rounded-[18px] shadow-sm mx-4' : 'bg-transparent'}`}>
                 {historyView === 'LIST' ? (
                   <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-400 font-bold">Chargement...</div>}>
                     <VirtualHistoryList
@@ -2117,6 +2408,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                       isPenalty={isPenalty}
                       getTranslatedTitle={getTranslatedTitle}
                       emptyMessage={historyFilter === 'THIS_MONTH' ? t.parent.history.noDataMonth : t.parent.history.noData}
+                      isIOS={!isAndroid}
+                      curr={curr}
                     />
                   </React.Suspense>
                 ) : (
@@ -2166,33 +2459,340 @@ const ParentView: React.FC<ParentViewProps> = ({
             </section>}
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto py-16 animate-fade-in-up px-4">
-            <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden text-center p-8 sm:p-12 relative">
-              <div className="absolute top-0 left-0 w-full h-2 bg-indigo-500"></div>
-              <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500 text-4xl mx-auto mb-8 shadow-inner border border-indigo-100">
-                <i className="fa-solid fa-people-roof animate-bounce-short"></i>
+          isAndroid ? (
+            /* ── Android MD3 Empty State ── */
+            <div className="max-w-2xl mx-auto py-16 animate-fade-in-up px-4">
+              <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden text-center p-8 relative">
+                <div className="absolute top-0 left-0 w-full h-2 bg-indigo-600"></div>
+                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-500 text-3xl mx-auto mb-6">
+                  <i className="fa-solid fa-people-roof"></i>
+                </div>
+                <h2 className="text-xl font-medium text-slate-800 dark:text-white mb-3">{t.parent.dashboard.welcomeTitle}</h2>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mb-8 max-w-sm mx-auto leading-relaxed">{t.parent.dashboard.welcomeDesc}</p>
+                <button onClick={startAddChild} className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-4 rounded-xl font-medium active:bg-indigo-700 transition-colors">
+                  <i className="fa-solid fa-plus"></i>
+                  {t.parent.addChild}
+                </button>
               </div>
-              <h2 className="text-2xl font-black text-slate-800 mb-4">{t.parent.dashboard.welcomeTitle}</h2>
-              <p className="text-slate-500 text-lg mb-10 max-w-sm mx-auto leading-relaxed">
-                {t.parent.dashboard.welcomeDesc}
-              </p>
-              <button onClick={startAddChild}
-                className="inline-flex items-center gap-3 bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-lg uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 group"
-              >
-                <i className="fa-solid fa-plus group-hover:rotate-90 transition-transform"></i>
-                {t.parent.addChild}
-              </button>
             </div>
-          </div>
+          ) : (
+            /* ── iOS Dark Empty State ── */
+            <div style={{ minHeight: '100vh', background: isDark ? '#0f172a' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px 100px', marginTop: -20 }} className="animate-fade-in-up">
+              <div style={{ width: '100%', background: 'white', borderRadius: 32, padding: '36px 28px 32px', boxShadow: '0 8px 40px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#818cf8,#4338ca)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, boxShadow: '0 12px 36px rgba(79,70,229,0.35)' }}>
+                  <i className="fa-solid fa-people-roof" style={{ fontSize: 28, color: 'white' }} />
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: '#1e293b', letterSpacing: '-0.4px', textAlign: 'center', lineHeight: 1.25, marginBottom: 10 }}>
+                  {t.parent.dashboard.welcomeTitle}
+                </div>
+                <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600, textAlign: 'center', lineHeight: 1.65, marginBottom: 24, maxWidth: 260 }}>
+                  {t.parent.dashboard.welcomeDesc}
+                </div>
+                <div style={{ width: '100%', height: 1, background: '#f1f5f9', marginBottom: 22 }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', marginBottom: 26 }}>
+                  {[
+                    { icon: 'fa-list-check', color: '#4f46e5', bg: '#eef2ff', text: language === 'fr' ? 'Créez des missions et récompenses' : language === 'nl' ? 'Maak missies en beloningen' : 'Create missions and rewards' },
+                    { icon: 'fa-bullseye', color: '#10b981', bg: '#ecfdf5', text: language === 'fr' ? "Définissez des objectifs d'épargne" : language === 'nl' ? 'Stel spaardoelen in' : 'Set savings goals' },
+                    { icon: 'fa-shield-halved', color: '#f59e0b', bg: '#fffbeb', text: language === 'fr' ? 'Espace sécurisé par code PIN' : language === 'nl' ? 'Beveiligd met PIN-code' : 'Secured with PIN code' },
+                  ].map(f => (
+                    <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 11, background: f.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <i className={`fa-solid ${f.icon}`} style={{ fontSize: 14, color: f.color }} />
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>{f.text}</span>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={startAddChild} style={{ width: '100%', height: 56, borderRadius: 18, border: 'none', background: 'linear-gradient(135deg,#818cf8,#4338ca)', color: 'white', fontSize: 13, fontWeight: 800, letterSpacing: '0.1em', boxShadow: '0 10px 32px rgba(79,70,229,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer' }}>
+                  <i className="fa-solid fa-plus" style={{ fontSize: 14 }} />
+                  {language === 'fr' ? 'AJOUTER UN ENFANT' : language === 'nl' ? 'KIND TOEVOEGEN' : 'ADD A CHILD'}
+                </button>
+              </div>
+            </div>
+          )
         )}
       </div>
 
       {
         mainView === 'profile' && (
-          <div className="fixed inset-0 bg-slate-100 dark:bg-slate-950 z-[40] flex flex-col p-4 animate-fade-in pt-24 overflow-hidden">
-            <div className="w-full max-w-2xl mx-auto rounded-[2.5rem] bg-white dark:bg-slate-900 shadow-none sm:shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-slate-800">
-              {/* Header Premium - Hidden in Tab View as TopNav covers it */}
+          <div className="fixed inset-0 bg-slate-100 dark:bg-slate-950 z-[40] flex flex-col animate-fade-in overflow-hidden">
+            {!isAndroid ? (
+              /* ── iOS Profile Layout ── */
+              <div className="flex-1 overflow-y-auto pb-32 no-scrollbar" style={{ paddingTop: 'max(80px, calc(env(safe-area-inset-top) + 60px))' }}>
+                {settingsView !== 'LIST' ? (
+                  /* iOS child form — dark theme */
+                  (() => {
+                    const pal = FORM_PAL[formColorClass] || FORM_PAL.indigo;
+                    const inputStyle: React.CSSProperties = { background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)'}`, borderRadius: 16, height: 52, color: isDark ? 'rgba(226,232,240,0.92)' : '#1e293b', fontSize: 15, fontWeight: 700, padding: '0 16px', outline: 'none', width: '100%', WebkitAppearance: 'none', appearance: 'none' };
+                    const labelStyle: React.CSSProperties = { fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' };
+                    return (
+                      <div style={{ background: isDark ? '#0f172a' : '#f1f5f9', minHeight: '100%', padding: '0 20px 48px' }}>
+                        {/* Back button */}
+                        <button type="button" onClick={() => setSettingsView('LIST')} style={{ display: 'flex', alignItems: 'center', gap: 6, color: isDark ? 'rgba(226,232,240,0.7)' : '#64748b', fontWeight: 700, fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 20px' }}>
+                          <i className="fa-solid fa-chevron-left" style={{ fontSize: 11 }}></i>
+                          {language === 'fr' ? 'Retour' : language === 'nl' ? 'Terug' : 'Back'}
+                        </button>
+                        <form onSubmit={saveChildForm} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                          {/* Avatar hero card */}
+                          <div style={{ borderRadius: 28, padding: '28px 20px 22px', background: `linear-gradient(145deg,${pal.from},${pal.to})`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
+                            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', padding: 3, flexShrink: 0 }}>
+                              <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.15)' }}>
+                                {renderAvatar(formAvatar, "w-full h-full", formColorClass)}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <p style={{ fontSize: 20, fontWeight: 900, color: 'white', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{formName || (language === 'fr' ? 'PRÉNOM' : language === 'nl' ? 'NAAM' : 'NAME')}</p>
+                              {formBirthday && (() => { const age = new Date().getFullYear() - parseInt(formBirthday.split('-')[0]); return age > 0 ? <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', fontWeight: 600, marginTop: 4 }}>{language === 'fr' ? `${age} ans` : language === 'nl' ? `${age} jaar` : `${age} yrs`}</p> : null; })()}
+                            </div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.18)', borderRadius: 100, padding: '5px 14px' }}>
+                              <span style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>{formBirthday ? (() => { const child = data.children.find(c => c.id === (editingChildId as any)); return child ? `${child.balance.toFixed(2)} ${curr}` : `0.00 ${curr}`; })() : `0.00 ${curr}`}</span>
+                            </div>
+                          </div>
 
+                          {/* PRÉNOM */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childName}</label>
+                            <input type="text" value={formName} onChange={e => setFormName(e.target.value)} required style={inputStyle} placeholder={t.parent.childName} />
+                          </div>
+
+                          {/* DATE DE NAISSANCE */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childBirthday}</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.4fr', gap: 8 }}>
+                              <select value={formBirthday ? parseInt(formBirthday.split('-')[2]) : ''} onChange={e => { const d = e.target.value.padStart(2,'0'); const m = formBirthday ? formBirthday.split('-')[1] : '01'; const y = formBirthday ? formBirthday.split('-')[0] : new Date().getFullYear().toString(); setFormBirthday(`${y}-${m}-${d}`); }} style={inputStyle}>
+                                <option value="" disabled>J</option>
+                                {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+                              </select>
+                              <select value={formBirthday ? parseInt(formBirthday.split('-')[1]) : ''} onChange={e => { const m = e.target.value.padStart(2,'0'); const d = formBirthday ? formBirthday.split('-')[2] : '01'; const y = formBirthday ? formBirthday.split('-')[0] : new Date().getFullYear().toString(); setFormBirthday(`${y}-${m}-${d}`); }} style={inputStyle}>
+                                <option value="" disabled>M</option>
+                                {['Jan','Fev','Mar','Avr','Mai','Juin','Juil','Aou','Sep','Oct','Nov','Dec'].map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                              </select>
+                              <select value={formBirthday ? parseInt(formBirthday.split('-')[0]) : ''} onChange={e => { const y = e.target.value; const m = formBirthday ? formBirthday.split('-')[1] : '01'; const d = formBirthday ? formBirthday.split('-')[2] : '01'; setFormBirthday(`${y}-${m}-${d}`); }} style={inputStyle}>
+                                <option value="" disabled>AAAA</option>
+                                {Array.from({ length: 18 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* AVATAR */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, position: 'relative' }}>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childAvatar}</label>
+                            <button type="button" onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)} style={{ ...inputStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', height: 56, padding: '0 16px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ width: 36, height: 36 }}>{renderAvatar(formAvatar, "w-full h-full", formColorClass)}</div>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.9)' : '#334155' }}>{formAvatar}</span>
+                              </div>
+                              <i className={`fa-solid fa-chevron-down transition-transform ${isAvatarDropdownOpen ? 'rotate-180' : ''}`} style={{ fontSize: 12, color: isDark ? 'rgba(148,163,184,0.6)' : '#94a3b8' }}></i>
+                            </button>
+                            {isAvatarDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-50" onClick={() => setIsAvatarDropdownOpen(false)}></div>
+                                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8, padding: 12, background: isDark ? '#1e293b' : '#ffffff', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`, borderRadius: 18, zIndex: 60, boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.12)' }} className="animate-scale-in">
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 280, overflowY: 'auto' }} className="no-scrollbar">
+                                    {AVAILABLE_SEEDS.map(seed => (
+                                      <button key={seed} type="button" onClick={() => { setFormAvatar(seed); setIsAvatarDropdownOpen(false); }} style={{ border: formAvatar === seed ? `2.5px solid ${pal.from}` : '2px solid transparent', borderRadius: 14, padding: 4, background: 'transparent', cursor: 'pointer', boxShadow: formAvatar === seed ? `0 0 0 1px ${pal.from}44` : 'none', transition: 'all 0.15s' }}>
+                                        <div style={{ width: 44, height: 44 }}>{renderAvatar(seed, "w-full h-full", formColorClass)}</div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          {/* COULEUR FAVORITE */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childColor}</label>
+                            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: 18, padding: '16px 12px' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12 }}>
+                                {AVAILABLE_COLORS.map(color => {
+                                  const colorVal = FORM_PAL[color]?.from || '#818cf8';
+                                  const isActive = formColorClass === color;
+                                  return (
+                                    <button key={color} type="button" onClick={() => setFormColorClass(color)} title={(t.colors as any)[color]} style={{ aspectRatio: '1', borderRadius: '50%', background: colorVal, cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', transform: isActive ? 'scale(1.18)' : 'scale(1)', boxShadow: isActive ? `0 0 0 3px ${isDark ? '#0f172a' : '#f1f5f9'}, 0 0 0 5px ${colorVal}, 0 4px 16px ${colorVal}66` : `0 2px 8px ${colorVal}44`, opacity: isActive ? 1 : 0.55 }}>
+                                      {isActive && <i className="fa-solid fa-check" style={{ fontSize: 11, color: 'white' }}></i>}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <p style={{ textAlign: 'center', fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.6)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 12 }}>{(t.colors as any)[formColorClass]}</p>
+                            </div>
+                          </div>
+
+                          {/* ENREGISTRER */}
+                          <button type="submit" style={{ width: '100%', height: 56, borderRadius: 20, background: `linear-gradient(135deg,${pal.from},${pal.to})`, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 12, fontWeight: 900, color: 'white', letterSpacing: '0.15em', textTransform: 'uppercase', boxShadow: `0 8px 32px ${pal.from}55`, transition: 'all 0.2s' }}>
+                            <i className="fa-solid fa-check" style={{ fontSize: 14 }}></i>
+                            {language === 'fr' ? 'ENREGISTRER' : language === 'nl' ? 'OPSLAAN' : 'SAVE'}
+                          </button>
+                        </form>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  /* iOS profile list view */
+                  <div className="px-4 max-w-2xl mx-auto space-y-5 pb-6">
+                    {/* Parent Space gradient card */}
+                    <div className="relative overflow-hidden rounded-[24px] p-6" style={{ background: 'linear-gradient(135deg,#818cf8,#4338ca)' }}>
+                      <div className="absolute top-[-40px] right-[-40px] w-[140px] h-[140px] rounded-full pointer-events-none" style={{ background: 'rgba(255,255,255,0.08)' }}></div>
+                      <div className="relative z-10">
+                        <p className="text-[18px] font-black text-white">Parent Space</p>
+                        </div>
+                      </div>
+
+                    {/* FAMILY section */}
+                    <div>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.12em] mb-2 px-1">{language === 'fr' ? 'FAMILLE' : language === 'nl' ? 'FAMILIE' : 'FAMILY'}</p>
+                      <div className="bg-white dark:bg-slate-900 rounded-[20px] overflow-hidden" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+                        {data.children.map((child, i) => {
+                          const goalEmojis: Record<string, string> = { 'fa-bicycle': '🚲', 'fa-gamepad': '🎮', 'fa-cube': '🧱', 'fa-rocket': '🚀', 'fa-headphones': '🎧', 'fa-mobile': '📱', 'fa-laptop': '💻', 'fa-book': '📚', 'fa-guitar': '🎸', 'fa-futbol': '⚽' };
+                          return (
+                            <div key={child.id} className="flex items-center" style={{ borderBottom: i < data.children.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+                              <button type="button" onClick={() => startEditChild(child)} className="flex-1 flex items-center gap-3 px-4 py-3 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors min-w-0">
+                                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-slate-100 p-0.5">{renderAvatar(child.avatar, "w-full h-full", child.colorClass)}</div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[14px] font-bold text-[#1e293b] dark:text-white">{child.name}</p>
+                                  <p className="text-[11px] text-slate-400 font-semibold">{child.balance.toFixed(2)}{curr}</p>
+                                </div>
+                                <div className="flex gap-1.5 mr-2">
+                                  {(child.goals || []).slice(0, 3).map(g => (
+                                    <span key={g.id} className="text-base">{goalEmojis[g.icon] || '⭐'}</span>
+                                  ))}
+                                </div>
+                                <i className="fa-solid fa-chevron-right text-[11px] text-slate-300 shrink-0"></i>
+                              </button>
+                              <button type="button" onClick={() => openConfirm(t.parent.deleteTitle, t.parent.deleteMessage, () => onDeleteChild(child.id), 'danger')} aria-label={`${language === 'fr' ? 'Supprimer' : language === 'nl' ? 'Verwijderen' : 'Delete'} ${child.name}`} className="w-10 h-10 rounded-xl bg-rose-50 text-rose-400 flex items-center justify-center active:bg-rose-100 transition-colors shrink-0 mr-3">
+                                <i className="fa-solid fa-trash-can text-xs" aria-hidden="true"></i>
+                              </button>
+                            </div>
+                          );
+                        })}
+                        <button type="button" onClick={startAddChild} className="w-full flex items-center gap-3 px-4 py-3.5 border-t border-slate-50 dark:border-slate-800 active:bg-slate-50 dark:active:bg-slate-800 transition-colors">
+                          <div className="w-10 h-10 rounded-[12px] flex items-center justify-center" style={{ background: '#eef2ff' }}>
+                            <i className="fa-solid fa-plus text-[14px]" style={{ color: '#4f46e5' }}></i>
+                          </div>
+                          <span className="text-[13px] font-bold" style={{ color: '#4f46e5' }}>{t.parent.addChild}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* SETTINGS section */}
+                    <div>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.12em] mb-2 px-1">{language === 'fr' ? 'PARAMÈTRES' : language === 'nl' ? 'INSTELLINGEN' : 'SETTINGS'}</p>
+                      <div className="bg-white dark:bg-slate-900 rounded-[20px] overflow-hidden" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+                        {/* Notifications */}
+                        <div className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: '1px solid #f8fafc' }}>
+                          <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#fff7ed' }}>
+                            <i className="fa-solid fa-bell text-[13px]" style={{ color: '#c2410c' }}></i>
+                          </div>
+                          <div className="flex-1 text-[14px] font-semibold text-[#1e293b] dark:text-white">{t.parent.account.enableNotifications}</div>
+                          <button onClick={async () => {
+                            if (notificationsAllowed) { notifications.setMuted(true); setNotificationsAllowed(false); return; }
+                            const isMuted = notifications.isMuted();
+                            if (isMuted) { notifications.setMuted(false); const hasSysPerm = await notifications.checkPermission(); if (hasSysPerm) { setNotificationsAllowed(true); return; } }
+                            try { const granted = await notifications.requestPermission(); if (granted) { notifications.setMuted(false); setNotificationsAllowed(true); await notifications.send('🎉 Notifications activées !', 'Vous recevrez désormais des alertes pour les missions et demandes de vos enfants.'); } else { openPrompt({ title: 'Notifications', message: t.parent.messages.notificationsDisabledMessage, type: 'warning', onConfirm: () => {} }); } } catch { openPrompt({ title: 'Notifications', message: t.parent.messages.notificationsErrorMessage, type: 'warning', onConfirm: () => {} }); }
+                          }} className={`w-12 h-6 rounded-full relative transition-all shrink-0 ${notificationsAllowed ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${notificationsAllowed ? 'right-1' : 'left-1'}`}></div>
+                          </button>
+                        </div>
+                        {/* Sound */}
+                        <div className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: '1px solid #f8fafc' }}>
+                          <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#f0fdf4' }}>
+                            <i className="fa-solid fa-volume-high text-[13px]" style={{ color: '#15803d' }}></i>
+                          </div>
+                          <div className="flex-1 text-[14px] font-semibold text-[#1e293b] dark:text-white">{t.parent.account.soundEffects}</div>
+                          <button onClick={() => onToggleSound(!data.soundEnabled)} className={`w-12 h-6 rounded-full relative transition-all shrink-0 ${data.soundEnabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${data.soundEnabled ? 'right-1' : 'left-1'}`}></div>
+                          </button>
+                        </div>
+                        {/* Language */}
+                        <button type="button" onClick={() => onSetLanguage(language === 'fr' ? 'nl' : language === 'nl' ? 'en' : 'fr')} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors" style={{ borderBottom: '1px solid #f8fafc' }}>
+                          <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#f0fdf4' }}>
+                            <i className="fa-solid fa-language text-[13px]" style={{ color: '#15803d' }}></i>
+                          </div>
+                          <div className="flex-1 text-[14px] font-semibold text-[#1e293b] dark:text-white">{language === 'fr' ? 'Langue' : language === 'nl' ? 'Taal' : 'Language'}</div>
+                          <span className="text-[12px] text-slate-400 font-semibold mr-2">{language.toUpperCase()}</span>
+                          <i className="fa-solid fa-chevron-right text-[11px] text-slate-300 shrink-0"></i>
+                        </button>
+                        {/* Currency */}
+                        <div className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: '1px solid #f8fafc' }}>
+                          <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#fffbeb' }}>
+                            <i className="fa-solid fa-coins text-[13px]" style={{ color: '#b45309' }}></i>
+                          </div>
+                          <div className="flex-1 text-[14px] font-semibold text-[#1e293b] dark:text-white">{language === 'fr' ? 'Devise' : language === 'nl' ? 'Valuta' : 'Currency'}</div>
+                          <select value={CURRENCIES.find(c => c.symbol === curr)?.code || 'EUR'} onChange={e => { const c = CURRENCIES.find(x => x.code === e.target.value); if (c) onSetCurrency(c.symbol); }} className="bg-transparent text-[12px] text-slate-400 font-semibold outline-none cursor-pointer">
+                            {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>)}
+                          </select>
+                        </div>
+                        {/* Wallet Limit */}
+                        <button type="button" onClick={() => openPrompt({ title: language === 'fr' ? 'Limite des cagnottes' : language === 'nl' ? 'Spaarbeperking' : 'Savings Limit', message: language === 'fr' ? 'Montant maximum du portefeuille (0 pour illimité, max 10 000)' : language === 'nl' ? 'Maximumbedrag in portemonnee (0 voor onbeperkt, max 10.000)' : 'Maximum wallet balance (0 for unlimited, max 10,000)', type: 'input', isNumeric: true, placeholder: (data.maxBalance || 100).toString(), onConfirm: (val) => { const n = parseFloat(val || ''); if (!isNaN(n) && n >= 0 && n <= 10000) { onUpdateMaxBalance?.(n); } } })} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors" style={{ borderBottom: '1px solid #f8fafc' }}>
+                          <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#f1f5f9' }}>
+                            <i className="fa-solid fa-gauge-high text-[13px]" style={{ color: '#64748b' }}></i>
+                          </div>
+                          <div className="flex-1 text-[14px] font-semibold text-[#1e293b] dark:text-white">{language === 'fr' ? 'Limite du portefeuille' : language === 'nl' ? 'Portemonnee limiet' : 'Wallet Limit'}</div>
+                          <span className="text-[12px] text-slate-400 font-semibold mr-2">{data.maxBalance || 100}{curr}</span>
+                          <i className="fa-solid fa-chevron-right text-[11px] text-slate-300 shrink-0"></i>
+                        </button>
+                        {/* PIN & Security */}
+                        <button type="button" onClick={handleResetPin} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors" style={{ borderBottom: '1px solid #f8fafc' }}>
+                          <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#faf5ff' }}>
+                            <i className="fa-solid fa-shield text-[13px]" style={{ color: '#7e22ce' }}></i>
+                          </div>
+                          <div className="flex-1 text-[14px] font-semibold text-[#1e293b] dark:text-white">{language === 'fr' ? 'PIN & Sécurité' : language === 'nl' ? 'PIN & Beveiliging' : 'PIN & Security'}</div>
+                          <i className="fa-solid fa-chevron-right text-[11px] text-slate-300 shrink-0"></i>
+                        </button>
+                        {/* Koiny Premium */}
+                        <button type="button" onClick={() => setIsSubscriptionModalOpen(true)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors" style={{ borderBottom: '1px solid #f8fafc' }}>
+                          <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#fdf4ff' }}>
+                            <i className="fa-solid fa-crown text-[13px]" style={{ color: '#9333ea' }}></i>
+                          </div>
+                          <div className="flex-1 text-[14px] font-semibold text-[#1e293b] dark:text-white">Koiny Premium</div>
+                          {data.isPremium && <span className="text-[11px] text-emerald-600 font-black mr-2">Active ✓</span>}
+                          <i className="fa-solid fa-chevron-right text-[11px] text-slate-300 shrink-0"></i>
+                        </button>
+                        {/* Help */}
+                        <button type="button" onClick={() => setShowHelp(true)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors" style={{ borderBottom: '1px solid #f8fafc' }}>
+                          <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
+                            <i className="fa-solid fa-book-open text-[13px]" style={{ color: '#4f46e5' }}></i>
+                          </div>
+                          <div className="flex-1 text-[14px] font-semibold text-[#1e293b] dark:text-white">{t.common.userGuide}</div>
+                          <i className="fa-solid fa-chevron-right text-[11px] text-slate-300 shrink-0"></i>
+                        </button>
+                        {/* Contact Support */}
+                        <button type="button" onClick={() => window.open('mailto:hello@koiny.app', '_blank')} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors">
+                          <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
+                            <i className="fa-solid fa-envelope text-[13px]" style={{ color: '#4f46e5' }}></i>
+                          </div>
+                          <div className="flex-1 text-[14px] font-semibold text-[#1e293b] dark:text-white">{language === 'fr' ? 'Contacter le support' : language === 'nl' ? 'Contact opnemen' : 'Contact Support'}</div>
+                          <i className="fa-solid fa-chevron-right text-[11px] text-slate-300 shrink-0"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Sign Out */}
+                    <button type="button" onClick={async () => await onSignOut()} className="w-full h-12 rounded-[16px] font-black text-[13px] tracking-wide" style={{ background: '#fff1f2', color: '#be123c' }}>
+                      {language === 'fr' ? 'SE DÉCONNECTER' : language === 'nl' ? 'AFMELDEN' : 'SIGN OUT'}
+                    </button>
+
+                    {/* Delete account */}
+                    <button type="button" onClick={() => openConfirm(t.parent.account.deleteAccountTitle, t.parent.account.deleteAccountMessage, () => onDeleteAccount(), 'danger')} className="w-full flex items-center justify-center gap-2 py-3 text-rose-500 font-bold text-sm">
+                      <i className="fa-solid fa-trash-can text-xs"></i>
+                      {t.parent.account.deleteAccount}
+                    </button>
+
+                    {/* Legal */}
+                    <div className="text-center pb-2">
+                      <button type="button" onClick={() => { const event = new CustomEvent('openLegalModal'); window.dispatchEvent(event); }} className="text-[11px] font-bold text-slate-400 underline decoration-slate-200">
+                        {t.legal.link}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── Android Profile Layout (existing) ── */
+              <div className="p-4 pt-24 flex flex-col overflow-hidden flex-1">
+                <div className="w-full max-w-2xl mx-auto rounded-[2.5rem] bg-white dark:bg-slate-900 shadow-none sm:shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-slate-800">
               {/* Segmented Control iOS Style */}
               <div className="px-6 py-4 bg-white dark:bg-slate-900 shrink-0">
                 <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
@@ -2563,7 +3163,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         >
                           {CURRENCIES.map(c => (
                             <option key={c.code} value={c.code}>
-                              {c.symbol} — {c.code}
+                              {c.symbol} {c.code}
                             </option>
                           ))}
                         </select>
@@ -2713,8 +3313,10 @@ const ParentView: React.FC<ParentViewProps> = ({
               </div>
             </div>
           </div>
-        )
-      }
+        )}
+      </div>
+    )
+  }
 
       {
         transactionType && activeChild && (
@@ -3219,6 +3821,220 @@ const ParentView: React.FC<ParentViewProps> = ({
         )
       )}
 
+      {/* ── iOS Add Mission Bottom Sheet ── */}
+      {!isAndroid && showAddMissionSheet && activeChild && (
+        <div className="fixed inset-0 z-[200] flex items-end" onClick={() => setShowAddMissionSheet(false)}>
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[6px]" />
+          <div className="relative w-full bg-white dark:bg-slate-900 rounded-t-[28px] shadow-[0_-20px_60px_rgba(0,0,0,0.2)] animate-slide-up"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
+            onClick={e => e.stopPropagation()}>
+            {/* Handle bar */}
+            <div className="flex justify-center pt-3 pb-4">
+              <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full" />
+            </div>
+            <div className="px-5">
+              {/* Title */}
+              <div className="mb-5">
+                <h3 className="text-[15px] font-black text-slate-800 dark:text-white tracking-tight">
+                  {language === 'fr' ? 'NOUVELLE MISSION' : language === 'nl' ? 'NIEUWE MISSIE' : 'NEW MISSION'}
+                </h3>
+                <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
+                  {language === 'fr' ? `Pour ${activeChild.name}` : language === 'nl' ? `Voor ${activeChild.name}` : `For ${activeChild.name}`}
+                </p>
+              </div>
+
+              {/* Template chips */}
+              <div className="flex flex-wrap gap-2 mb-5">
+                {[
+                  { title: t.parent.templates.room, reward: 2 },
+                  { title: t.parent.templates.table, reward: 1 },
+                  { title: language === 'fr' ? 'Sortir les poubelles' : language === 'nl' ? 'Vuilnis buiten zetten' : 'Take out trash', reward: 2 },
+                  { title: language === 'fr' ? 'Promener le chien' : language === 'nl' ? 'Hond uitlaten' : 'Walk the dog', reward: 3 },
+                ].map(tmpl => (
+                  <button key={tmpl.title}
+                    onClick={() => { setSheetTitle(tmpl.title); setSheetAmount(String(tmpl.reward)); }}
+                    className="px-3 py-1.5 rounded-full text-[11px] font-bold transition-all active:scale-95"
+                    style={{ background: sheetTitle === tmpl.title ? '#4f46e5' : '#eef2ff', color: sheetTitle === tmpl.title ? 'white' : '#4f46e5' }}
+                  >{tmpl.title}</button>
+                ))}
+              </div>
+
+              {/* Title input */}
+              <div className="mb-3">
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em] mb-1.5 block">{t.parent.formTitleLabel}</label>
+                <input type="text" value={sheetTitle} onChange={e => setSheetTitle(e.target.value)}
+                  placeholder={t.parent.formTitlePlaceholder}
+                  maxLength={100}
+                  className="w-full h-12 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 text-[14px] font-semibold text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-all"
+                />
+              </div>
+
+              {/* Amount input */}
+              <div className="mb-6">
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em] mb-1.5 block">
+                  {language === 'fr' ? `RÉCOMPENSE (${curr})` : language === 'nl' ? `BELONING (${curr})` : `REWARD (${curr})`}
+                </label>
+                <input type="number" inputMode="decimal" step="0.5" min="0.5"
+                  max={data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500)}
+                  value={sheetAmount}
+                  onChange={e => {
+                    const v = e.target.value;
+                    const missionMax = data.maxBalance === 0 || !data.maxBalance ? 500 : Math.min(data.maxBalance, 500);
+                    if (v === '' || (parseFloat(v) <= missionMax && v.length <= 10)) setSheetAmount(v);
+                  }}
+                  placeholder="ex: 3"
+                  className="w-full h-12 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 text-[14px] font-semibold text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-all"
+                />
+              </div>
+
+              {/* Submit */}
+              {(() => {
+                const titleOk = sheetTitle.trim().length > 0 && sheetTitle.trim().length <= 100;
+                const amtOk = parseFloat(sheetAmount) > 0 && !isNaN(parseFloat(sheetAmount));
+                const valid = titleOk && amtOk;
+                const premiumOk = data.isPremium || !activeChild || activeChild.missions.filter(m => m.status === 'ACTIVE').length < 2;
+                return (
+                  <button
+                    onClick={() => {
+                      if (!valid) return;
+                      if (!premiumOk) {
+                        setShowAddMissionSheet(false);
+                        openPrompt({
+                          title: t.parent.premium.limitTitle || 'Koiny Premium',
+                          message: t.parent.premium.missionsLimitMessage || 'Limite de missions atteinte.',
+                          type: 'info',
+                          onConfirm: () => setIsSubscriptionModalOpen(true)
+                        });
+                        return;
+                      }
+                      onAddMission(activeChild.id, sheetTitle.trim(), parseFloat(sheetAmount));
+                      setShowAddMissionSheet(false);
+                    }}
+                    className="w-full h-14 rounded-2xl text-[14px] font-black tracking-[0.05em] transition-all active:scale-[0.98]"
+                    style={{
+                      background: valid ? 'linear-gradient(135deg,#818cf8,#4338ca)' : '#e2e8f0',
+                      color: valid ? 'white' : '#94a3b8',
+                      boxShadow: valid ? '0 8px 24px rgba(79,70,229,0.35)' : 'none',
+                    }}
+                  >
+                    {language === 'fr' ? 'CRÉER LA MISSION' : language === 'nl' ? 'MISSIE AANMAKEN' : 'CREATE MISSION'}
+                  </button>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* iOS Dashboard Goal Sheet */}
+      {!isAndroid && dashGoalSheetOpen && (() => {
+        const DASH_GOAL_ICONS: { key: string; emoji: string; label: string }[] = [
+          { key: 'gift',    emoji: '🎁', label: 'Cadeau' },
+          { key: 'gamepad', emoji: '🎮', label: 'Jeu' },
+          { key: 'bike',    emoji: '🚲', label: 'Vélo' },
+          { key: 'plane',   emoji: '✈️', label: 'Voyage' },
+          { key: 'book',    emoji: '📚', label: 'Livre' },
+          { key: 'music',   emoji: '🎵', label: 'Musique' },
+          { key: 'cart',    emoji: '🛒', label: 'Achat' },
+          { key: 'shirt',   emoji: '👕', label: 'Vêtement' },
+          { key: 'futbol',  emoji: '⚽', label: 'Sport' },
+          { key: 'trophy',  emoji: '🏆', label: 'Trophée' },
+        ];
+        const pal = FORM_PAL[activeChild?.colorClass || 'indigo'] || FORM_PAL.indigo;
+        const isEditing = !!dashGoalId;
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'flex-end' }}>
+            {/* Backdrop */}
+            <div onClick={() => setDashGoalSheetOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)' }} />
+            {/* Sheet */}
+            <div style={{ position: 'relative', zIndex: 1, width: '100%', background: isDark ? '#1e293b' : '#ffffff', borderRadius: '28px 28px 0 0', padding: '0 20px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)', boxShadow: isDark ? '0 -20px 60px rgba(0,0,0,0.4)' : '0 -20px 60px rgba(0,0,0,0.12)' }}>
+              {/* Handle */}
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 16 }}>
+                <div style={{ width: 40, height: 4, borderRadius: 2, background: isDark ? 'rgba(255,255,255,0.15)' : '#e2e8f0' }} />
+              </div>
+              {/* Title */}
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontSize: 18, fontWeight: 900, color: isDark ? 'rgba(226,232,240,0.95)' : '#1e293b', letterSpacing: '-0.4px' }}>
+                  {isEditing
+                    ? (language === 'fr' ? 'Modifier l\'objectif' : language === 'nl' ? 'Doel bewerken' : 'Edit Goal')
+                    : (language === 'fr' ? 'Nouvel objectif' : language === 'nl' ? 'Nieuw doel' : 'New Goal')}
+                </p>
+              </div>
+              {/* Icon picker */}
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>
+                  {language === 'fr' ? 'Icône' : language === 'nl' ? 'Pictogram' : 'Icon'}
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {DASH_GOAL_ICONS.map(({ key, emoji }) => (
+                    <button key={key} type="button" onClick={() => setDashGoalIcon(key)} style={{
+                      width: 44, height: 44, borderRadius: 12, fontSize: 20, border: 'none', cursor: 'pointer',
+                      background: dashGoalIcon === key ? `${pal.from}28` : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                      outline: dashGoalIcon === key ? `2px solid ${pal.from}` : '2px solid transparent',
+                      transition: 'all 0.15s',
+                    }}>{emoji}</button>
+                  ))}
+                </div>
+              </div>
+              {/* Name input */}
+              <div style={{ marginBottom: 12 }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+                  {language === 'fr' ? 'Nom' : language === 'nl' ? 'Naam' : 'Name'}
+                </p>
+                <input
+                  type="text"
+                  value={dashGoalName}
+                  onChange={e => setDashGoalName(e.target.value.slice(0, 50))}
+                  placeholder={language === 'fr' ? 'Ex: Nouveau vélo' : language === 'nl' ? 'Bijv: Nieuwe fiets' : 'E.g. New bicycle'}
+                  maxLength={50}
+                  style={{ width: '100%', boxSizing: 'border-box', background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`, borderRadius: 14, padding: '14px 16px', fontSize: 15, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.95)' : '#1e293b', outline: 'none', WebkitAppearance: 'none' }}
+                />
+              </div>
+              {/* Target input */}
+              <div style={{ marginBottom: 24 }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+                  {language === 'fr' ? `Montant cible (${curr})` : language === 'nl' ? `Doelbedrag (${curr})` : `Target amount (${curr})`}
+                </p>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={dashGoalTarget}
+                    onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 1000) return; setDashGoalTarget(e.target.value); }}
+                    placeholder="0"
+                    style={{ width: '100%', boxSizing: 'border-box', background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`, borderRadius: 14, padding: '14px 16px 14px 16px', paddingRight: 48, fontSize: 15, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.95)' : '#1e293b', outline: 'none', WebkitAppearance: 'none' }}
+                  />
+                  <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 800, color: isDark ? 'rgba(148,163,184,0.5)' : '#94a3b8' }}>{curr}</span>
+                </div>
+              </div>
+              {/* Buttons */}
+              <div style={{ display: 'grid', gridTemplateColumns: isEditing ? '1fr 1fr' : '1fr', gap: 10, marginBottom: 8 }}>
+                {isEditing && (
+                  <button type="button" onClick={() => dashGoalId && deleteDashGoal(dashGoalId)} style={{
+                    height: 52, borderRadius: 14, border: 'none', cursor: 'pointer',
+                    background: 'rgba(244,63,94,0.12)', color: '#f87171',
+                    fontSize: 13, fontWeight: 800, letterSpacing: '0.04em',
+                  }}>
+                    <i className="fa-solid fa-trash-can" style={{ marginRight: 6 }} />
+                    {language === 'fr' ? 'Supprimer' : language === 'nl' ? 'Verwijderen' : 'Delete'}
+                  </button>
+                )}
+                <button type="button" onClick={saveDashGoal} disabled={!dashGoalName.trim() || !dashGoalTarget} style={{
+                  height: 52, borderRadius: 14, border: 'none', cursor: 'pointer',
+                  background: dashGoalName.trim() && dashGoalTarget ? `linear-gradient(135deg,${pal.from},${pal.to})` : 'rgba(255,255,255,0.08)',
+                  color: dashGoalName.trim() && dashGoalTarget ? 'white' : 'rgba(148,163,184,0.5)',
+                  fontSize: 13, fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  boxShadow: dashGoalName.trim() && dashGoalTarget ? `0 4px 20px ${pal.from}44` : 'none',
+                  transition: 'all 0.2s',
+                }}>
+                  {language === 'fr' ? 'Enregistrer' : language === 'nl' ? 'Opslaan' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <BottomNavigation
         activeTab={mainView}
         onTabChange={(tab) => setMainView(tab as any)}
@@ -3227,10 +4043,16 @@ const ParentView: React.FC<ParentViewProps> = ({
             startAddChild();
             return;
           }
-          setMainView('dashboard');
-          setTimeout(() => {
-            missionFormRef.current?.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
+          if (!isAndroid) {
+            setSheetTitle('');
+            setSheetAmount('');
+            setShowAddMissionSheet(true);
+          } else {
+            setMainView('dashboard');
+            setTimeout(() => {
+              missionFormRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }
         }}
         pendingCount={totalPendingCount}
         t={t}
