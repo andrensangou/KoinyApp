@@ -2612,45 +2612,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                             </div>
                           </div>
 
-                          {/* OBJECTIFS */}
-                          <div ref={formGoalsRef} style={{ background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`, borderRadius: 18, overflow: 'hidden' }}>
-                            <div style={{ padding: '14px 16px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{ width: 32, height: 32, borderRadius: 10, background: `${pal.from}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <i className="fa-solid fa-bullseye-arrow" style={{ fontSize: 13, color: pal.from }}></i>
-                                </div>
-                                <span style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childGoalsTitle}</span>
-                              </div>
-                              <button type="button" onClick={handleAddGoalToForm} style={{ background: `${pal.from}22`, border: 'none', borderRadius: 10, padding: '6px 12px', fontSize: 10, fontWeight: 900, color: pal.from, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                                <i className="fa-solid fa-plus" style={{ fontSize: 10 }}></i> {t.common.add}
-                              </button>
-                            </div>
-                            <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 80 }}>
-                              {formGoals.length === 0 ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8, color: isDark ? 'rgba(148,163,184,0.3)' : '#cbd5e1' }}>
-                                  <i className="fa-solid fa-bullseye" style={{ fontSize: 22 }}></i>
-                                  <p style={{ fontSize: 11, fontStyle: 'italic', fontWeight: 600 }}>{t.parent.goalsEmpty.noneInForm}</p>
-                                </div>
-                              ) : formGoals.map((goal) => (
-                                <div key={goal.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', borderRadius: 14, border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` }} className="animate-scale-in">
-                                  <div style={{ width: 36, height: 36, borderRadius: 10, background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8', flexShrink: 0 }}>
-                                    <i className={getIcon(goal.icon, 'fa-solid fa-bullseye')} style={{ fontSize: 13 }}></i>
-                                  </div>
-                                  <input type="text" value={goal.name} onChange={e => handleUpdateGoal(goal.id, { name: e.target.value })} placeholder={t.parent.childGoalName} style={{ flex: 1, minWidth: 80, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.9)' : '#334155' }} />
-                                  <div style={{ position: 'relative' }}>
-                                    <input type="number" value={goal.target || ''} onChange={e => handleUpdateGoal(goal.id, { target: parseFloat(e.target.value) || 0 })} placeholder="0" style={{ width: 72, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.9)' : '#334155', textAlign: 'right', paddingRight: 18 }} />
-                                    <span style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: isDark ? 'rgba(148,163,184,0.5)' : '#94a3b8', pointerEvents: 'none', fontWeight: 700 }}>{curr}</span>
-                                  </div>
-                                  <button type="button" onClick={() => handleRemoveGoal(goal.id)} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(244,63,94,0.12)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f43f5e', flexShrink: 0 }}>
-                                    <i className="fa-solid fa-trash-can" style={{ fontSize: 11 }}></i>
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
                           {/* ENREGISTRER */}
-                          <button type="submit" disabled={formGoals.some(g => !g.name || !g.target || g.target <= 0)} style={{ width: '100%', height: 56, borderRadius: 20, background: `linear-gradient(135deg,${pal.from},${pal.to})`, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 12, fontWeight: 900, color: 'white', letterSpacing: '0.15em', textTransform: 'uppercase', boxShadow: `0 8px 32px ${pal.from}55`, opacity: formGoals.some(g => !g.name || !g.target || g.target <= 0) ? 0.5 : 1, transition: 'all 0.2s' }}>
+                          <button type="submit" style={{ width: '100%', height: 56, borderRadius: 20, background: `linear-gradient(135deg,${pal.from},${pal.to})`, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 12, fontWeight: 900, color: 'white', letterSpacing: '0.15em', textTransform: 'uppercase', boxShadow: `0 8px 32px ${pal.from}55`, transition: 'all 0.2s' }}>
                             <i className="fa-solid fa-check" style={{ fontSize: 14 }}></i>
                             {language === 'fr' ? 'ENREGISTRER' : language === 'nl' ? 'OPSLAAN' : 'SAVE'}
                           </button>
