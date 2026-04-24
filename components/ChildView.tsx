@@ -22,6 +22,20 @@ interface ChildViewProps {
   onPurchaseGoal?: (goal: Goal) => void;
 }
 
+const CHILD_PAL: Record<string, { from: string; to: string; muted: string }> = {
+  indigo:  { from: '#818cf8', to: '#4338ca', muted: '#c7d2fe' },
+  emerald: { from: '#34d399', to: '#059669', muted: '#6ee7b7' },
+  rose:    { from: '#fb7185', to: '#be123c', muted: '#fda4af' },
+  amber:   { from: '#fbbf24', to: '#d97706', muted: '#fcd34d' },
+  blue:    { from: '#60a5fa', to: '#2563eb', muted: '#93c5fd' },
+  pink:    { from: '#f472b6', to: '#db2777', muted: '#f9a8d4' },
+  violet:  { from: '#a78bfa', to: '#7c3aed', muted: '#c4b5fd' },
+  purple:  { from: '#c084fc', to: '#9333ea', muted: '#d8b4fe' },
+  teal:    { from: '#2dd4bf', to: '#0d9488', muted: '#5eead4' },
+  cyan:    { from: '#22d3ee', to: '#0891b2', muted: '#67e8f9' },
+  orange:  { from: '#fb923c', to: '#ea580c', muted: '#fdba74' },
+};
+
 const renderAvatar = (avatar: string, sizeClass: string = "w-full h-full", colorClass: string = "indigo") => {
   if (!avatar) return <i className="fa-solid fa-user text-slate-300 text-2xl"></i>;
   if (avatar.startsWith('fa-')) {
@@ -161,8 +175,8 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
   const bgGradient = `from-${data.colorClass}-600 to-${data.colorClass}-400`;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 flex justify-center font-sans transition-colors duration-500">
-      <div className={`w-full ${isAndroid ? 'bg-white dark:bg-slate-900 min-h-screen relative overflow-hidden pb-20' : 'max-w-lg md:max-w-7xl bg-white dark:bg-slate-900 min-h-screen relative shadow-2xl sm:my-4 sm:rounded-[40px] sm:min-h-[calc(100vh-2rem)] sm:h-fit overflow-hidden pb-20 border border-slate-200 dark:border-slate-800 transition-colors duration-500'}`}>
+    <div className={`min-h-screen flex justify-center font-sans transition-colors duration-500 ${isAndroid ? 'bg-white dark:bg-slate-950' : ''}`} style={!isAndroid ? { background: '#0f172a' } : undefined}>
+      <div className={`w-full ${isAndroid ? 'bg-white dark:bg-slate-900 min-h-screen relative overflow-hidden pb-20' : 'max-w-lg md:max-w-7xl min-h-screen relative overflow-hidden pb-20'}`} style={!isAndroid ? { background: '#0f172a' } : undefined}>
 
         {balanceDiff && (
           <div className="fixed inset-0 flex items-center justify-center z-[70] pointer-events-none p-6">
@@ -301,7 +315,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
           </div>
         )}
 
-        <div className={`relative z-20 px-4 sm:px-6 max-w-7xl mx-auto w-full ${isAndroid ? '-mt-10 bg-white dark:bg-slate-900 rounded-t-3xl pt-6' : '-mt-12'}`}>
+        <div className={`relative z-20 max-w-7xl mx-auto w-full ${isAndroid ? 'px-4 sm:px-6 -mt-10 bg-white dark:bg-slate-900 rounded-t-3xl pt-6' : 'px-[18px]'}`} style={!isAndroid ? { background: '#1e293b', borderRadius: '30px 30px 0 0', marginTop: -30, paddingTop: 24, minHeight: '60vh' } : undefined}>
           {latestPenalty && (
             isAndroid ? (
               /* ── Android MD3 Penalty Alert ── */
@@ -323,22 +337,22 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                 </div>
               </div>
             ) : (
-              /* ── iOS Penalty Alert ── */
+              /* ── iOS Penalty Alert — dark theme ── */
               <div className="mb-6 animate-pop-in max-w-2xl mx-auto">
-                <div className="bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-900/50 rounded-[2.5rem] p-5 shadow-xl relative overflow-hidden transition-colors duration-500">
-                  <div className="absolute top-0 right-0 p-3">
-                    <button onClick={() => setAcknowledgedPenaltyId(latestPenalty.id)} aria-label={language === 'fr' ? 'Fermer l\'alerte' : 'Dismiss alert'} className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">
-                      <i className="fa-solid fa-check" aria-hidden="true"></i>
+                <div style={{ background: 'rgba(251,191,36,0.1)', border: '1.5px solid rgba(251,191,36,0.2)', borderRadius: 20, padding: '16px 18px', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, right: 0, padding: 10 }}>
+                    <button onClick={() => setAcknowledgedPenaltyId(latestPenalty.id)} aria-label={language === 'fr' ? 'Fermer l\'alerte' : 'Dismiss alert'} style={{ width: 28, height: 28, background: 'rgba(251,191,36,0.15)', border: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fbbf24' }}>
+                      <i className="fa-solid fa-check" style={{ fontSize: 11 }} aria-hidden="true"></i>
                     </button>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-2xl shadow-lg animate-bounce-short">
-                      <i className="fa-solid fa-gavel"></i>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ width: 44, height: 44, background: 'rgba(245,158,11,0.2)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <i className="fa-solid fa-gavel" style={{ fontSize: 18, color: '#fbbf24' }}></i>
                     </div>
-                    <div className="flex-1 pr-6">
-                      <h4 className="font-black text-amber-800 dark:text-amber-400 text-sm uppercase tracking-wider mb-1">{t.child.penaltyAlertTitle}</h4>
-                      <p className="text-amber-700 dark:text-amber-500 text-xs font-bold leading-relaxed">
-                        {getTranslatedTitle(latestPenalty.title, language)} : <span className="underline">-{Math.abs(latestPenalty.amount)}{curr}</span>.
+                    <div style={{ flex: 1, paddingRight: 24 }}>
+                      <h4 style={{ fontWeight: 800, color: '#fbbf24', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>{t.child.penaltyAlertTitle}</h4>
+                      <p style={{ color: 'rgba(251,191,36,0.8)', fontSize: 12, fontWeight: 600, lineHeight: 1.4 }}>
+                        {getTranslatedTitle(latestPenalty.title, language)} : <span style={{ textDecoration: 'underline' }}>-{Math.abs(latestPenalty.amount)}{curr}</span>.
                         {latestPenalty.note ? ` "${latestPenalty.note}"` : ` ${t.child.penaltyAlertDefaultNote}`}
                       </p>
                     </div>
@@ -413,51 +427,49 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                 </div>
               </div>
             ) : (
-              /* ── iOS History Panel ── */
+              /* ── iOS History Panel — dark theme ── */
               <div className="mb-6 animate-fade-in-up max-w-2xl mx-auto">
-                <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl p-6 border border-slate-100 dark:border-slate-800 transition-colors duration-500">
-                  <div className="flex justify-between items-center mb-6 px-1">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500 dark:text-indigo-400 flex items-center justify-center">
-                        <i className="fa-solid fa-receipt text-sm"></i>
+                <div style={{ background: '#0f172a', borderRadius: 24, padding: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 10, background: 'rgba(129,140,248,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <i className="fa-solid fa-receipt" style={{ fontSize: 12, color: '#818cf8' }}></i>
                       </div>
-                      <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-800 dark:text-white">{t.child.historyHeader}</h4>
+                      <h4 style={{ fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(148,163,184,0.7)' }}>{t.child.historyHeader}</h4>
                     </div>
-                    <button onClick={() => setShowHistory(false)} aria-label={language === 'fr' ? 'Fermer l\'historique' : 'Close history'} className="w-8 h-8 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"><i className="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                    <button onClick={() => setShowHistory(false)} aria-label={language === 'fr' ? 'Fermer l\'historique' : 'Close history'} style={{ width: 28, height: 28, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, color: 'rgba(148,163,184,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fa-solid fa-xmark" style={{ fontSize: 11 }} aria-hidden="true"></i></button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-emerald-500 rounded-2xl p-4 text-center shadow-md shadow-emerald-500/25 dark:shadow-none">
-                      <p className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">{t.child.totalGains}</p>
-                      <p className="text-xl font-black text-white">+{stats.totalGains.toFixed(2)}{curr}</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+                    <div style={{ background: 'rgba(52,211,153,0.12)', borderRadius: 14, padding: '10px 14px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 9, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4, opacity: 0.7 }}>{t.child.totalGains}</p>
+                      <p style={{ fontSize: 17, fontWeight: 900, color: '#34d399' }}>+{stats.totalGains.toFixed(2)}{curr}</p>
                     </div>
-                    <div className="bg-rose-500 rounded-2xl p-4 text-center shadow-md shadow-rose-500/25 dark:shadow-none">
-                      <p className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">{t.child.totalLosses}</p>
-                      <p className="text-xl font-black text-white">-{stats.totalLosses.toFixed(2)}{curr}</p>
+                    <div style={{ background: 'rgba(244,63,94,0.12)', borderRadius: 14, padding: '10px 14px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 9, fontWeight: 800, color: '#f43f5e', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4, opacity: 0.7 }}>{t.child.totalLosses}</p>
+                      <p style={{ fontSize: 17, fontWeight: 900, color: '#f43f5e' }}>-{stats.totalLosses.toFixed(2)}{curr}</p>
                     </div>
                   </div>
 
-                  <div className="space-y-3 max-h-[350px] overflow-y-auto no-scrollbar">
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto no-scrollbar">
                     {data.history && data.history.length > 0 ? data.history.map(entry => {
                       const neg = entry.amount < 0 || isPenalty(entry.title) || isPurchase(entry.title);
                       return (
-                        <div key={entry.id} className="flex items-start justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all group">
-                          <div className="flex items-start gap-4 flex-1 pr-3">
-                            <div className={`w-10 h-10 rounded-xl flex shrink-0 items-center justify-center text-sm shadow-sm transition-transform group-hover:scale-110 ${neg ? 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
-                              <i className={`fa-solid ${getEntryIcon(entry.title)}`}></i>
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-black text-slate-800 dark:text-white tracking-tight">{getTranslatedTitle(entry.title, language)}</p>
-                              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest leading-none mt-0.5">{entry.date}</p>
-                              {entry.note && !isPenalty(entry.title) && (
-                                <div className="mt-2 flex items-start gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1.5 rounded-xl border border-amber-100/50 dark:border-amber-800/30">
-                                  <span className="text-xs">💬</span>
-                                  <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 leading-snug break-words">{entry.note}</span>
-                                </div>
-                              )}
-                            </div>
+                        <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: neg ? 'rgba(255,255,255,0.06)' : 'rgba(52,211,153,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <i className={`fa-solid ${getEntryIcon(entry.title)}`} style={{ fontSize: 12, color: neg ? 'rgba(148,163,184,0.6)' : '#34d399' }}></i>
                           </div>
-                          <span className={`font-black text-sm tabular-nums shrink-0 mt-1 ${neg ? 'text-rose-500' : 'text-emerald-500'}`}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: 'rgba(226,232,240,0.9)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getTranslatedTitle(entry.title, language)}</p>
+                            <p style={{ fontSize: 10, color: 'rgba(148,163,184,0.4)', fontWeight: 600, marginTop: 1 }}>{entry.date}</p>
+                            {entry.note && !isPenalty(entry.title) && (
+                              <div style={{ marginTop: 4, background: 'rgba(251,191,36,0.08)', borderRadius: 8, padding: '3px 8px', display: 'inline-flex', gap: 4, alignItems: 'flex-start' }}>
+                                <span style={{ fontSize: 10 }}>💬</span>
+                                <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(251,191,36,0.7)', lineHeight: 1.4 }}>{entry.note}</span>
+                              </div>
+                            )}
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 800, flexShrink: 0, color: neg ? '#f87171' : '#34d399' }}>
                             {neg ? '-' : '+'}{Math.abs(entry.amount).toFixed(2)}{curr}
                           </span>
                         </div>
@@ -551,97 +563,79 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                   )}
                 </>
               ) : (
-                /* ── iOS Goal Cards ── */
-                <>
-                  <div
-                    ref={goalsScrollRef}
-                    onScroll={() => {
-                      if (!goalsScrollRef.current) return;
-                      const el = goalsScrollRef.current;
-                      const firstCard = el.children[0] as HTMLElement;
-                      if (!firstCard) return;
-                      const cardWidth = firstCard.offsetWidth + 16;
-                      setActiveGoalIndex(Math.round(el.scrollLeft / cardWidth));
-                    }}
-                    className={`flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 no-scrollbar md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible md:snap-none md:justify-items-center md:gap-6`}
-                  >
-                    {data.goals.filter(g => g.status !== 'ARCHIVED').map((goal, index) => {
-                      const percentage = Math.min(100, Math.round((data.balance / goal.target) * 100));
-                      const isReached = data.balance >= goal.target && goal.status !== 'COMPLETED';
-                      const isCompleted = goal.status === 'COMPLETED';
-                      return (
-                        <div key={goal.id} className={`snap-start shrink-0 w-full rounded-3xl p-5 shadow-lg flex flex-col justify-between relative transition-all animate-scale-in overflow-hidden ${isCompleted ? 'bg-emerald-50 dark:bg-emerald-900/30' : isReached ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-white dark:bg-slate-800'}`}>
-                          <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full blur-3xl opacity-20 ${isReached ? 'bg-yellow-400' : `bg-${data.colorClass}-400`}`}></div>
-
-                          <div className="flex items-center justify-between relative z-10">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-md ${isCompleted ? 'bg-emerald-500 text-white' : isReached ? 'bg-yellow-400 text-white animate-bounce-short' : 'bg-indigo-100 dark:bg-slate-800 text-indigo-500 dark:text-indigo-400'}`}>
-                                <i className={isCompleted ? 'fa-solid fa-trophy' : isReached ? 'fa-solid fa-star' : getIcon(goal.icon, 'fa-solid fa-bullseye')}></i>
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-1.5">
-                                  <h3 className={`font-black text-base leading-none tracking-tight ${isCompleted ? 'text-emerald-800 dark:text-emerald-100' : isReached ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-800 dark:text-white'}`}>{goal.name}</h3>
-                                  {index === 0 && <i className="fa-solid fa-star text-yellow-400 text-[10px] animate-pulse"></i>}
+                /* ── iOS Goal Cards — dark theme ── */
+                (() => {
+                  const pal = CHILD_PAL[data.colorClass] || CHILD_PAL.indigo;
+                  return (
+                    <>
+                      <div
+                        ref={goalsScrollRef}
+                        onScroll={() => {
+                          if (!goalsScrollRef.current) return;
+                          const el = goalsScrollRef.current;
+                          const firstCard = el.children[0] as HTMLElement;
+                          if (!firstCard) return;
+                          const cardWidth = firstCard.offsetWidth + 16;
+                          setActiveGoalIndex(Math.round(el.scrollLeft / cardWidth));
+                        }}
+                        className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 no-scrollbar"
+                      >
+                        {data.goals.filter(g => g.status !== 'ARCHIVED').map((goal, index) => {
+                          const percentage = Math.min(100, Math.round((data.balance / goal.target) * 100));
+                          const isReached = data.balance >= goal.target && goal.status !== 'COMPLETED';
+                          const isCompleted = goal.status === 'COMPLETED';
+                          const progressBg = (() => {
+                            if (percentage >= 100) return 'linear-gradient(to right,#fbbf24,#f59e0b)';
+                            if (percentage >= 75) return 'linear-gradient(to right,#34d399,#10b981)';
+                            if (percentage >= 50) return 'linear-gradient(to right,#a3e635,#fde047)';
+                            if (percentage >= 25) return 'linear-gradient(to right,#fb923c,#f97316)';
+                            return 'linear-gradient(to right,#f87171,#fb7185)';
+                          })();
+                          return (
+                            <div key={goal.id} className="snap-start shrink-0 w-full animate-scale-in" style={{ background: '#0f172a', borderRadius: 24, padding: '18px 18px 16px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(148,163,184,0.7)', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+                                  {t.child.goalObjective}
+                                  {index === 0 && <i className="fa-solid fa-star ml-1" style={{ fontSize: 9, color: '#fbbf24' }}></i>}
                                 </div>
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-0.5">{t.child.goalObjective}</p>
+                                <div style={{ fontSize: 11, fontWeight: 800, color: pal.muted }}>{percentage}%</div>
                               </div>
-                            </div>
-                            <span className={`text-xl font-black tabular-nums leading-none ${isCompleted ? 'text-emerald-600' : isReached ? 'text-yellow-600' : `text-${data.colorClass}-600`}`}>{goal.target}{curr}</span>
-                          </div>
-
-                          <div className="relative z-10 mt-4">
-                            {isCompleted ? (
-                              <div className="w-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2 border border-emerald-500/20">
-                                <i className="fa-solid fa-circle-check"></i>
-                                {language === 'fr' ? 'Obtenu !' : language === 'nl' ? 'Behaald!' : 'Purchased!'}
-                              </div>
-                            ) : isReached ? (
-                              <button onClick={() => handlePurchase(goal)}
-                                aria-label={`${t.child.reached} ${goal.name}`}
-                                className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all animate-bounce-short flex items-center justify-center gap-2"
-                              >
-                                <i className={`${getIcon('gift')} text-yellow-400`} aria-hidden="true"></i>
-                                {t.child.reached}
-                              </button>
-                            ) : (
-                              <div className="space-y-2.5">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs font-black text-slate-400 tabular-nums">{t.child.remaining} {(goal.target - data.balance).toFixed(2)}{curr}</span>
-                                  <span className={`text-xs font-black text-${data.colorClass}-500 tabular-nums`}>{percentage}%</span>
+                              <div style={{ fontSize: 16, fontWeight: 800, color: 'white', marginBottom: 12, letterSpacing: '-0.3px' }}>{goal.name}</div>
+                              {isCompleted ? (
+                                <div style={{ background: 'rgba(52,211,153,0.12)', borderRadius: 12, padding: '8px 12px', fontSize: 11, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center' }}>
+                                  <i className="fa-solid fa-circle-check mr-2"></i>
+                                  {language === 'fr' ? 'Obtenu !' : language === 'nl' ? 'Behaald!' : 'Purchased!'}
                                 </div>
-                                <div className="w-full h-3 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden p-0.5">
-                                  <div
-                                    className="h-full rounded-full transition-all duration-1000 ease-out flex items-center justify-end pr-1"
-                                    style={{
-                                      width: `${Math.max(percentage, 2)}%`,
-                                      background: (() => {
-                                        if (percentage >= 100) return 'linear-gradient(to right, #fbbf24, #f59e0b)';
-                                        if (percentage >= 75) return 'linear-gradient(to right, #34d399, #10b981)';
-                                        if (percentage >= 50) return 'linear-gradient(to right, #a3e635, #fde047)';
-                                        if (percentage >= 25) return 'linear-gradient(to right, #fb923c, #f97316)';
-                                        return 'linear-gradient(to right, #f87171, #fb7185)';
-                                      })()
-                                    }}
-                                  >
-                                    {percentage > 15 && <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>}
+                              ) : isReached ? (
+                                <button onClick={() => handlePurchase(goal)} style={{ width: '100%', background: `linear-gradient(135deg,${pal.from},${pal.to})`, border: 'none', borderRadius: 12, padding: '10px 16px', fontSize: 11, fontWeight: 800, color: 'white', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                  <i className="fa-solid fa-gift mr-2 text-yellow-300"></i>
+                                  {t.child.reached}
+                                </button>
+                              ) : (
+                                <div>
+                                  <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 100, overflow: 'hidden', marginBottom: 8 }}>
+                                    <div style={{ height: '100%', borderRadius: 100, background: progressBg, width: `${Math.max(percentage, 2)}%`, transition: 'width 1s ease-out' }} />
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(148,163,184,0.55)' }}>{t.child.remaining} {(goal.target - data.balance).toFixed(2)}{curr}</span>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(148,163,184,0.55)' }}>/ {goal.target}{curr}</span>
                                   </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {data.goals.filter(g => g.status !== 'ARCHIVED').length > 1 && (
+                        <div className="flex justify-center gap-1.5 mt-1">
+                          {data.goals.filter(g => g.status !== 'ARCHIVED').map((_, i) => (
+                            <div key={i} style={{ borderRadius: 100, transition: 'all 0.3s', width: i === activeGoalIndex ? 16 : 6, height: 6, background: i === activeGoalIndex ? pal.muted : 'rgba(255,255,255,0.2)' }} />
+                          ))}
                         </div>
-                      );
-                    })}
-                  </div>
-                  {/* Dot pagination */}
-                  {data.goals.filter(g => g.status !== 'ARCHIVED').length > 1 && (
-                    <div className="flex justify-center gap-1.5 mt-1 md:hidden">
-                      {data.goals.filter(g => g.status !== 'ARCHIVED').map((_, i) => (
-                        <div key={i} className={`rounded-full transition-all duration-300 ${i === activeGoalIndex ? `w-4 h-1.5 bg-${data.colorClass}-500` : 'w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600'}`} />
-                      ))}
-                    </div>
-                  )}
-                </>
+                      )}
+                    </>
+                  );
+                })()
               )
             ) : (
               isAndroid ? (
@@ -658,11 +652,11 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                   </button>
                 </div>
               ) : (
-                /* ── iOS Empty Goal ── */
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 text-center shadow-md shadow-slate-900/5 dark:shadow-black/20 group hover:scale-[1.02] transition-transform mx-1 max-w-lg mx-auto">
-                  <i className={`fa-solid fa-bullseye text-4xl mb-3 transition-transform ${isGoalNudging ? 'text-emerald-500 animate-bounce' : 'text-slate-200'}`}></i>
-                  <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mb-4 leading-relaxed">{isGoalNudging ? t.child.nudgeSent : t.child.askParentsGoal}</p>
-                  <button onClick={() => { setIsGoalNudging(true); if (onRequestGift) onRequestGift(); setTimeout(() => setIsGoalNudging(false), 3000); }} className={`w-full bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-600 dark:text-${data.colorClass}-400 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-${data.colorClass}-100 dark:hover:bg-${data.colorClass}-900/30 transition-all active:scale-95 shadow-sm`}>
+                /* ── iOS Empty Goal — dark theme ── */
+                <div style={{ background: '#0f172a', borderRadius: 20, padding: '28px 20px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <i className={`fa-solid fa-bullseye text-4xl mb-3 ${isGoalNudging ? 'text-emerald-400 animate-bounce' : ''}`} style={{ color: isGoalNudging ? '#34d399' : 'rgba(255,255,255,0.15)', display: 'block', marginBottom: 12 }}></i>
+                  <p style={{ color: 'rgba(148,163,184,0.7)', fontWeight: 600, fontSize: 13, marginBottom: 16, lineHeight: 1.5 }}>{isGoalNudging ? t.child.nudgeSent : t.child.askParentsGoal}</p>
+                  <button onClick={() => { setIsGoalNudging(true); if (onRequestGift) onRequestGift(); setTimeout(() => setIsGoalNudging(false), 3000); }} style={{ width: '100%', background: `${CHILD_PAL[data.colorClass]?.from || '#818cf8'}22`, border: 'none', borderRadius: 14, padding: '12px', fontSize: 11, fontWeight: 800, color: CHILD_PAL[data.colorClass]?.muted || '#c7d2fe', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                     {t.child.addGoalAction}
                   </button>
                 </div>
@@ -736,71 +730,71 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                 </div>
               </>
             ) : (
-              /* ── iOS Mission Section ── */
-              <>
-                <div className="flex items-center gap-3 mb-6 px-1">
-                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center text-indigo-500">
-                    <i className="fa-solid fa-list-check text-sm"></i>
-                  </div>
-                  <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest leading-none">
-                    {t.child.myMissions}
-                  </h2>
-                </div>
-
-                <div className="space-y-4 px-1 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:space-y-0">
-                  {data.missions && data.missions.filter(m => m.status !== 'COMPLETED').length > 0 ? (
-                    data.missions.filter(m => m.status !== 'COMPLETED').map(mission => (
-                      <button
-                        key={mission.id}
-                        disabled={mission.status === 'PENDING'}
-                        onClick={() => handleMissionClick(mission.id)}
-                        className={`w-full p-5 rounded-[2.5rem] shadow-md shadow-slate-900/5 dark:shadow-black/20 border-2 flex items-center justify-between transition-all relative overflow-hidden group transition-colors duration-500 ${mission.status === 'PENDING'
-                          ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-100/50 dark:border-indigo-900/30 cursor-default'
-                          : 'bg-white dark:bg-slate-900 border-slate-50 dark:border-slate-800 active:scale-95 hover:border-emerald-100 dark:hover:border-emerald-900 hover:shadow-lg transition-all duration-300'
-                          }`}
-                      >
-                        <div className="flex items-center gap-5 relative z-10">
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-transform group-hover:scale-110 shadow-sm ${mission.status === 'PENDING' ? 'bg-white dark:bg-slate-800 text-indigo-400 dark:text-indigo-500 ring-4 ring-indigo-50 dark:ring-indigo-900/20' : `bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-500 dark:text-${data.colorClass}-400 border border-${data.colorClass}-100 dark:border-${data.colorClass}-900/30`}`}>
-                            <i className={mission.status === 'PENDING' ? 'fa-solid fa-hourglass-half animate-spin-slow' : getIcon(mission.icon)}></i>
-                          </div>
-                          <div className="text-left">
-                            <div className={`font-black text-base sm:text-lg tracking-tight ${mission.status === 'PENDING' ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-800 dark:text-white'}`}>{getTranslatedTitle(mission.title, language)}</div>
-                            <div className={`text-[10px] font-black uppercase tracking-[0.15em] mt-1 flex items-center gap-2 ${mission.status === 'PENDING' ? 'text-indigo-400 dark:text-indigo-500' : 'text-slate-400 dark:text-slate-500'}`}>
-                              {mission.status === 'PENDING' ? (
-                                <><span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 animate-pulse"></span> {t.child.pending}</>
-                              ) : (
-                                <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-emerald-500"></span> {t.child.todo}</>
-                              )}
-                            </div>
-                            {mission.feedback && mission.status === 'ACTIVE' && (
-                              <div className="mt-2 flex items-start gap-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-2.5 py-1.5 rounded-xl">
-                                <span className="text-sm shrink-0">💬</span>
-                                <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 leading-snug">{mission.feedback}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className={`font-black text-sm px-5 py-2.5 rounded-2xl shadow-sm ${mission.status === 'PENDING' ? 'bg-white dark:bg-slate-800 text-indigo-500 dark:text-indigo-400 border border-indigo-50 dark:border-indigo-900/30' : `bg-${data.colorClass}-50 dark:bg-${data.colorClass}-900/20 text-${data.colorClass}-600 dark:text-${data.colorClass}-400 border border-${data.colorClass}-100 dark:border-${data.colorClass}-900/30`}`}>
-                          +{mission.reward}{curr}
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-[3rem] p-12 text-center flex flex-col items-center gap-4 col-span-full">
-                      <div className={`w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center text-4xl shadow-inner ${isNudging ? 'animate-bounce' : ''}`}>
-                        <i className={`fa-solid fa-rocket text-slate-200`}></i>
+              /* ── iOS Mission Section — dark theme ── */
+              (() => {
+                const pal = CHILD_PAL[data.colorClass] || CHILD_PAL.indigo;
+                return (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, paddingLeft: 2 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 10, background: `${pal.from}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <i className="fa-solid fa-list-check" style={{ fontSize: 13, color: pal.muted }}></i>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-slate-500 font-black text-sm uppercase tracking-widest">{t.child.noMissions}</p>
-                        <p className="text-slate-400 text-xs font-medium">{isNudging ? t.child.nudgeSent : t.child.askNewMission}</p>
-                      </div>
-                      <button onClick={() => { setIsNudging(true); if (onRequestMission) onRequestMission(); setTimeout(() => setIsNudging(false), 3000); }} className="mt-4 px-8 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-md shadow-indigo-500/25 hover:bg-indigo-700 transition-all active:scale-95">
-                        {t.child.askButton}
-                      </button>
+                      <h2 style={{ fontSize: 10, fontWeight: 800, color: 'rgba(148,163,184,0.5)', textTransform: 'uppercase', letterSpacing: '0.18em' }}>
+                        {t.child.myMissions}
+                      </h2>
                     </div>
-                  )}
-                </div>
-              </>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {data.missions && data.missions.filter(m => m.status !== 'COMPLETED').length > 0 ? (
+                        data.missions.filter(m => m.status !== 'COMPLETED').map(mission => {
+                          const isPending = mission.status === 'PENDING';
+                          return (
+                            <button
+                              key={mission.id}
+                              disabled={isPending}
+                              onClick={() => handleMissionClick(mission.id)}
+                              style={{ width: '100%', background: '#0f172a', borderRadius: 20, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, border: `1px solid ${isPending ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.05)'}`, cursor: isPending ? 'default' : 'pointer', textAlign: 'left' }}
+                            >
+                              <div style={{ width: 44, height: 44, borderRadius: 14, flexShrink: 0, background: isPending ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                                <i className={isPending ? 'fa-solid fa-hourglass-half' : getIcon(mission.icon)} style={{ color: isPending ? '#fbbf24' : 'rgba(226,232,240,0.8)' }}></i>
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(226,232,240,0.9)', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTranslatedTitle(mission.title, language)}</div>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: isPending ? 'rgba(250,204,21,0.1)' : 'rgba(52,211,153,0.1)', borderRadius: 8, padding: '3px 8px' }}>
+                                  <i className={`fa-solid ${isPending ? 'fa-hourglass-half' : 'fa-circle-dot'}`} style={{ fontSize: 8, color: isPending ? '#fbbf24' : '#34d399' }} />
+                                  <span style={{ fontSize: 9, fontWeight: 800, color: isPending ? '#fbbf24' : '#34d399', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                                    {isPending ? t.child.pending : t.child.todo}
+                                  </span>
+                                </div>
+                                {mission.feedback && !isPending && (
+                                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'flex-start', gap: 6, background: 'rgba(251,191,36,0.08)', borderRadius: 10, padding: '4px 8px' }}>
+                                    <span style={{ fontSize: 11 }}>💬</span>
+                                    <span style={{ fontSize: 10, fontWeight: 600, color: '#fbbf24', lineHeight: 1.4 }}>{mission.feedback}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ fontSize: 15, fontWeight: 900, color: isPending ? '#fbbf24' : pal.muted, flexShrink: 0 }}>+{mission.reward}{curr}</div>
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <i className="fa-solid fa-rocket" style={{ fontSize: 22, color: 'rgba(255,255,255,0.2)' }}></i>
+                          </div>
+                          <div>
+                            <p style={{ color: 'rgba(226,232,240,0.5)', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>{t.child.noMissions}</p>
+                            <p style={{ color: 'rgba(148,163,184,0.4)', fontSize: 11, fontWeight: 500 }}>{isNudging ? t.child.nudgeSent : t.child.askNewMission}</p>
+                          </div>
+                          <button onClick={() => { setIsNudging(true); if (onRequestMission) onRequestMission(); setTimeout(() => setIsNudging(false), 3000); }} style={{ background: `${pal.from}22`, border: 'none', borderRadius: 12, padding: '10px 20px', fontSize: 11, fontWeight: 800, color: pal.muted, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                            {t.child.askButton}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()
             )}
           </div>
         </div>

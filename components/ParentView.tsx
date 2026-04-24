@@ -196,6 +196,13 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [formColorClass, setFormColorClass] = useState(AVAILABLE_COLORS[0]);
   const [formGoals, setFormGoals] = useState<Goal[]>([]);
   const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
+
+  /* DASHBOARD GOAL SHEET (iOS) */
+  const [dashGoalSheetOpen, setDashGoalSheetOpen] = useState(false);
+  const [dashGoalId, setDashGoalId] = useState<string | null>(null); // null = new
+  const [dashGoalName, setDashGoalName] = useState('');
+  const [dashGoalTarget, setDashGoalTarget] = useState('');
+  const [dashGoalIcon, setDashGoalIcon] = useState('gift');
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
   const [localPin, setLocalPin] = useState<string | null>(null);
   const [biometricStatus, setBiometricStatus] = useState<{ isAvailable: boolean; biometryType: 'face' | 'fingerprint' | 'none' } | null>(null);
@@ -789,9 +796,51 @@ const ParentView: React.FC<ParentViewProps> = ({
   }, [selectedChildId]);
 
   const startAddGoal = () => {
-    if (activeChild) {
+    if (!activeChild) return;
+    if (!isAndroid) {
+      // iOS: inline dashboard sheet
+      if (!data.isPremium && (activeChild.goals || []).filter(g => g.status !== 'ARCHIVED').length >= FREE_GOALS_LIMIT) {
+        openPrompt({
+          title: t.parent.premium.limitTitle || 'Koiny Premium',
+          message: t.parent.premium.goalsLimitMessage || `Limite de ${FREE_GOALS_LIMIT} objectif atteinte. Passez au Premium pour en créer plus !`,
+          type: 'info',
+          onConfirm: () => setIsSubscriptionModalOpen(true)
+        });
+        return;
+      }
+      setDashGoalId(null);
+      setDashGoalName('');
+      setDashGoalTarget('');
+      setDashGoalIcon('gift');
+      setDashGoalSheetOpen(true);
+    } else {
       startEditChild(activeChild, true);
     }
+  };
+
+  const openDashGoalEdit = (goal: Goal) => {
+    setDashGoalId(goal.id);
+    setDashGoalName(goal.name);
+    setDashGoalTarget(goal.target ? String(goal.target) : '');
+    setDashGoalIcon(goal.icon || 'gift');
+    setDashGoalSheetOpen(true);
+  };
+
+  const saveDashGoal = () => {
+    if (!activeChild || !dashGoalName.trim()) return;
+    const targetVal = parseFloat(dashGoalTarget);
+    if (isNaN(targetVal) || targetVal <= 0) return;
+    const updatedGoals = dashGoalId
+      ? (activeChild.goals || []).map(g => g.id === dashGoalId ? { ...g, name: dashGoalName.trim(), target: targetVal, icon: dashGoalIcon } : g)
+      : [...(activeChild.goals || []), { id: crypto.randomUUID(), name: dashGoalName.trim(), target: targetVal, icon: dashGoalIcon }];
+    onEditChild(activeChild.id, { goals: updatedGoals });
+    setDashGoalSheetOpen(false);
+  };
+
+  const deleteDashGoal = (goalId: string) => {
+    if (!activeChild) return;
+    onDeleteGoal?.(activeChild.id, goalId);
+    setDashGoalSheetOpen(false);
   };
 
   const saveChildForm = (e: React.FormEvent) => {
@@ -1821,8 +1870,9 @@ const ParentView: React.FC<ParentViewProps> = ({
                             const subtitleColor = isCompleted ? '#15803d' : isReady ? '#d97706' : '#94a3b8';
                             const iconBg = isCompleted ? '#ecfdf5' : isReady ? '#fef9c3' : accentColor + '18';
                             return (
-                              <div key={goal.id} className="bg-white dark:bg-slate-900 rounded-[18px] overflow-hidden"
-                                style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                              <div key={goal.id} className="bg-white dark:bg-slate-900 rounded-[18px] overflow-hidden active:scale-[0.98] transition-transform cursor-pointer"
+                                style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+                                onClick={() => openDashGoalEdit(goal)}>
                                 <div className="p-4 flex items-center gap-3">
                                   <div className="w-10 h-10 rounded-[12px] flex items-center justify-center text-[18px] shrink-0 flex-shrink-0"
                                     style={{ background: iconBg }}>
@@ -2399,24 +2449,57 @@ const ParentView: React.FC<ParentViewProps> = ({
             </section>}
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto py-16 animate-fade-in-up px-4">
-            <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden text-center p-8 sm:p-12 relative">
-              <div className="absolute top-0 left-0 w-full h-2 bg-indigo-500"></div>
-              <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500 text-4xl mx-auto mb-8 shadow-inner border border-indigo-100">
-                <i className="fa-solid fa-people-roof animate-bounce-short"></i>
+          isAndroid ? (
+            /* ── Android MD3 Empty State ── */
+            <div className="max-w-2xl mx-auto py-16 animate-fade-in-up px-4">
+              <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden text-center p-8 relative">
+                <div className="absolute top-0 left-0 w-full h-2 bg-indigo-600"></div>
+                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-500 text-3xl mx-auto mb-6">
+                  <i className="fa-solid fa-people-roof"></i>
+                </div>
+                <h2 className="text-xl font-medium text-slate-800 dark:text-white mb-3">{t.parent.dashboard.welcomeTitle}</h2>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mb-8 max-w-sm mx-auto leading-relaxed">{t.parent.dashboard.welcomeDesc}</p>
+                <button onClick={startAddChild} className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-4 rounded-xl font-medium active:bg-indigo-700 transition-colors">
+                  <i className="fa-solid fa-plus"></i>
+                  {t.parent.addChild}
+                </button>
               </div>
-              <h2 className="text-2xl font-black text-slate-800 mb-4">{t.parent.dashboard.welcomeTitle}</h2>
-              <p className="text-slate-500 text-lg mb-10 max-w-sm mx-auto leading-relaxed">
-                {t.parent.dashboard.welcomeDesc}
-              </p>
-              <button onClick={startAddChild}
-                className="inline-flex items-center gap-3 bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-lg uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 group"
-              >
-                <i className="fa-solid fa-plus group-hover:rotate-90 transition-transform"></i>
-                {t.parent.addChild}
-              </button>
             </div>
-          </div>
+          ) : (
+            /* ── iOS Dark Empty State ── */
+            <div style={{ minHeight: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px 100px', marginTop: -20 }} className="animate-fade-in-up">
+              <div style={{ width: '100%', background: 'white', borderRadius: 32, padding: '36px 28px 32px', boxShadow: '0 8px 40px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#818cf8,#4338ca)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, boxShadow: '0 12px 36px rgba(79,70,229,0.35)' }}>
+                  <i className="fa-solid fa-people-roof" style={{ fontSize: 28, color: 'white' }} />
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: '#1e293b', letterSpacing: '-0.4px', textAlign: 'center', lineHeight: 1.25, marginBottom: 10 }}>
+                  {t.parent.dashboard.welcomeTitle}
+                </div>
+                <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600, textAlign: 'center', lineHeight: 1.65, marginBottom: 24, maxWidth: 260 }}>
+                  {t.parent.dashboard.welcomeDesc}
+                </div>
+                <div style={{ width: '100%', height: 1, background: '#f1f5f9', marginBottom: 22 }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', marginBottom: 26 }}>
+                  {[
+                    { icon: 'fa-list-check', color: '#4f46e5', bg: '#eef2ff', text: language === 'fr' ? 'Créez des missions et récompenses' : language === 'nl' ? 'Maak missies en beloningen' : 'Create missions and rewards' },
+                    { icon: 'fa-bullseye', color: '#10b981', bg: '#ecfdf5', text: language === 'fr' ? "Définissez des objectifs d'épargne" : language === 'nl' ? 'Stel spaardoelen in' : 'Set savings goals' },
+                    { icon: 'fa-shield-halved', color: '#f59e0b', bg: '#fffbeb', text: language === 'fr' ? 'Espace sécurisé par code PIN' : language === 'nl' ? 'Beveiligd met PIN-code' : 'Secured with PIN code' },
+                  ].map(f => (
+                    <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 11, background: f.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <i className={`fa-solid ${f.icon}`} style={{ fontSize: 14, color: f.color }} />
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>{f.text}</span>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={startAddChild} style={{ width: '100%', height: 56, borderRadius: 18, border: 'none', background: 'linear-gradient(135deg,#818cf8,#4338ca)', color: 'white', fontSize: 13, fontWeight: 800, letterSpacing: '0.1em', boxShadow: '0 10px 32px rgba(79,70,229,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer' }}>
+                  <i className="fa-solid fa-plus" style={{ fontSize: 14 }} />
+                  {language === 'fr' ? 'AJOUTER UN ENFANT' : language === 'nl' ? 'KIND TOEVOEGEN' : 'ADD A CHILD'}
+                </button>
+              </div>
+            </div>
+          )
         )}
       </div>
 
@@ -2494,11 +2577,11 @@ const ParentView: React.FC<ParentViewProps> = ({
                             {isAvatarDropdownOpen && (
                               <>
                                 <div className="fixed inset-0 z-50" onClick={() => setIsAvatarDropdownOpen(false)}></div>
-                                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8, padding: 16, background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18, zIndex: 60, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} className="animate-scale-in">
-                                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-h-[280px] overflow-y-auto no-scrollbar">
+                                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8, padding: 12, background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18, zIndex: 60, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }} className="animate-scale-in">
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 280, overflowY: 'auto' }} className="no-scrollbar">
                                     {AVAILABLE_SEEDS.map(seed => (
-                                      <button key={seed} type="button" onClick={() => { setFormAvatar(seed); setIsAvatarDropdownOpen(false); }} style={{ aspectRatio: '1', borderRadius: '50%', overflow: 'hidden', border: formAvatar === seed ? `2.5px solid ${pal.from}` : '2px solid rgba(255,255,255,0.08)', boxShadow: formAvatar === seed ? `0 0 0 1px ${pal.from}44` : 'none', transform: formAvatar === seed ? 'scale(1.08)' : 'scale(1)', transition: 'all 0.15s', cursor: 'pointer', padding: 2 }}>
-                                        {renderAvatar(seed, "w-full h-full", seed === formAvatar ? formColorClass : "slate")}
+                                      <button key={seed} type="button" onClick={() => { setFormAvatar(seed); setIsAvatarDropdownOpen(false); }} style={{ border: formAvatar === seed ? `2.5px solid ${pal.from}` : '2px solid transparent', borderRadius: 14, padding: 4, background: 'transparent', cursor: 'pointer', boxShadow: formAvatar === seed ? `0 0 0 1px ${pal.from}44` : 'none', transition: 'all 0.15s' }}>
+                                        <div style={{ width: 44, height: 44 }}>{renderAvatar(seed, "w-full h-full", formColorClass)}</div>
                                       </button>
                                     ))}
                                   </div>
@@ -3868,6 +3951,115 @@ const ParentView: React.FC<ParentViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* iOS Dashboard Goal Sheet */}
+      {!isAndroid && dashGoalSheetOpen && (() => {
+        const DASH_GOAL_ICONS: { key: string; emoji: string; label: string }[] = [
+          { key: 'gift',    emoji: '🎁', label: 'Cadeau' },
+          { key: 'gamepad', emoji: '🎮', label: 'Jeu' },
+          { key: 'bike',    emoji: '🚲', label: 'Vélo' },
+          { key: 'plane',   emoji: '✈️', label: 'Voyage' },
+          { key: 'book',    emoji: '📚', label: 'Livre' },
+          { key: 'music',   emoji: '🎵', label: 'Musique' },
+          { key: 'cart',    emoji: '🛒', label: 'Achat' },
+          { key: 'shirt',   emoji: '👕', label: 'Vêtement' },
+          { key: 'futbol',  emoji: '⚽', label: 'Sport' },
+          { key: 'trophy',  emoji: '🏆', label: 'Trophée' },
+        ];
+        const pal = FORM_PAL[activeChild?.colorClass || 'indigo'] || FORM_PAL.indigo;
+        const isEditing = !!dashGoalId;
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'flex-end' }}>
+            {/* Backdrop */}
+            <div onClick={() => setDashGoalSheetOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)' }} />
+            {/* Sheet */}
+            <div style={{ position: 'relative', zIndex: 1, width: '100%', background: '#1e293b', borderRadius: '28px 28px 0 0', padding: '0 20px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)', boxShadow: '0 -20px 60px rgba(0,0,0,0.4)' }}>
+              {/* Handle */}
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 16 }}>
+                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+              </div>
+              {/* Title */}
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontSize: 18, fontWeight: 900, color: 'rgba(226,232,240,0.95)', letterSpacing: '-0.4px' }}>
+                  {isEditing
+                    ? (language === 'fr' ? 'Modifier l\'objectif' : language === 'nl' ? 'Doel bewerken' : 'Edit Goal')
+                    : (language === 'fr' ? 'Nouvel objectif' : language === 'nl' ? 'Nieuw doel' : 'New Goal')}
+                </p>
+              </div>
+              {/* Icon picker */}
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.7)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>
+                  {language === 'fr' ? 'Icône' : language === 'nl' ? 'Pictogram' : 'Icon'}
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {DASH_GOAL_ICONS.map(({ key, emoji }) => (
+                    <button key={key} type="button" onClick={() => setDashGoalIcon(key)} style={{
+                      width: 44, height: 44, borderRadius: 12, fontSize: 20, border: 'none', cursor: 'pointer',
+                      background: dashGoalIcon === key ? `${pal.from}28` : 'rgba(255,255,255,0.05)',
+                      outline: dashGoalIcon === key ? `2px solid ${pal.from}` : '2px solid transparent',
+                      transition: 'all 0.15s',
+                    }}>{emoji}</button>
+                  ))}
+                </div>
+              </div>
+              {/* Name input */}
+              <div style={{ marginBottom: 12 }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.7)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+                  {language === 'fr' ? 'Nom' : language === 'nl' ? 'Naam' : 'Name'}
+                </p>
+                <input
+                  type="text"
+                  value={dashGoalName}
+                  onChange={e => setDashGoalName(e.target.value.slice(0, 50))}
+                  placeholder={language === 'fr' ? 'Ex: Nouveau vélo' : language === 'nl' ? 'Bijv: Nieuwe fiets' : 'E.g. New bicycle'}
+                  maxLength={50}
+                  style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '14px 16px', fontSize: 15, fontWeight: 700, color: 'rgba(226,232,240,0.95)', outline: 'none', WebkitAppearance: 'none' }}
+                />
+              </div>
+              {/* Target input */}
+              <div style={{ marginBottom: 24 }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.7)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+                  {language === 'fr' ? `Montant cible (${curr})` : language === 'nl' ? `Doelbedrag (${curr})` : `Target amount (${curr})`}
+                </p>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={dashGoalTarget}
+                    onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 1000) return; setDashGoalTarget(e.target.value); }}
+                    placeholder="0"
+                    style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '14px 16px 14px 16px', paddingRight: 48, fontSize: 15, fontWeight: 700, color: 'rgba(226,232,240,0.95)', outline: 'none', WebkitAppearance: 'none' }}
+                  />
+                  <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 800, color: 'rgba(148,163,184,0.5)' }}>{curr}</span>
+                </div>
+              </div>
+              {/* Buttons */}
+              <div style={{ display: 'grid', gridTemplateColumns: isEditing ? '1fr 1fr' : '1fr', gap: 10, marginBottom: 8 }}>
+                {isEditing && (
+                  <button type="button" onClick={() => dashGoalId && deleteDashGoal(dashGoalId)} style={{
+                    height: 52, borderRadius: 14, border: 'none', cursor: 'pointer',
+                    background: 'rgba(244,63,94,0.12)', color: '#f87171',
+                    fontSize: 13, fontWeight: 800, letterSpacing: '0.04em',
+                  }}>
+                    <i className="fa-solid fa-trash-can" style={{ marginRight: 6 }} />
+                    {language === 'fr' ? 'Supprimer' : language === 'nl' ? 'Verwijderen' : 'Delete'}
+                  </button>
+                )}
+                <button type="button" onClick={saveDashGoal} disabled={!dashGoalName.trim() || !dashGoalTarget} style={{
+                  height: 52, borderRadius: 14, border: 'none', cursor: 'pointer',
+                  background: dashGoalName.trim() && dashGoalTarget ? `linear-gradient(135deg,${pal.from},${pal.to})` : 'rgba(255,255,255,0.08)',
+                  color: dashGoalName.trim() && dashGoalTarget ? 'white' : 'rgba(148,163,184,0.5)',
+                  fontSize: 13, fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  boxShadow: dashGoalName.trim() && dashGoalTarget ? `0 4px 20px ${pal.from}44` : 'none',
+                  transition: 'all 0.2s',
+                }}>
+                  {language === 'fr' ? 'Enregistrer' : language === 'nl' ? 'Opslaan' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <BottomNavigation
         activeTab={mainView}
