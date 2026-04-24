@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { GlobalState, Language } from '../types';
 import { translations } from '../i18n';
 import HelpModal from './HelpModal';
@@ -9,6 +9,7 @@ interface LoginViewProps {
   data: GlobalState;
   onSelectChild: (childId: string) => void;
   onParentAccess: () => void;
+  onDemoMode?: () => void;
 }
 
 const PAL: Record<string, { from: string; to: string; light: string; accent: string; soft: string; text: string }> = {
@@ -37,10 +38,19 @@ const renderAvatar = (avatar: string, colorClass: string = 'indigo') => {
   );
 };
 
-const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAccess }) => {
+const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAccess, onDemoMode }) => {
   const t = translations[data.language];
   const curr = data.currency || '€';
   const [showHelp, setShowHelp] = useState(false);
+  const demoTapCount = useRef(0);
+  const demoTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleDemoTap = () => {
+    if (!onDemoMode) return;
+    demoTapCount.current += 1;
+    if (demoTapTimer.current) clearTimeout(demoTapTimer.current);
+    demoTapTimer.current = setTimeout(() => { demoTapCount.current = 0; }, 1500);
+    if (demoTapCount.current >= 7) { demoTapCount.current = 0; onDemoMode(); }
+  };
 
   if (isAndroid) {
     return (
@@ -48,7 +58,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
       <div className="min-h-screen bg-white dark:bg-slate-900 flex flex-col font-sans" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {/* Top indigo band */}
         <div className="bg-indigo-600 pt-12 pb-10 px-6 flex flex-col items-center" style={{ paddingTop: 'max(48px, env(safe-area-inset-top))' }}>
-          <div className="w-20 h-20 mb-4 rounded-[1.5rem] overflow-hidden shadow-lg">
+          <div className="w-20 h-20 mb-4 rounded-[1.5rem] overflow-hidden shadow-lg" onClick={handleDemoTap}>
             <img src="/mascot.png" alt="Koiny Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl font-medium text-white mb-1">{t.login.welcome}</h1>
@@ -128,7 +138,7 @@ const LoginView: React.FC<LoginViewProps> = ({ data, onSelectChild, onParentAcce
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '0 24px 40px', position: 'relative', zIndex: 1, overflowY: 'auto' }}>
         {/* Logo + brand */}
         <div style={{ textAlign: 'center', paddingTop: 'max(52px, env(safe-area-inset-top))', paddingBottom: 24 }}>
-          <div style={{
+          <div onClick={handleDemoTap} style={{
             width: 88, height: 88, borderRadius: 28, overflow: 'hidden',
             margin: '0 auto 18px',
             boxShadow: '0 20px 60px rgba(99,102,241,0.45), 0 4px 16px rgba(0,0,0,0.15)'

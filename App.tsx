@@ -8,7 +8,7 @@ import LandingView from './components/LandingView';
 import OnboardingView from './components/OnboardingView';
 import LegalModal from './components/LegalModal';
 import AlertBanner from './components/AlertBanner';
-import { GlobalState, INITIAL_DATA, HistoryEntry, ChildProfile, Language, Goal, BADGE_THRESHOLDS, ParentBadge, MAX_BALANCE } from './types';
+import { GlobalState, INITIAL_DATA, HistoryEntry, ChildProfile, Language, Goal, BADGE_THRESHOLDS, ParentBadge, MAX_BALANCE, getDemoData } from './types';
 import { loadData, saveData, persistentStorage } from './services/storage';
 import { updateWidgetData } from './services/widgetBridge';
 import { getSupabase, updatePassword, deleteAccount, ensureUserProfile } from './services/supabase';
@@ -1364,7 +1364,7 @@ const App: React.FC = () => {
           : <AuthView language={data.language} onSetLanguage={setLanguage} onLoginSuccess={handleLoginSuccess} />
       )}
       {view === 'AUTH' && <AuthView language={data.language} onSetLanguage={setLanguage} onLoginSuccess={handleLoginSuccess} />}
-      {view === 'LOGIN' && <LoginView data={data} onSelectChild={handleSelectChild} onParentAccess={() => setView('PARENT')} />}
+      {view === 'LOGIN' && <LoginView data={data} onSelectChild={handleSelectChild} onParentAccess={() => setView('PARENT')} onDemoMode={() => { setData(getDemoData(data.language)); setOwnerId('demo'); }} />}
       {view === 'CHILD' && (
         data.children.find(c => c.id === activeChildId) ? (
           <ChildView
