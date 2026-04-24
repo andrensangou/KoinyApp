@@ -8,7 +8,7 @@
 Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
-**Statut:** Publiée sur l'App Store (version 1.0.2). Version 1.0.3 soumise pour review Apple (11/04/2026). Android en cours de finalisation.
+**Statut:** Publiée sur l'App Store (version 1.0.4). Version 1.0.5 build 6 en cours de test TestFlight (24/04/2026). Android en cours de finalisation.
 
 ## Regles critiques
 
@@ -306,7 +306,7 @@ npm run dev
 - Review Apple pour tests externes: 24-48h
 - Xcode incrémente automatiquement le build number à chaque archive
 - Builds: (1) 15/03, (2) 15/03, (3) 16/03, (4+) 16/03 après contrat signé
-- Build actuel: **version 1.0.3, build 4** (11/04/2026 — limites saisie, devise, champ numérique cagnotte)
+- Build actuel: **version 1.0.5, build 6** (24/04/2026 — redesign iOS complet: dark/light adaptatif, goal sheet dashboard, history/requests/profile redesign)
 
 **Android:**
 - Gradle JDK: `jbr-21` (configuré dans `android/.idea/gradle.xml`)
