@@ -125,19 +125,20 @@ export const INITIAL_DATA: GlobalState = {
 
 export const getDemoData = (language: Language = 'fr'): GlobalState => {
   const now = new Date();
-  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
-  const lastWeek = new Date(now); lastWeek.setDate(now.getDate() - 7);
-
-  const fmt = (d: Date) => d.toLocaleDateString(language === 'fr' ? 'fr-FR' : (language === 'nl' ? 'nl-NL' : 'en-US'), { day: '2-digit', month: '2-digit' });
+  const d = (daysAgo: number) => { const d = new Date(now); d.setDate(now.getDate() - daysAgo); return d; };
+  const fmt = (date: Date) => date.toLocaleDateString(language === 'fr' ? 'fr-FR' : (language === 'nl' ? 'nl-NL' : 'en-US'), { day: '2-digit', month: '2-digit' });
+  const fr = (fr: string, nl: string, en: string) => language === 'fr' ? fr : language === 'nl' ? nl : en;
 
   return {
     parentTutorialSeen: true,
-    language: language,
-    parentPin: '73df605645ebf3aca750aa13c079f9ee:bf375d4b25c1ccd172d6efe41753c6b6965e472c9acf88bea88b08f917afdac1d1ebbfc3181669f80ace18e3bad0cb52dea1e613ec555b4bb2692b869801c4e1', // Code "0000" hashé avec PBKDF2
+    language,
+    parentPin: '73df605645ebf3aca750aa13c079f9ee:bf375d4b25c1ccd172d6efe41753c6b6965e472c9acf88bea88b08f917afdac1d1ebbfc3181669f80ace18e3bad0cb52dea1e613ec555b4bb2692b869801c4e1', // PIN "0000"
     soundEnabled: true,
     parentBadge: 'EXPERT',
-    totalApprovedMissions: 15,
+    totalApprovedMissions: 24,
     maxBalance: 100,
+    currency: '€',
+    isPremium: true,
     updatedAt: now.toISOString(),
     children: [
       {
@@ -145,20 +146,25 @@ export const getDemoData = (language: Language = 'fr'): GlobalState => {
         name: 'Léo',
         avatar: 'Felix',
         colorClass: 'indigo',
-        balance: 14.50,
-        tutorialSeen: false,
+        balance: 22.50,
+        birthday: '2016-03-12',
+        tutorialSeen: true,
         giftRequested: false,
-        missionRequested: false,
+        missionRequested: true,
         goals: [
-          { id: 'dg1', name: 'Lego Star Wars', target: 30, icon: 'fa-solid fa-rocket', status: 'ACTIVE' }
+          { id: 'dg1', name: 'Lego Technic', target: 35, icon: 'fa-solid fa-rocket', status: 'ACTIVE' }
         ],
         missions: [
-          { id: 'dm1', title: language === 'fr' ? 'Ranger la chambre' : (language === 'nl' ? 'Kamer opruimen' : 'Clean room'), reward: 2, icon: 'fa-solid fa-broom', status: 'PENDING', createdAt: yesterday.toISOString() },
-          { id: 'dm2', title: language === 'fr' ? 'Sortir les poubelles' : (language === 'nl' ? 'Vuilnis buiten zetten' : 'Take out trash'), reward: 1, icon: 'fa-solid fa-trash', status: 'ACTIVE', createdAt: now.toISOString() }
+          { id: 'dm1', title: fr('Ranger la chambre', 'Kamer opruimen', 'Clean room'), reward: 2, icon: 'fa-solid fa-broom', status: 'PENDING', createdAt: d(1).toISOString() },
+          { id: 'dm2', title: fr('Sortir les poubelles', 'Vuilnis buiten zetten', 'Take out trash'), reward: 1, icon: 'fa-solid fa-trash', status: 'ACTIVE', createdAt: now.toISOString() },
+          { id: 'dm3', title: fr('Lecture 20 min', '20 min lezen', 'Read 20 min'), reward: 1.50, icon: 'fa-solid fa-book', status: 'ACTIVE', createdAt: d(2).toISOString() }
         ],
         history: [
-          { id: 'dh1', date: fmt(yesterday), title: language === 'fr' ? 'Missions semaine' : 'Missions', amount: 4 },
-          { id: 'dh2', date: fmt(lastWeek), title: language === 'fr' ? 'Cadeau Mamie' : 'Gift', amount: 10 }
+          { id: 'dh1', date: fmt(d(1)), title: fr('Missions de la semaine', 'Missies van de week', 'Weekly missions'), amount: 5.50 },
+          { id: 'dh2', date: fmt(d(4)), title: fr('Aide aux devoirs', 'Huiswerk hulp', 'Homework help'), amount: 3 },
+          { id: 'dh3', date: fmt(d(7)), title: fr('Cadeau Mamie', 'Cadeau Oma', 'Gift from grandma'), amount: 10 },
+          { id: 'dh4', date: fmt(d(10)), title: fr('Achat — Pokémon', 'Aankoop — Pokémon', 'Purchase — Pokémon'), amount: -8 },
+          { id: 'dh5', date: fmt(d(14)), title: fr('Missions quinzaine', 'Missies twee weken', 'Biweekly missions'), amount: 7 }
         ]
       },
       {
@@ -166,16 +172,25 @@ export const getDemoData = (language: Language = 'fr'): GlobalState => {
         name: 'Emma',
         avatar: 'Zoe',
         colorClass: 'pink',
-        balance: 45.00,
+        balance: 47.00,
+        birthday: '2014-07-25',
         tutorialSeen: true,
         giftRequested: true,
         missionRequested: false,
         goals: [
-          { id: 'dg2', name: language === 'fr' ? 'Vélo' : (language === 'nl' ? 'Fiets' : 'Bike'), target: 120, icon: 'fa-solid fa-bicycle', status: 'ACTIVE' }
+          { id: 'dg2', name: fr('Nouveau vélo', 'Nieuwe fiets', 'New bike'), target: 80, icon: 'fa-solid fa-bicycle', status: 'ACTIVE' },
+          { id: 'dg3', name: fr('Rollers', 'Skeelers', 'Rollerblades'), target: 35, icon: 'fa-solid fa-star', status: 'ACTIVE' }
         ],
-        missions: [],
+        missions: [
+          { id: 'dm4', title: fr('Mettre la table', 'Tafel dekken', 'Set the table'), reward: 0.50, icon: 'fa-solid fa-utensils', status: 'ACTIVE', createdAt: now.toISOString() },
+          { id: 'dm5', title: fr('Promener le chien', 'Hond uitlaten', 'Walk the dog'), reward: 2, icon: 'fa-solid fa-paw', status: 'ACTIVE', createdAt: d(1).toISOString() }
+        ],
         history: [
-          { id: 'dh3', date: fmt(yesterday), title: language === 'fr' ? 'Anniversaire' : 'Birthday', amount: 20 }
+          { id: 'dh6', date: fmt(d(1)), title: fr('Anniversaire Papa', 'Verjaardag Papa', "Dad's birthday"), amount: 20 },
+          { id: 'dh7', date: fmt(d(5)), title: fr('Missions semaine', 'Missies week', 'Weekly missions'), amount: 6 },
+          { id: 'dh8', date: fmt(d(8)), title: fr('Achat — Livre', 'Aankoop — Boek', 'Purchase — Book'), amount: -12 },
+          { id: 'dh9', date: fmt(d(12)), title: fr('Aide jardinage', 'Tuinieren', 'Garden help'), amount: 5 },
+          { id: 'dh10', date: fmt(d(20)), title: fr('Missions quinzaine', 'Missies twee weken', 'Biweekly missions'), amount: 8 }
         ]
       }
     ]
