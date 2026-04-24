@@ -7,6 +7,7 @@ import confetti from 'canvas-confetti';
 import { getIcon } from '../constants/icons';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { isAndroid } from '../hooks/usePlatform';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 interface ChildViewProps {
   data: ChildProfile;
@@ -97,6 +98,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
   const goalsScrollRef = useRef<HTMLDivElement>(null);
 
   const t = translations[language];
+  const isDark = useDarkMode();
   const prevBalance = useRef(data.balance);
   const [isBalanceAnimating, setIsBalanceAnimating] = useState(false);
   const [balanceDiff, setBalanceDiff] = useState<{ amount: number, type: 'GAIN' | 'LOSS' | 'PENALTY' } | null>(null);
@@ -175,8 +177,8 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
   const bgGradient = `from-${data.colorClass}-600 to-${data.colorClass}-400`;
 
   return (
-    <div className={`min-h-screen flex justify-center font-sans transition-colors duration-500 ${isAndroid ? 'bg-white dark:bg-slate-950' : ''}`} style={!isAndroid ? { background: '#0f172a' } : undefined}>
-      <div className={`w-full ${isAndroid ? 'bg-white dark:bg-slate-900 min-h-screen relative overflow-hidden pb-20' : 'max-w-lg md:max-w-7xl min-h-screen relative overflow-hidden pb-20'}`} style={!isAndroid ? { background: '#0f172a' } : undefined}>
+    <div className={`min-h-screen flex justify-center font-sans transition-colors duration-500 ${isAndroid ? 'bg-white dark:bg-slate-950' : ''}`} style={!isAndroid ? { background: isDark ? '#0f172a' : '#f8fafc' } : undefined}>
+      <div className={`w-full ${isAndroid ? 'bg-white dark:bg-slate-900 min-h-screen relative overflow-hidden pb-20' : 'max-w-lg md:max-w-7xl min-h-screen relative overflow-hidden pb-20'}`} style={!isAndroid ? { background: isDark ? '#0f172a' : '#f8fafc' } : undefined}>
 
         {balanceDiff && (
           <div className="fixed inset-0 flex items-center justify-center z-[70] pointer-events-none p-6">
@@ -315,7 +317,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
           </div>
         )}
 
-        <div className={`relative z-20 max-w-7xl mx-auto w-full ${isAndroid ? 'px-4 sm:px-6 -mt-10 bg-white dark:bg-slate-900 rounded-t-3xl pt-6' : 'px-[18px]'}`} style={!isAndroid ? { background: '#1e293b', borderRadius: '30px 30px 0 0', marginTop: -30, paddingTop: 24, minHeight: '60vh' } : undefined}>
+        <div className={`relative z-20 max-w-7xl mx-auto w-full ${isAndroid ? 'px-4 sm:px-6 -mt-10 bg-white dark:bg-slate-900 rounded-t-3xl pt-6' : 'px-[18px]'}`} style={!isAndroid ? { background: isDark ? '#1e293b' : '#ffffff', borderRadius: '30px 30px 0 0', marginTop: -30, paddingTop: 24, minHeight: '60vh' } : undefined}>
           {latestPenalty && (
             isAndroid ? (
               /* ── Android MD3 Penalty Alert ── */
@@ -427,20 +429,25 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                 </div>
               </div>
             ) : (
-              /* ── iOS History Panel — dark theme ── */
-              <div className="mb-6 animate-fade-in-up max-w-2xl mx-auto">
-                <div style={{ background: '#0f172a', borderRadius: 24, padding: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              /* ── iOS History — fixed overlay (prevents scroll-to-top bug) ── */
+              <div className="fixed inset-0 z-[200] flex items-end animate-fade-in" style={{ backdropFilter: 'blur(4px)', background: 'rgba(15,23,42,0.5)' }} onClick={() => setShowHistory(false)}>
+                <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: isDark ? '#1e293b' : '#ffffff', borderRadius: '28px 28px 0 0', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 -20px 60px rgba(0,0,0,0.3)' }}>
+                  {/* Handle */}
+                  <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4, flexShrink: 0 }}>
+                    <div style={{ width: 40, height: 4, borderRadius: 2, background: isDark ? 'rgba(255,255,255,0.15)' : '#e2e8f0' }} />
+                  </div>
+                  {/* Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px 14px', flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 30, height: 30, borderRadius: 10, background: 'rgba(129,140,248,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <i className="fa-solid fa-receipt" style={{ fontSize: 12, color: '#818cf8' }}></i>
                       </div>
-                      <h4 style={{ fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(148,163,184,0.7)' }}>{t.child.historyHeader}</h4>
+                      <h4 style={{ fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', color: isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8' }}>{t.child.historyHeader}</h4>
                     </div>
-                    <button onClick={() => setShowHistory(false)} aria-label={language === 'fr' ? 'Fermer l\'historique' : 'Close history'} style={{ width: 28, height: 28, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, color: 'rgba(148,163,184,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fa-solid fa-xmark" style={{ fontSize: 11 }} aria-hidden="true"></i></button>
+                    <button onClick={() => setShowHistory(false)} aria-label={language === 'fr' ? 'Fermer l\'historique' : 'Close history'} style={{ width: 28, height: 28, background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', border: 'none', borderRadius: 8, color: isDark ? 'rgba(148,163,184,0.6)' : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fa-solid fa-xmark" style={{ fontSize: 11 }} aria-hidden="true"></i></button>
                   </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+                  {/* Stats */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, margin: '0 20px 14px', flexShrink: 0 }}>
                     <div style={{ background: 'rgba(52,211,153,0.12)', borderRadius: 14, padding: '10px 14px', textAlign: 'center' }}>
                       <p style={{ fontSize: 9, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4, opacity: 0.7 }}>{t.child.totalGains}</p>
                       <p style={{ fontSize: 17, fontWeight: 900, color: '#34d399' }}>+{stats.totalGains.toFixed(2)}{curr}</p>
@@ -450,18 +457,18 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                       <p style={{ fontSize: 17, fontWeight: 900, color: '#f43f5e' }}>-{stats.totalLosses.toFixed(2)}{curr}</p>
                     </div>
                   </div>
-
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto no-scrollbar">
+                  {/* List */}
+                  <div style={{ overflowY: 'auto', flex: 1, padding: '0 20px' }} className="no-scrollbar">
                     {data.history && data.history.length > 0 ? data.history.map(entry => {
                       const neg = entry.amount < 0 || isPenalty(entry.title) || isPurchase(entry.title);
                       return (
-                        <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: neg ? 'rgba(255,255,255,0.06)' : 'rgba(52,211,153,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <i className={`fa-solid ${getEntryIcon(entry.title)}`} style={{ fontSize: 12, color: neg ? 'rgba(148,163,184,0.6)' : '#34d399' }}></i>
+                        <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}` }}>
+                          <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: neg ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)') : 'rgba(52,211,153,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <i className={`fa-solid ${getEntryIcon(entry.title)}`} style={{ fontSize: 12, color: neg ? (isDark ? 'rgba(148,163,184,0.6)' : '#94a3b8') : '#34d399' }}></i>
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontSize: 13, fontWeight: 700, color: 'rgba(226,232,240,0.9)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getTranslatedTitle(entry.title, language)}</p>
-                            <p style={{ fontSize: 10, color: 'rgba(148,163,184,0.4)', fontWeight: 600, marginTop: 1 }}>{entry.date}</p>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.9)' : '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getTranslatedTitle(entry.title, language)}</p>
+                            <p style={{ fontSize: 10, color: isDark ? 'rgba(148,163,184,0.4)' : '#94a3b8', fontWeight: 600, marginTop: 1 }}>{entry.date}</p>
                             {entry.note && !isPenalty(entry.title) && (
                               <div style={{ marginTop: 4, background: 'rgba(251,191,36,0.08)', borderRadius: 8, padding: '3px 8px', display: 'inline-flex', gap: 4, alignItems: 'flex-start' }}>
                                 <span style={{ fontSize: 10 }}>💬</span>
@@ -473,7 +480,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                             {neg ? '-' : '+'}{Math.abs(entry.amount).toFixed(2)}{curr}
                           </span>
                         </div>
-                      )
+                      );
                     }) : (
                       <div className="text-center py-10 opacity-30">
                         <i className="fa-solid fa-moon text-4xl mb-2"></i>
@@ -592,15 +599,15 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                             return 'linear-gradient(to right,#f87171,#fb7185)';
                           })();
                           return (
-                            <div key={goal.id} className="snap-start shrink-0 w-full animate-scale-in" style={{ background: '#0f172a', borderRadius: 24, padding: '18px 18px 16px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <div key={goal.id} className="snap-start shrink-0 w-full animate-scale-in" style={{ background: isDark ? '#0f172a' : '#ffffff', borderRadius: 24, padding: '18px 18px 16px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`, boxShadow: isDark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)' }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(148,163,184,0.7)', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
                                   {t.child.goalObjective}
                                   {index === 0 && <i className="fa-solid fa-star ml-1" style={{ fontSize: 9, color: '#fbbf24' }}></i>}
                                 </div>
                                 <div style={{ fontSize: 11, fontWeight: 800, color: pal.muted }}>{percentage}%</div>
                               </div>
-                              <div style={{ fontSize: 16, fontWeight: 800, color: 'white', marginBottom: 12, letterSpacing: '-0.3px' }}>{goal.name}</div>
+                              <div style={{ fontSize: 16, fontWeight: 800, color: isDark ? 'white' : '#1e293b', marginBottom: 12, letterSpacing: '-0.3px' }}>{goal.name}</div>
                               {isCompleted ? (
                                 <div style={{ background: 'rgba(52,211,153,0.12)', borderRadius: 12, padding: '8px 12px', fontSize: 11, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center' }}>
                                   <i className="fa-solid fa-circle-check mr-2"></i>
@@ -613,12 +620,12 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                                 </button>
                               ) : (
                                 <div>
-                                  <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 100, overflow: 'hidden', marginBottom: 8 }}>
+                                  <div style={{ width: '100%', height: 6, background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', borderRadius: 100, overflow: 'hidden', marginBottom: 8 }}>
                                     <div style={{ height: '100%', borderRadius: 100, background: progressBg, width: `${Math.max(percentage, 2)}%`, transition: 'width 1s ease-out' }} />
                                   </div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(148,163,184,0.55)' }}>{t.child.remaining} {(goal.target - data.balance).toFixed(2)}{curr}</span>
-                                    <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(148,163,184,0.55)' }}>/ {goal.target}{curr}</span>
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: isDark ? 'rgba(148,163,184,0.55)' : '#94a3b8' }}>{t.child.remaining} {(goal.target - data.balance).toFixed(2)}{curr}</span>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: isDark ? 'rgba(148,163,184,0.55)' : '#94a3b8' }}>/ {goal.target}{curr}</span>
                                   </div>
                                 </div>
                               )}
@@ -653,9 +660,9 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                 </div>
               ) : (
                 /* ── iOS Empty Goal — dark theme ── */
-                <div style={{ background: '#0f172a', borderRadius: 20, padding: '28px 20px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <i className={`fa-solid fa-bullseye text-4xl mb-3 ${isGoalNudging ? 'text-emerald-400 animate-bounce' : ''}`} style={{ color: isGoalNudging ? '#34d399' : 'rgba(255,255,255,0.15)', display: 'block', marginBottom: 12 }}></i>
-                  <p style={{ color: 'rgba(148,163,184,0.7)', fontWeight: 600, fontSize: 13, marginBottom: 16, lineHeight: 1.5 }}>{isGoalNudging ? t.child.nudgeSent : t.child.askParentsGoal}</p>
+                <div style={{ background: isDark ? '#0f172a' : '#ffffff', borderRadius: 20, padding: '28px 20px', textAlign: 'center', border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`, boxShadow: isDark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)' }}>
+                  <i className={`fa-solid fa-bullseye text-4xl mb-3 ${isGoalNudging ? 'text-emerald-400 animate-bounce' : ''}`} style={{ color: isGoalNudging ? '#34d399' : isDark ? 'rgba(255,255,255,0.15)' : '#e2e8f0', display: 'block', marginBottom: 12 }}></i>
+                  <p style={{ color: isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8', fontWeight: 600, fontSize: 13, marginBottom: 16, lineHeight: 1.5 }}>{isGoalNudging ? t.child.nudgeSent : t.child.askParentsGoal}</p>
                   <button onClick={() => { setIsGoalNudging(true); if (onRequestGift) onRequestGift(); setTimeout(() => setIsGoalNudging(false), 3000); }} style={{ width: '100%', background: `${CHILD_PAL[data.colorClass]?.from || '#818cf8'}22`, border: 'none', borderRadius: 14, padding: '12px', fontSize: 11, fontWeight: 800, color: CHILD_PAL[data.colorClass]?.muted || '#c7d2fe', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                     {t.child.addGoalAction}
                   </button>
@@ -739,7 +746,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                       <div style={{ width: 32, height: 32, borderRadius: 10, background: `${pal.from}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <i className="fa-solid fa-list-check" style={{ fontSize: 13, color: pal.muted }}></i>
                       </div>
-                      <h2 style={{ fontSize: 10, fontWeight: 800, color: 'rgba(148,163,184,0.5)', textTransform: 'uppercase', letterSpacing: '0.18em' }}>
+                      <h2 style={{ fontSize: 10, fontWeight: 800, color: isDark ? 'rgba(148,163,184,0.5)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.18em' }}>
                         {t.child.myMissions}
                       </h2>
                     </div>
@@ -753,13 +760,13 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                               key={mission.id}
                               disabled={isPending}
                               onClick={() => handleMissionClick(mission.id)}
-                              style={{ width: '100%', background: '#0f172a', borderRadius: 20, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, border: `1px solid ${isPending ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.05)'}`, cursor: isPending ? 'default' : 'pointer', textAlign: 'left' }}
+                              style={{ width: '100%', background: isDark ? '#0f172a' : '#ffffff', borderRadius: 20, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, border: `1px solid ${isPending ? 'rgba(250,204,21,0.15)' : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)'}`, cursor: isPending ? 'default' : 'pointer', textAlign: 'left', boxShadow: isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.05)' }}
                             >
-                              <div style={{ width: 44, height: 44, borderRadius: 14, flexShrink: 0, background: isPending ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                                <i className={isPending ? 'fa-solid fa-hourglass-half' : getIcon(mission.icon)} style={{ color: isPending ? '#fbbf24' : 'rgba(226,232,240,0.8)' }}></i>
+                              <div style={{ width: 44, height: 44, borderRadius: 14, flexShrink: 0, background: isPending ? 'rgba(250,204,21,0.15)' : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                                <i className={isPending ? 'fa-solid fa-hourglass-half' : getIcon(mission.icon)} style={{ color: isPending ? '#fbbf24' : isDark ? 'rgba(226,232,240,0.8)' : '#64748b' }}></i>
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(226,232,240,0.9)', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTranslatedTitle(mission.title, language)}</div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.9)' : '#334155', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTranslatedTitle(mission.title, language)}</div>
                                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: isPending ? 'rgba(250,204,21,0.1)' : 'rgba(52,211,153,0.1)', borderRadius: 8, padding: '3px 8px' }}>
                                   <i className={`fa-solid ${isPending ? 'fa-hourglass-half' : 'fa-circle-dot'}`} style={{ fontSize: 8, color: isPending ? '#fbbf24' : '#34d399' }} />
                                   <span style={{ fontSize: 9, fontWeight: 800, color: isPending ? '#fbbf24' : '#34d399', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -778,13 +785,13 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                           );
                         })
                       ) : (
-                        <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <i className="fa-solid fa-rocket" style={{ fontSize: 22, color: 'rgba(255,255,255,0.2)' }}></i>
+                        <div style={{ background: isDark ? '#0f172a' : '#ffffff', border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`, borderRadius: 20, padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: isDark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)' }}>
+                          <div style={{ width: 56, height: 56, borderRadius: '50%', background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <i className="fa-solid fa-rocket" style={{ fontSize: 22, color: isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1' }}></i>
                           </div>
                           <div>
-                            <p style={{ color: 'rgba(226,232,240,0.5)', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>{t.child.noMissions}</p>
-                            <p style={{ color: 'rgba(148,163,184,0.4)', fontSize: 11, fontWeight: 500 }}>{isNudging ? t.child.nudgeSent : t.child.askNewMission}</p>
+                            <p style={{ color: isDark ? 'rgba(226,232,240,0.5)' : '#64748b', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>{t.child.noMissions}</p>
+                            <p style={{ color: isDark ? 'rgba(148,163,184,0.4)' : '#94a3b8', fontSize: 11, fontWeight: 500 }}>{isNudging ? t.child.nudgeSent : t.child.askNewMission}</p>
                           </div>
                           <button onClick={() => { setIsNudging(true); if (onRequestMission) onRequestMission(); setTimeout(() => setIsNudging(false), 3000); }} style={{ background: `${pal.from}22`, border: 'none', borderRadius: 12, padding: '10px 20px', fontSize: 11, fontWeight: 800, color: pal.muted, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                             {t.child.askButton}

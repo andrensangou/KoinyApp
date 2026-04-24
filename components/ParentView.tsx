@@ -23,6 +23,7 @@ import { checkBiometricAvailability, authenticateWithBiometric, getBiometricLabe
 import { Capacitor } from '@capacitor/core';
 import { useModal } from '../hooks/useModal';
 import { isAndroid } from '../hooks/usePlatform';
+import { useDarkMode } from '../hooks/useDarkMode';
 import { CURRENCIES } from '../types';
 
 interface ParentViewProps {
@@ -315,6 +316,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [isHeroVisible, setIsHeroVisible] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
   const t = translations[language];
+  const isDark = useDarkMode();
   const activeChild = useMemo(() => data.children ? data.children.find(c => c.id === selectedChildId) : null, [data.children, selectedChildId]);
 
   // Sync Listeners
@@ -2467,7 +2469,7 @@ const ParentView: React.FC<ParentViewProps> = ({
             </div>
           ) : (
             /* ── iOS Dark Empty State ── */
-            <div style={{ minHeight: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px 100px', marginTop: -20 }} className="animate-fade-in-up">
+            <div style={{ minHeight: '100vh', background: isDark ? '#0f172a' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px 100px', marginTop: -20 }} className="animate-fade-in-up">
               <div style={{ width: '100%', background: 'white', borderRadius: 32, padding: '36px 28px 32px', boxShadow: '0 8px 40px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#818cf8,#4338ca)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, boxShadow: '0 12px 36px rgba(79,70,229,0.35)' }}>
                   <i className="fa-solid fa-people-roof" style={{ fontSize: 28, color: 'white' }} />
@@ -2513,11 +2515,12 @@ const ParentView: React.FC<ParentViewProps> = ({
                   /* iOS child form — dark theme */
                   (() => {
                     const pal = FORM_PAL[formColorClass] || FORM_PAL.indigo;
-                    const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.09)', borderRadius: 16, height: 52, color: 'rgba(226,232,240,0.92)', fontSize: 15, fontWeight: 700, padding: '0 16px', outline: 'none', width: '100%', WebkitAppearance: 'none', appearance: 'none' };
+                    const inputStyle: React.CSSProperties = { background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)'}`, borderRadius: 16, height: 52, color: isDark ? 'rgba(226,232,240,0.92)' : '#1e293b', fontSize: 15, fontWeight: 700, padding: '0 16px', outline: 'none', width: '100%', WebkitAppearance: 'none', appearance: 'none' };
+                    const labelStyle: React.CSSProperties = { fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' };
                     return (
-                      <div style={{ background: '#0f172a', minHeight: '100%', padding: '0 20px 48px' }}>
+                      <div style={{ background: isDark ? '#0f172a' : '#f1f5f9', minHeight: '100%', padding: '0 20px 48px' }}>
                         {/* Back button */}
-                        <button type="button" onClick={() => setSettingsView('LIST')} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(226,232,240,0.7)', fontWeight: 700, fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 20px' }}>
+                        <button type="button" onClick={() => setSettingsView('LIST')} style={{ display: 'flex', alignItems: 'center', gap: 6, color: isDark ? 'rgba(226,232,240,0.7)' : '#64748b', fontWeight: 700, fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 20px' }}>
                           <i className="fa-solid fa-chevron-left" style={{ fontSize: 11 }}></i>
                           {language === 'fr' ? 'Retour' : language === 'nl' ? 'Terug' : 'Back'}
                         </button>
@@ -2541,13 +2544,13 @@ const ParentView: React.FC<ParentViewProps> = ({
 
                           {/* PRÉNOM */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childName}</label>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childName}</label>
                             <input type="text" value={formName} onChange={e => setFormName(e.target.value)} required style={inputStyle} placeholder={t.parent.childName} />
                           </div>
 
                           {/* DATE DE NAISSANCE */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childBirthday}</label>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childBirthday}</label>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.4fr', gap: 8 }}>
                               <select value={formBirthday ? parseInt(formBirthday.split('-')[2]) : ''} onChange={e => { const d = e.target.value.padStart(2,'0'); const m = formBirthday ? formBirthday.split('-')[1] : '01'; const y = formBirthday ? formBirthday.split('-')[0] : new Date().getFullYear().toString(); setFormBirthday(`${y}-${m}-${d}`); }} style={inputStyle}>
                                 <option value="" disabled>J</option>
@@ -2566,18 +2569,18 @@ const ParentView: React.FC<ParentViewProps> = ({
 
                           {/* AVATAR */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, position: 'relative' }}>
-                            <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childAvatar}</label>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childAvatar}</label>
                             <button type="button" onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)} style={{ ...inputStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', height: 56, padding: '0 16px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                 <div style={{ width: 36, height: 36 }}>{renderAvatar(formAvatar, "w-full h-full", formColorClass)}</div>
-                                <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(226,232,240,0.9)' }}>{formAvatar}</span>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.9)' : '#334155' }}>{formAvatar}</span>
                               </div>
-                              <i className={`fa-solid fa-chevron-down transition-transform ${isAvatarDropdownOpen ? 'rotate-180' : ''}`} style={{ fontSize: 12, color: 'rgba(148,163,184,0.6)' }}></i>
+                              <i className={`fa-solid fa-chevron-down transition-transform ${isAvatarDropdownOpen ? 'rotate-180' : ''}`} style={{ fontSize: 12, color: isDark ? 'rgba(148,163,184,0.6)' : '#94a3b8' }}></i>
                             </button>
                             {isAvatarDropdownOpen && (
                               <>
                                 <div className="fixed inset-0 z-50" onClick={() => setIsAvatarDropdownOpen(false)}></div>
-                                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8, padding: 12, background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18, zIndex: 60, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }} className="animate-scale-in">
+                                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8, padding: 12, background: isDark ? '#1e293b' : '#ffffff', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`, borderRadius: 18, zIndex: 60, boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.12)' }} className="animate-scale-in">
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 280, overflowY: 'auto' }} className="no-scrollbar">
                                     {AVAILABLE_SEEDS.map(seed => (
                                       <button key={seed} type="button" onClick={() => { setFormAvatar(seed); setIsAvatarDropdownOpen(false); }} style={{ border: formAvatar === seed ? `2.5px solid ${pal.from}` : '2px solid transparent', borderRadius: 14, padding: 4, background: 'transparent', cursor: 'pointer', boxShadow: formAvatar === seed ? `0 0 0 1px ${pal.from}44` : 'none', transition: 'all 0.15s' }}>
@@ -2592,31 +2595,31 @@ const ParentView: React.FC<ParentViewProps> = ({
 
                           {/* COULEUR FAVORITE */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childColor}</label>
+                            <label style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childColor}</label>
                             <div style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: 18, padding: '16px 12px' }}>
                               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12 }}>
                                 {AVAILABLE_COLORS.map(color => {
                                   const colorVal = FORM_PAL[color]?.from || '#818cf8';
                                   const isActive = formColorClass === color;
                                   return (
-                                    <button key={color} type="button" onClick={() => setFormColorClass(color)} title={(t.colors as any)[color]} style={{ aspectRatio: '1', borderRadius: '50%', background: colorVal, cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', transform: isActive ? 'scale(1.18)' : 'scale(1)', boxShadow: isActive ? `0 0 0 3px #0f172a, 0 0 0 5px ${colorVal}, 0 4px 16px ${colorVal}66` : `0 2px 8px ${colorVal}44`, opacity: isActive ? 1 : 0.55 }}>
+                                    <button key={color} type="button" onClick={() => setFormColorClass(color)} title={(t.colors as any)[color]} style={{ aspectRatio: '1', borderRadius: '50%', background: colorVal, cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', transform: isActive ? 'scale(1.18)' : 'scale(1)', boxShadow: isActive ? `0 0 0 3px ${isDark ? '#0f172a' : '#f1f5f9'}, 0 0 0 5px ${colorVal}, 0 4px 16px ${colorVal}66` : `0 2px 8px ${colorVal}44`, opacity: isActive ? 1 : 0.55 }}>
                                       {isActive && <i className="fa-solid fa-check" style={{ fontSize: 11, color: 'white' }}></i>}
                                     </button>
                                   );
                                 })}
                               </div>
-                              <p style={{ textAlign: 'center', fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.6)', textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 12 }}>{(t.colors as any)[formColorClass]}</p>
+                              <p style={{ textAlign: 'center', fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.6)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 12 }}>{(t.colors as any)[formColorClass]}</p>
                             </div>
                           </div>
 
                           {/* OBJECTIFS */}
-                          <div ref={formGoalsRef} style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: 18, overflow: 'hidden' }}>
-                            <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div ref={formGoalsRef} style={{ background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`, borderRadius: 18, overflow: 'hidden' }}>
+                            <div style={{ padding: '14px 16px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                 <div style={{ width: 32, height: 32, borderRadius: 10, background: `${pal.from}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   <i className="fa-solid fa-bullseye-arrow" style={{ fontSize: 13, color: pal.from }}></i>
                                 </div>
-                                <span style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childGoalsTitle}</span>
+                                <span style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.8)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t.parent.childGoalsTitle}</span>
                               </div>
                               <button type="button" onClick={handleAddGoalToForm} style={{ background: `${pal.from}22`, border: 'none', borderRadius: 10, padding: '6px 12px', fontSize: 10, fontWeight: 900, color: pal.from, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                                 <i className="fa-solid fa-plus" style={{ fontSize: 10 }}></i> {t.common.add}
@@ -2624,19 +2627,19 @@ const ParentView: React.FC<ParentViewProps> = ({
                             </div>
                             <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 80 }}>
                               {formGoals.length === 0 ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8, color: 'rgba(148,163,184,0.3)' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8, color: isDark ? 'rgba(148,163,184,0.3)' : '#cbd5e1' }}>
                                   <i className="fa-solid fa-bullseye" style={{ fontSize: 22 }}></i>
                                   <p style={{ fontSize: 11, fontStyle: 'italic', fontWeight: 600 }}>{t.parent.goalsEmpty.noneInForm}</p>
                                 </div>
                               ) : formGoals.map((goal) => (
-                                <div key={goal.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.06)' }} className="animate-scale-in">
-                                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(148,163,184,0.7)', flexShrink: 0 }}>
+                                <div key={goal.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', borderRadius: 14, border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` }} className="animate-scale-in">
+                                  <div style={{ width: 36, height: 36, borderRadius: 10, background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8', flexShrink: 0 }}>
                                     <i className={getIcon(goal.icon, 'fa-solid fa-bullseye')} style={{ fontSize: 13 }}></i>
                                   </div>
-                                  <input type="text" value={goal.name} onChange={e => handleUpdateGoal(goal.id, { name: e.target.value })} placeholder={t.parent.childGoalName} style={{ flex: 1, minWidth: 80, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontWeight: 700, color: 'rgba(226,232,240,0.9)' }} />
+                                  <input type="text" value={goal.name} onChange={e => handleUpdateGoal(goal.id, { name: e.target.value })} placeholder={t.parent.childGoalName} style={{ flex: 1, minWidth: 80, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.9)' : '#334155' }} />
                                   <div style={{ position: 'relative' }}>
-                                    <input type="number" value={goal.target || ''} onChange={e => handleUpdateGoal(goal.id, { target: parseFloat(e.target.value) || 0 })} placeholder="0" style={{ width: 72, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontWeight: 700, color: 'rgba(226,232,240,0.9)', textAlign: 'right', paddingRight: 18 }} />
-                                    <span style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'rgba(148,163,184,0.5)', pointerEvents: 'none', fontWeight: 700 }}>{curr}</span>
+                                    <input type="number" value={goal.target || ''} onChange={e => handleUpdateGoal(goal.id, { target: parseFloat(e.target.value) || 0 })} placeholder="0" style={{ width: 72, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.9)' : '#334155', textAlign: 'right', paddingRight: 18 }} />
+                                    <span style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: isDark ? 'rgba(148,163,184,0.5)' : '#94a3b8', pointerEvents: 'none', fontWeight: 700 }}>{curr}</span>
                                   </div>
                                   <button type="button" onClick={() => handleRemoveGoal(goal.id)} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(244,63,94,0.12)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f43f5e', flexShrink: 0 }}>
                                     <i className="fa-solid fa-trash-can" style={{ fontSize: 11 }}></i>
@@ -3973,14 +3976,14 @@ const ParentView: React.FC<ParentViewProps> = ({
             {/* Backdrop */}
             <div onClick={() => setDashGoalSheetOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)' }} />
             {/* Sheet */}
-            <div style={{ position: 'relative', zIndex: 1, width: '100%', background: '#1e293b', borderRadius: '28px 28px 0 0', padding: '0 20px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)', boxShadow: '0 -20px 60px rgba(0,0,0,0.4)' }}>
+            <div style={{ position: 'relative', zIndex: 1, width: '100%', background: isDark ? '#1e293b' : '#ffffff', borderRadius: '28px 28px 0 0', padding: '0 20px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)', boxShadow: isDark ? '0 -20px 60px rgba(0,0,0,0.4)' : '0 -20px 60px rgba(0,0,0,0.12)' }}>
               {/* Handle */}
               <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 16 }}>
-                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+                <div style={{ width: 40, height: 4, borderRadius: 2, background: isDark ? 'rgba(255,255,255,0.15)' : '#e2e8f0' }} />
               </div>
               {/* Title */}
               <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: 18, fontWeight: 900, color: 'rgba(226,232,240,0.95)', letterSpacing: '-0.4px' }}>
+                <p style={{ fontSize: 18, fontWeight: 900, color: isDark ? 'rgba(226,232,240,0.95)' : '#1e293b', letterSpacing: '-0.4px' }}>
                   {isEditing
                     ? (language === 'fr' ? 'Modifier l\'objectif' : language === 'nl' ? 'Doel bewerken' : 'Edit Goal')
                     : (language === 'fr' ? 'Nouvel objectif' : language === 'nl' ? 'Nieuw doel' : 'New Goal')}
@@ -3988,14 +3991,14 @@ const ParentView: React.FC<ParentViewProps> = ({
               </div>
               {/* Icon picker */}
               <div style={{ marginBottom: 16 }}>
-                <p style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.7)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>
                   {language === 'fr' ? 'Icône' : language === 'nl' ? 'Pictogram' : 'Icon'}
                 </p>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {DASH_GOAL_ICONS.map(({ key, emoji }) => (
                     <button key={key} type="button" onClick={() => setDashGoalIcon(key)} style={{
                       width: 44, height: 44, borderRadius: 12, fontSize: 20, border: 'none', cursor: 'pointer',
-                      background: dashGoalIcon === key ? `${pal.from}28` : 'rgba(255,255,255,0.05)',
+                      background: dashGoalIcon === key ? `${pal.from}28` : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
                       outline: dashGoalIcon === key ? `2px solid ${pal.from}` : '2px solid transparent',
                       transition: 'all 0.15s',
                     }}>{emoji}</button>
@@ -4004,7 +4007,7 @@ const ParentView: React.FC<ParentViewProps> = ({
               </div>
               {/* Name input */}
               <div style={{ marginBottom: 12 }}>
-                <p style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.7)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
                   {language === 'fr' ? 'Nom' : language === 'nl' ? 'Naam' : 'Name'}
                 </p>
                 <input
@@ -4013,12 +4016,12 @@ const ParentView: React.FC<ParentViewProps> = ({
                   onChange={e => setDashGoalName(e.target.value.slice(0, 50))}
                   placeholder={language === 'fr' ? 'Ex: Nouveau vélo' : language === 'nl' ? 'Bijv: Nieuwe fiets' : 'E.g. New bicycle'}
                   maxLength={50}
-                  style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '14px 16px', fontSize: 15, fontWeight: 700, color: 'rgba(226,232,240,0.95)', outline: 'none', WebkitAppearance: 'none' }}
+                  style={{ width: '100%', boxSizing: 'border-box', background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`, borderRadius: 14, padding: '14px 16px', fontSize: 15, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.95)' : '#1e293b', outline: 'none', WebkitAppearance: 'none' }}
                 />
               </div>
               {/* Target input */}
               <div style={{ marginBottom: 24 }}>
-                <p style={{ fontSize: 10, fontWeight: 900, color: 'rgba(148,163,184,0.7)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
                   {language === 'fr' ? `Montant cible (${curr})` : language === 'nl' ? `Doelbedrag (${curr})` : `Target amount (${curr})`}
                 </p>
                 <div style={{ position: 'relative' }}>
@@ -4028,9 +4031,9 @@ const ParentView: React.FC<ParentViewProps> = ({
                     value={dashGoalTarget}
                     onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 1000) return; setDashGoalTarget(e.target.value); }}
                     placeholder="0"
-                    style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '14px 16px 14px 16px', paddingRight: 48, fontSize: 15, fontWeight: 700, color: 'rgba(226,232,240,0.95)', outline: 'none', WebkitAppearance: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`, borderRadius: 14, padding: '14px 16px 14px 16px', paddingRight: 48, fontSize: 15, fontWeight: 700, color: isDark ? 'rgba(226,232,240,0.95)' : '#1e293b', outline: 'none', WebkitAppearance: 'none' }}
                   />
-                  <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 800, color: 'rgba(148,163,184,0.5)' }}>{curr}</span>
+                  <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 800, color: isDark ? 'rgba(148,163,184,0.5)' : '#94a3b8' }}>{curr}</span>
                 </div>
               </div>
               {/* Buttons */}
