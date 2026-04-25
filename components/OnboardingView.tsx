@@ -75,6 +75,23 @@ const slides: Slide[] = [
             { icon: 'fa-solid fa-mobile-screen', textFr: 'Widget iOS intégré', textNl: 'Geïntegreerde iOS-widget', textEn: 'Built-in iOS widget' },
         ],
     },
+    {
+        emoji: '🚀',
+        icon: 'fa-solid fa-flag-checkered',
+        titleFr: "Prêt en\n3 étapes",
+        titleNl: "Klaar in\n3 stappen",
+        titleEn: "Ready in\n3 steps",
+        descFr: "C'est simple — voici comment démarrer dès aujourd'hui avec ton enfant.",
+        descNl: "Het is eenvoudig — zo begin je vandaag nog met je kind.",
+        descEn: "It's simple — here's how to get started with your child today.",
+        gradient: 'from-amber-500 via-orange-600 to-rose-700',
+        accentColor: 'amber',
+        features: [
+            { icon: 'fa-solid fa-circle-1', textFr: 'Crée le profil de ton enfant', textNl: 'Maak het profiel van je kind aan', textEn: 'Create your child\'s profile' },
+            { icon: 'fa-solid fa-circle-2', textFr: 'Ajoute une première mission', textNl: 'Voeg een eerste missie toe', textEn: 'Add a first mission' },
+            { icon: 'fa-solid fa-circle-3', textFr: 'Valide → l\'argent est crédité !', textNl: 'Valideer → geld wordt bijgeschreven!', textEn: 'Approve → money is credited!' },
+        ],
+    },
 ];
 
 const languages: { code: Language; label: string; flag: string }[] = [
