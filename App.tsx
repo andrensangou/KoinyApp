@@ -1289,6 +1289,10 @@ const App: React.FC = () => {
       const result = await loadData();
       setData(result.data || INITIAL_DATA);
       setOwnerId(result.ownerId);
+      // Track onboarding completion at login if onboarding was seen but not yet tracked
+      if (localStorage.getItem('koiny_onboarding_seen') && result.ownerId && result.ownerId !== 'demo') {
+        getSupabase().from('profiles').update({ onboarding_completed_at: new Date().toISOString() }).eq('id', result.ownerId).then(() => {});
+      }
     }
     setLoading(false);
     setView('LOGIN');
@@ -1358,6 +1362,12 @@ const App: React.FC = () => {
             onSetLanguage={setLanguage}
             onComplete={() => {
               localStorage.setItem('koiny_onboarding_seen', '1');
+              // Track onboarding completion in Supabase (fire-and-forget)
+              getSupabase().auth.getUser().then(({ data: u }) => {
+                if (u?.user?.id) {
+                  getSupabase().from('profiles').update({ onboarding_completed_at: new Date().toISOString() }).eq('id', u.user.id);
+                }
+              });
               setView('AUTH');
             }}
           />
