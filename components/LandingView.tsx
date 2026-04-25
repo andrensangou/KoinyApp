@@ -190,7 +190,7 @@ const LandingView: React.FC<LandingViewProps> = ({ language, onGetStarted, onSet
 
             {/* Main App Mockup */}
             <div className="relative w-[300px] h-auto bg-slate-900 rounded-[3.5rem] border-[10px] border-slate-800 dark:border-slate-950 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden ring-4 ring-indigo-500/10 transition-all duration-500">
-              <img src="/child_dashboard_mockup.png" alt="App Preview" className="w-full h-full object-cover" />
+              <img src={`/child_dashboard_mockup_${language}.png`} alt="App Preview" className="w-full h-full object-cover" />
             </div>
           </div>
         </div>
