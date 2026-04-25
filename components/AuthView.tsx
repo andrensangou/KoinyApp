@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { translations } from '../i18n';
-import { Language, GlobalState, getDemoData } from '../types';
+import { Language } from '../types';
 import { getSupabase, signInWithGoogle, signInWithApple } from '../services/supabase';
 import { SUPABASE_URL } from '../config';
 import HelpModal from './HelpModal';
@@ -25,18 +25,6 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
   const [error, setError] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const demoTapCount = useRef(0);
-  const demoTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleDemoTap = () => {
-    demoTapCount.current += 1;
-    if (demoTapTimer.current) clearTimeout(demoTapTimer.current);
-    demoTapTimer.current = setTimeout(() => { demoTapCount.current = 0; }, 1500);
-    if (demoTapCount.current >= 7) {
-      demoTapCount.current = 0;
-      onLoginSuccess(getDemoData(language));
-    }
-  };
 
   const t = translations[language];
   const supabase = getSupabase();
@@ -307,7 +295,7 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
         </div>
 
         <div className="flex flex-col items-center justify-center mt-6 gap-2">
-          <p onClick={handleDemoTap} className="text-slate-500 dark:text-slate-400 text-xs flex items-center gap-1 opacity-80 select-none"><i className="fa-solid fa-shield-halved"></i> {isConfigured ? t.auth.cloudSync : language === 'en' ? "Local Mode (No cloud sync)" : "Mode Local (Données non synchronisées)"}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-xs flex items-center gap-1 opacity-80 select-none"><i className="fa-solid fa-shield-halved"></i> {isConfigured ? t.auth.cloudSync : language === 'en' ? "Local Mode (No cloud sync)" : "Mode Local (Données non synchronisées)"}</p>
           <button onClick={triggerLegalModal} className="text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 underline decoration-slate-300 dark:decoration-slate-700 hover:decoration-indigo-500 transition-colors uppercase font-black tracking-widest">{t.legal.link}</button>
         </div>
       </div>
