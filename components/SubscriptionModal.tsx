@@ -384,7 +384,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               const period = isYearly ? (language === 'fr' ? '/an' : language === 'nl' ? '/jaar' : '/year') : (language === 'fr' ? '/mois' : language === 'nl' ? '/maand' : '/month');
               const desc = isMonthly
                 ? (language === 'fr' ? 'Facturé mensuellement' : language === 'nl' ? 'Maandelijks gefactureerd' : 'Billed monthly, cancel anytime')
-                : (language === 'fr' ? `Seulement ${(parseFloat(product.price) / 12).toFixed(2)}€/mois` : language === 'nl' ? `Slechts ${(parseFloat(product.price) / 12).toFixed(2)}€/maand` : `Only ${(parseFloat(product.price) / 12).toFixed(2)}€/month — best value`);
+                : (() => { const rawPrice = parseFloat(product.price.replace(/[^0-9.,]/g, '').replace(',', '.')); const monthly = isNaN(rawPrice) ? '?' : (rawPrice / 12).toFixed(2); const sym = (product.price.match(/^[^0-9\s.,]+/) || ['€'])[0]; return language === 'fr' ? `Seulement ${sym}${monthly}/mois` : language === 'nl' ? `Slechts ${sym}${monthly}/maand` : `Only ${sym}${monthly}/month — best value`; })();
               return (
                 <div key={product.id} onClick={() => !isCurrentSubscription && setSelectedPlan(product.id)} style={{
                   borderRadius: 20, padding: '16px 18px', cursor: isCurrentSubscription ? 'default' : 'pointer',

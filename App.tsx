@@ -1356,22 +1356,23 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen ${isOverflowing ? 'overflow-active' : ''}`}>
       {view === 'LANDING' && (
-        !localStorage.getItem('koiny_onboarding_seen')
-          ? <OnboardingView
-            language={data.language}
-            onSetLanguage={setLanguage}
-            onComplete={() => {
-              localStorage.setItem('koiny_onboarding_seen', '1');
-              // Track onboarding completion in Supabase (fire-and-forget)
-              getSupabase().auth.getUser().then(({ data: u }) => {
-                if (u?.user?.id) {
-                  getSupabase().from('profiles').update({ onboarding_completed_at: new Date().toISOString() }).eq('id', u.user.id);
-                }
-              });
-              setView('AUTH');
-            }}
-          />
-          : <AuthView language={data.language} onSetLanguage={setLanguage} onLoginSuccess={handleLoginSuccess} />
+        !Capacitor.isNativePlatform()
+          ? <LandingView language={data.language} onSetLanguage={setLanguage} onGetStarted={() => setView('AUTH')} />
+          : !localStorage.getItem('koiny_onboarding_seen')
+            ? <OnboardingView
+              language={data.language}
+              onSetLanguage={setLanguage}
+              onComplete={() => {
+                localStorage.setItem('koiny_onboarding_seen', '1');
+                getSupabase().auth.getUser().then(({ data: u }) => {
+                  if (u?.user?.id) {
+                    getSupabase().from('profiles').update({ onboarding_completed_at: new Date().toISOString() }).eq('id', u.user.id);
+                  }
+                });
+                setView('AUTH');
+              }}
+            />
+            : <AuthView language={data.language} onSetLanguage={setLanguage} onLoginSuccess={handleLoginSuccess} />
       )}
       {view === 'AUTH' && <AuthView language={data.language} onSetLanguage={setLanguage} onLoginSuccess={handleLoginSuccess} />}
       {view === 'LOGIN' && <LoginView data={data} onSelectChild={handleSelectChild} onParentAccess={() => setView('PARENT')} />}

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { translations } from '../i18n';
-import { Language } from '../types';
+import { Language, GlobalState } from '../types';
 import { getSupabase, signInWithGoogle, signInWithApple } from '../services/supabase';
 import { SUPABASE_URL } from '../config';
 import HelpModal from './HelpModal';

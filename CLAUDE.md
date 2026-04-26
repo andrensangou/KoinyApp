@@ -8,7 +8,7 @@
 Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
-**Statut:** Publiée sur l'App Store (version 1.0.4). Version 1.0.5 build 6 en cours de test TestFlight (24/04/2026). Android en cours de finalisation.
+**Statut:** Publiée sur l'App Store (version 1.0.4). Version 1.0.5 build 7 en cours de soumission App Store (26/04/2026). Android en cours de finalisation.
 
 ## Regles critiques
 
@@ -167,6 +167,17 @@ const t = translations[data.language || 'fr'];
 - ✅ Refresh premium périodique: `visibilitychange` (retour premier plan) + intervalle 6h → détecte annulations
 - ✅ Fix: `waitForInit()` — produits ne chargeaient pas car modal ouvert avant init RevenueCat
 - ✅ Fix: SubscriptionModal retry auto + bouton "Réessayer" + spinner achat + anti double-clic
+
+### Corrections appliquées (26/04/2026 — Landing page, onboarding, soumission 1.0.5)
+**Contexte**: Préparation soumission App Store version 1.0.5 build 7.
+- ✅ **LandingView redesignée** (`components/LandingView.tsx`): port 1:1 du site officiel koiny.app — hero avec float cards, section problèmes (3 pain points emoji), 6 features cards, aperçu 3 mockups (parent/enfant/missions), how-it-works 3 étapes numérotées, why koiny 6 cartes emoji, pricing free vs premium gradient indigo, CTA dark avec App Store badge, footer 3 colonnes + disclaimer simulateur. I18n FR/NL/EN inline complet. Gated `!Capacitor.isNativePlatform()` → web only.
+- ✅ **Mockups multilingues** (`/public/`): 9 fichiers — `parent_dashboard_mockup_{fr,nl,en}.png`, `child_dashboard_mockup_{fr,nl,en}.png`, `missions_mockup_{fr,nl,en}.png`. Noms normalisés (suppression des `.png.png` en double).
+- ✅ **Onboarding 4e slide** (`components/OnboardingView.tsx`): slide "Prêt en 3 étapes" avec ①②③ (créer profil, ajouter mission, valider). Gradient amber→orange→rose.
+- ✅ **Tracking onboarding** (Supabase): colonne `onboarding_completed_at timestamptz` dans `profiles`. Mise à jour dans `handleLoginSuccess` (App.tsx) si `koiny_onboarding_seen` présent.
+- ✅ **Mode démo retiré** production: `AuthView.tsx` (7-tap trigger supprimé), `LoginView.tsx` (tap logo supprimé), `App.tsx` (`getDemoData` import retiré, prop `onDemoMode` retirée).
+- ✅ **iPad support restauré**: `TARGETED_DEVICE_FAMILY = "1,2"` — Apple refuse la régression de device support si 1.0.4 supportait iPad (erreur 90101).
+- ✅ **Bug NaN prix annuel** (`components/SubscriptionModal.tsx:387`): `parseFloat(product.price)` retournait NaN sur `"$16.99"`. Fix: strip des caractères non-numériques avant parsing + extraction du symbole monétaire depuis le préfixe de la chaîne.
+- 📝 **Builds**: build 6 (24/04) → build 7 (26/04, inclut fix NaN + mockups corrects).
 
 ### Corrections appliquées (23/04/2026 — iOS History, Requests, Profile redesign)
 **Contexte**: Suite du redesign iOS (branche `redesign`). Dashboard déjà fait. Scope: iOS uniquement (`!isAndroid`), Android MD3 intact.
@@ -457,3 +468,21 @@ export const isIOS = platform === 'ios';
 export const isWeb = platform === 'web';
 export const isNative = Capacitor.isNativePlatform();
 ```
+
+## LandingView (web uniquement)
+
+`components/LandingView.tsx` — rendu uniquement quand `!Capacitor.isNativePlatform()` (App.tsx).
+
+**Structure sections** (dans l'ordre, calquée sur koiny.app):
+Nav → Hero (phone mockup + 3 float cards) → Pain (3 pain points emoji) → Features (6 cartes FA icons) → Screenshots (3 phones parent/enfant/missions) → How it works (3 étapes numérotées) → Why Koiny (6 cartes emoji colorées) → Pricing (Free vs Premium gradient) → CTA dark (App Store badge) → Footer (3 colonnes + disclaimer simulateur)
+
+**Mockups** (`/public/`): `{parent_dashboard,child_dashboard,missions}_mockup_{fr,nl,en}.png` — 9 fichiers total.
+
+**Design tokens** (calqués sur koiny.app CSS):
+- `--indigo: #4f46e5`, `--indigo-dark: #3730a3`
+- Hero bg: `linear-gradient(135deg, #f8f9ff 0%, #eef2ff 50%, #faf5ff 100%)`
+- Section alt bg: `#f8fafc`
+- Font: Inter (Google Fonts)
+- Radius: 16px / 24px / 44px (phone)
+
+**Props**: `language`, `onGetStarted` (→ AUTH view), `onSetLanguage`. Pas de dark mode (site officiel light only).
