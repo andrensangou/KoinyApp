@@ -415,7 +415,8 @@ export const loadFromSupabase = async (userId: string): Promise<any> => {
                 colorClass: c.theme_color || 'indigo', // Mapped from theme_color
                 balance: c.balance,
                 tutorialSeen: true,
-                birthday: null,
+                birthday: c.birth_date || undefined,
+                lastBirthdayRewardYear: c.last_birthday_reward_year || undefined,
                 giftRequested: c.gift_requested || false,
                 missionRequested: c.mission_requested || false,
                 missions: (c.missions || []).map((m: any) => ({
@@ -502,7 +503,9 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                 theme_color: child.colorClass || '#6366f1',
                 balance: child.balance ?? 0,
                 mission_requested: child.missionRequested || false,
-                gift_requested: child.giftRequested || false
+                gift_requested: child.giftRequested || false,
+                birth_date: child.birthday || null,
+                last_birthday_reward_year: child.lastBirthdayRewardYear || null
             };
 
             let savedChildId = child.id;
