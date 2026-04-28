@@ -407,6 +407,54 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [data.children, data.lastReminderSent, loading]);
 
+  // 🎂 Birthday bonus: check on init + foreground, credit once per year
+  useEffect(() => {
+    if (loading || !data.children.length) return;
+    const checkBirthdays = () => {
+      const now = new Date();
+      const todayMonth = now.getMonth() + 1;
+      const todayDay = now.getDate();
+      const currentYear = now.getFullYear();
+      const t = translations[data.language || 'fr'];
+      const BIRTHDAY_BONUS = 5;
+
+      const childrenWithBirthday = data.children.filter(c => {
+        if (!c.birthday) return false;
+        const [, m, d] = c.birthday.split('-').map(Number);
+        return m === todayMonth && d === todayDay && c.lastBirthdayRewardYear !== currentYear;
+      });
+
+      if (!childrenWithBirthday.length) return;
+
+      setData(prev => ({
+        ...prev,
+        updatedAt: new Date().toISOString(),
+        children: prev.children.map(child => {
+          if (!childrenWithBirthday.find(c => c.id === child.id)) return child;
+          const newBalance = Math.min((child.balance || 0) + BIRTHDAY_BONUS, prev.maxBalance || 100);
+          const credited = newBalance - (child.balance || 0);
+          notifications.notifyParentReminder(
+            t.child.happyBirthday,
+            `${child.name}: +${credited}${prev.currency || '€'} ${t.child.birthdayBonus}`
+          );
+          return {
+            ...child,
+            balance: newBalance,
+            lastBirthdayRewardYear: currentYear,
+            history: [
+              { id: crypto.randomUUID(), date: now.toISOString(), title: t.child.birthdayBonus, amount: credited },
+              ...child.history,
+            ],
+          };
+        }),
+      }));
+    };
+    checkBirthdays();
+    const onVis = () => { if (document.visibilityState === 'visible') checkBirthdays(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [data.children, data.language, data.currency, data.maxBalance, loading]);
+
   useEffect(() => {
     monitoring.initSentry();
     monitoring.initWebVitals();
