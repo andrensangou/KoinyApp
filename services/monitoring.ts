@@ -6,8 +6,19 @@
  */
 import * as Sentry from '@sentry/capacitor';
 import * as SentryReact from '@sentry/react';
+import { getSupabase } from './supabase';
 
 type MetricType = 'PERF' | 'BUSINESS' | 'ERROR' | 'SECURITY';
+
+const SESSION_ID_KEY = 'koiny_session_id';
+const getSessionId = (): string => {
+  let id = sessionStorage.getItem(SESSION_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    sessionStorage.setItem(SESSION_ID_KEY, id);
+  }
+  return id;
+};
 
 interface MetricEvent {
   type: MetricType;
@@ -76,6 +87,25 @@ class MonitoringService {
       Sentry.captureException(new Error(name), {
         extra: event.metadata,
       });
+    }
+
+    // BUSINESS events → Supabase analytics_events (fire-and-forget)
+    if (type === 'BUSINESS') {
+      try {
+        const supabase = getSupabase();
+        if (supabase) {
+          supabase.auth.getUser().then(({ data }) => {
+            supabase.from('analytics_events').insert({
+              event_name: name,
+              user_id: data?.user?.id || null,
+              session_id: getSessionId(),
+              metadata: { ...event.metadata, value },
+            }).then(() => {});
+          });
+        }
+      } catch {
+        // Silent fail — analytics never breaks the app
+      }
     }
   }
 
