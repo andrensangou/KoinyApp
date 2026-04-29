@@ -1208,17 +1208,20 @@ const App: React.FC = () => {
       if (error) throw new Error(error.message);
 
       // 2. Update local state
-      setData(prev => ({
-        ...prev,
-        children: [...prev.children, {
-          id: childId,
-          ...childData,
-          balance: 0,
-          missions: [],
-          history: [],
-          tutorialSeen: false
-        }]
-      }));
+      setData(prev => {
+        monitoring.track('BUSINESS', 'CHILD_CREATED', 1, { isFirstChild: prev.children.length === 0 });
+        return {
+          ...prev,
+          children: [...prev.children, {
+            id: childId,
+            ...childData,
+            balance: 0,
+            missions: [],
+            history: [],
+            tutorialSeen: false
+          }]
+        };
+      });
     } catch (err: any) {
       console.error('❌ Erreur ajout enfant:', err?.message);
       showAppError(`Impossible de créer l'enfant : ${err?.message || 'Erreur inconnue'}`);
@@ -1337,6 +1340,12 @@ const App: React.FC = () => {
       const result = await loadData();
       setData(result.data || INITIAL_DATA);
       setOwnerId(result.ownerId);
+      monitoring.track('BUSINESS', 'AUTH_SUCCESS', 1, { isFirstSession: !result.data?.children?.length });
+      // Track onboarding completion at login if onboarding was seen but not yet tracked
+      if (localStorage.getItem('koiny_onboarding_seen') && result.ownerId && result.ownerId !== 'demo') {
+        getSupabase().from('profiles').update({ onboarding_completed_at: new Date().toISOString() }).eq('id', result.ownerId).then(() => {});
+        monitoring.track('BUSINESS', 'ONBOARDING_COMPLETED');
+      }
     }
     setLoading(false);
     setView('LOGIN');

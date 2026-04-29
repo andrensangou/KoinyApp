@@ -5,6 +5,7 @@ import { translations } from '../i18n';
 import { Language, GlobalState } from '../types';
 import { getSupabase, signInWithGoogle, signInWithApple } from '../services/supabase';
 import { SUPABASE_URL } from '../config';
+import { monitoring } from '../services/monitoring';
 import HelpModal from './HelpModal';
 
 
@@ -31,12 +32,17 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
   const isConfigured = (SUPABASE_URL as string) !== "YOUR_SUPABASE_URL_HERE";
 
   useEffect(() => {
+    monitoring.track('BUSINESS', 'AUTH_SCREEN_VIEWED');
     const savedEmail = localStorage.getItem('kidbank_saved_email');
     if (savedEmail) {
       setEmail(savedEmail);
       setRememberMe(true);
     }
   }, []);
+
+  useEffect(() => {
+    monitoring.track('BUSINESS', 'AUTH_MODE_CHANGED', 1, { mode: authMode });
+  }, [authMode]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +96,7 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
       setError('Configuration error: Supabase not available');
       return;
     }
+    monitoring.track('BUSINESS', 'AUTH_PROVIDER_TAPPED', 1, { provider: 'google' });
     setLoading(true);
     try {
       await signInWithGoogle();
@@ -106,6 +113,7 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
       setError('Configuration error: Supabase not available');
       return;
     }
+    monitoring.track('BUSINESS', 'AUTH_PROVIDER_TAPPED', 1, { provider: 'apple' });
     setLoading(true);
     setError(null);
     try {
