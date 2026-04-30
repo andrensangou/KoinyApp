@@ -8,7 +8,7 @@
 Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
-**Statut:** Publiée sur l'App Store (version 1.0.2). Version 1.0.3 soumise pour review Apple (11/04/2026). Android en cours de finalisation.
+**Statut:** Publiée sur l'App Store (version 1.0.5). Version 1.0.6 build 1 prête à archiver depuis la branche `redesign` (30/04/2026). Android en cours de finalisation.
 
 ## Regles critiques
 
@@ -168,6 +168,20 @@ const t = translations[data.language || 'fr'];
 - ✅ Fix: `waitForInit()` — produits ne chargeaient pas car modal ouvert avant init RevenueCat
 - ✅ Fix: SubscriptionModal retry auto + bouton "Réessayer" + spinner achat + anti double-clic
 
+### Corrections appliquées (29-30/04/2026 — birthday persistence, analytics funnel, branch reconcile)
+**Contexte**: Test de la version 1.0.5 build 6 a révélé que la date de naissance se "désactivait" après quelques secondes. Diagnostic + fix + ajout d'un système de tracking funnel pour mesurer la conversion install → activation (Apple Search Ads s'arrête à l'install).
+- ✅ **Bug birthday persistence** (`services/supabase.ts:418`): la lecture forçait `birthday: null` à chaque sync depuis Supabase → la date locale était écrasée à chaque reload. Cause racine: la colonne `birth_date` n'existait pas dans `children`. Fix: ajout colonne + lecture `c.birth_date` + écriture `birth_date: child.birthday` dans `childPayload`.
+- ✅ **Crédit anniversaire automatique** (`App.tsx`): nouveau `useEffect` qui s'exécute au mount + `visibilitychange`. Pour chaque enfant dont `birthday` (mois/jour) match aujourd'hui ET `lastBirthdayRewardYear !== currentYear`: crédite 5€ (plafonné par `maxBalance`), entrée historique "Cadeau d'anniversaire", notification parent localisée (`t.child.happyBirthday`), maj `lastBirthdayRewardYear` (anti double-crédit).
+- ✅ **Migration Supabase**: `ALTER TABLE children ADD COLUMN birth_date date, last_birthday_reward_year integer;` exécutée en prod.
+- ✅ **Analytics funnel** (`services/monitoring.ts`): `BUSINESS` events désormais persistés dans `analytics_events` Supabase (fire-and-forget, ne bloque jamais l'UI). Session ID dans `sessionStorage`. Events instrumentés: `AUTH_SCREEN_VIEWED`, `AUTH_MODE_CHANGED`, `AUTH_PROVIDER_TAPPED` (Google/Apple), `AUTH_SUCCESS` (avec `isFirstSession`), `ONBOARDING_COMPLETED`, `CHILD_CREATED` (avec `isFirstChild`).
+- ✅ **Migration Supabase**: table `analytics_events` (id uuid PK, event_name, user_id FK profiles, session_id, metadata jsonb, created_at). RLS: anon/authenticated INSERT only, SELECT service_role only.
+- ✅ **Bump versions**: 1.0.4 (5) → 1.0.5 (7) → 1.0.6 (1). Apple a rejeté 1.0.5 (7) avec erreur 90062/90186 — train 1.0.5 fermé pour nouvelles soumissions car déjà approuvé. Migration vers train 1.0.6.
+- ⚠️ **Régression `redesign` détectée — leçon apprise**: avant chaque archive, faire `git log main ^redesign` pour identifier les commits manquants. Régressions trouvées et fixées sur `redesign` lors de l'audit:
+  - 4e slide onboarding "Prêt en 3 étapes" manquant (cherry-pick `0da2bcf`)
+  - Bug NaN prix annuel `SubscriptionModal.tsx:387` (cherry-pick manuel du fix de `b077319`)
+  - LandingView 1:1 koiny.app + iPad `"1,2"` non portés (mais LandingView est web-only donc pas critique pour iOS)
+- 📝 **Branches en sync**: `main` et `redesign` ont toutes les deux birthday + analytics + 1.0.6 + 4e slide + fix NaN. Build iOS depuis `redesign`.
+
 ### Corrections appliquées (23/04/2026 — iOS History, Requests, Profile redesign)
 **Contexte**: Suite du redesign iOS (branche `redesign`). Dashboard déjà fait. Scope: iOS uniquement (`!isAndroid`), Android MD3 intact.
 - ✅ **History tab iOS** (`components/ParentView.tsx`): sélecteur d'avatars enfants (multi-enfants, outline accent couleur), badge total montant (vert/rouge), liste dans carte blanche `rounded-[18px]`. `VirtualHistoryList` reécrit avec prop `isIOS` + `curr` — items style carte iOS (icône colorée par type: ⭐ Mission, 🎁 Cadeau, ⚠️ Amende, 🛍️ Achat), label type bold, sous-titre titre+note+date, montant à droite.
@@ -175,7 +189,7 @@ const t = translations[data.language || 'fr'];
 - ✅ **Profile tab iOS** (`components/ParentView.tsx`): layout page unique — carte gradient indigo "Parent Space" + badge, section FAMILY (rows enfants avatar+solde+emojis goals+chevron, bouton Ajouter), section SETTINGS (8 rows: Notifs toggle, Son toggle, Langue click-to-cycle, Devise select inline, Wallet Limit prompt, PIN & Sécurité, Koiny Premium, Aide, Contact Support), bouton SIGN OUT rouge, Supprimer compte, Lien légal. Formulaire enfant (edit) accessible depuis les rows FAMILY avec bouton Retour.
 - ✅ **Android profile inchangé**: layout segmenté FAMILY/ACCOUNT préservé tel quel derrière `isAndroid` ternaire.
 - ✅ **Sécurité**: token Supabase CLI (`sbp_a2c8ce...`) exposé dans `.claude/settings.json` → révoqué automatiquement par Supabase (GitHub Secret Scanning). Fichier retiré du tracking git, `.claude/` ajouté au `.gitignore`.
-- 📝 **Branche**: tout le redesign iOS est sur la branche `redesign` (main = v1.0.3 intact).
+- 📝 **Branche**: redesign iOS sur la branche `redesign`. Depuis 30/04, `main` et `redesign` sont synchronisées sur les fixes de production (birthday, analytics, 1.0.6) — toujours faire `git log main ^redesign` avant archive.
 
 ### Corrections appliquées (22/04/2026 — iOS Parent Dashboard facelift)
 **Contexte**: Import du bundle de design Claude Design (`docs/design-parent-dashboard/`) — prototype hi-fi iOS du parent dashboard. Scope: iOS uniquement (`!isAndroid`), Android MD3 intact.
