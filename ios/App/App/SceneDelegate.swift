@@ -55,25 +55,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     // MARK: - Widget Data Sync
 
-    /// Reads child data written by the Capacitor web layer (Preferences) and
-    /// copies it into the App Group UserDefaults so the widget can display it.
-    /// Safe to call on Simulator — gracefully handles missing App Groups.
+    /// Copies the raw JSON written by the JS layer (Capacitor Preferences) directly
+    /// into the App Group so the widget gets ALL fields without re-encoding.
     private func syncWidgetData() {
-        do {
-            guard let json = UserDefaults.standard.string(forKey: "CapacitorStorage.koiny_widget_data"),
-                  let raw  = json.data(using: .utf8)
-            else { return }
+        guard let json = UserDefaults.standard.string(forKey: "CapacitorStorage.koiny_widget_data"),
+              let raw  = json.data(using: .utf8),
+              let defaults = UserDefaults(suiteName: "group.com.koiny.app")
+        else { return }
 
-            let payload = try JSONDecoder().decode(KoinyWidgetBridge.Payload.self, from: raw)
-            KoinyWidgetBridge.update(
-                childName:   payload.childName,
-                balance:     payload.balance,
-                goalName:    payload.goalName,
-                goalTarget:  payload.goalTarget,
-                language:    payload.language ?? "fr"
-            )
-        } catch {
-            print("[SceneDelegate] ⚠️ Widget sync skipped: \(error.localizedDescription)")
-        }
+        defaults.set(raw, forKey: "koiny_widget_data")
+        WidgetCenter.shared.reloadAllTimelines()
+        print("[SceneDelegate] ✅ Widget data synced")
     }
 }
