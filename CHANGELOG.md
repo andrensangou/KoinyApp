@@ -4,6 +4,17 @@ Toutes les modifications notables de l'app Koiny sont documentées ici.
 
 ---
 
+## [1.0.7] — Mai 2026
+
+### Nouveau
+- **Widget iOS dynamique** — le widget change de couleur et affiche un message contextuel selon l'état de l'enfant : amber 🔔 (missions en attente), vert 🎉 (argent gagné aujourd'hui), rouge 😴 (inactivité 3+ jours)
+
+### Corrections
+- Fix widget : données correctement copiées dans l'App Group via JSON brut (widget ne montrait plus 0.00€)
+- Fix import `WidgetKit` manquant dans `SceneDelegate`
+
+---
+
 ## [1.0.6] — Mai 2026
 
 ### Nouveau
