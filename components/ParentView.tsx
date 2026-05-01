@@ -572,6 +572,9 @@ const ParentView: React.FC<ParentViewProps> = ({
   const _anyInlineModalOpen = showOfflineModal || !!editingMission || !!transactionType || !!selectedMissionId || promptConfig.isOpen || !!(biometricChoice?.isOpen) || showAddMissionSheet;
   useModal(_anyInlineModalOpen);
 
+  const isConfirmingRef = React.useRef(false);
+  const isSubmittingTransactionRef = React.useRef(false);
+
   const handleResetPin = async () => {
     // Demo Mode — skip security
     if (ownerId === 'demo') {
@@ -611,7 +614,9 @@ const ParentView: React.FC<ParentViewProps> = ({
   };
 
   const confirmAction = () => {
+    if (isConfirmingRef.current) return;
     if (!selectedMissionId || !actionType || !selectedChildId) return;
+    isConfirmingRef.current = true;
     if (actionType === 'APPROVE') {
       onApprove(selectedChildId, selectedMissionId, note);
       if (typeof confetti === 'function') {
@@ -627,6 +632,7 @@ const ParentView: React.FC<ParentViewProps> = ({
     setSelectedMissionId(null);
     setActionType(null);
     setNote('');
+    setTimeout(() => { isConfirmingRef.current = false; }, 500);
   };
 
   const applyTemplate = (title: string, amount: number) => {
@@ -637,6 +643,7 @@ const ParentView: React.FC<ParentViewProps> = ({
 
   const handleTransactionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingTransactionRef.current) return;
     if (!transactionType || !selectedChildId || !transAmount) return;
 
     // Fermer le clavier proprement pour éviter l'effet de zoom iOS
@@ -672,9 +679,11 @@ const ParentView: React.FC<ParentViewProps> = ({
 
     const finalTitle = transReason ? `${categoryPrefix} : ${transReason}` : categoryPrefix;
 
+    isSubmittingTransactionRef.current = true;
     onManualTransaction(selectedChildId, finalAmount, finalTitle);
     setTransactionType(null);
     setTransAmount('');
+    setTimeout(() => { isSubmittingTransactionRef.current = false; }, 500);
     setTransReason('');
     setWithdrawSubtype('PURCHASE');
   };
@@ -3393,7 +3402,7 @@ const ParentView: React.FC<ParentViewProps> = ({
               </div>
             </div>
           ) : (
-            <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 transition-colors duration-500">
+            <div className="fixed inset-0 bg-slate-900/50 dark:bg-black/80 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 transition-colors duration-500">
               <div className="fixed inset-0" onClick={() => setTransactionType(null)}></div>
               <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in text-slate-900 dark:text-white relative z-10 transition-colors duration-500">
                 <div className={`pt-10 pb-8 px-8 text-white relative overflow-hidden ${transactionType === 'DEPOSIT' ? 'bg-emerald-500' : (withdrawSubtype === 'PURCHASE' ? 'bg-slate-900' : 'bg-red-600')}`}>
@@ -3500,7 +3509,7 @@ const ParentView: React.FC<ParentViewProps> = ({
               </div>
             </div>
           ) : (
-          <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 dark:bg-black/80 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 w-full max-sm rounded-2xl shadow-2xl overflow-hidden animate-scale-in text-slate-900 dark:text-white font-bold border border-white/10 transition-colors duration-500">
               <div className={`p-6 text-white ${actionType === 'APPROVE' ? 'bg-emerald-500' : 'bg-red-500'}`}>
                 <h3 className="text-base font-bold flex items-center gap-2"><i className={`fa-solid ${actionType === 'APPROVE' ? 'fa-check-circle' : 'fa-circle-xmark'}`}></i> {actionType === 'APPROVE' ? t.parent.approveModalTitle : t.parent.rejectModalTitle}</h3>

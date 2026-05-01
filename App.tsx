@@ -728,6 +728,9 @@ const App: React.FC = () => {
     const today = new Date();
     const dateFormatted = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
+    // Block general saveData while Supabase IIFE runs (same pattern as handleManualTransaction)
+    if (userId) isDirectSupabaseOperation.current = true;
+
     // ⭐ 1. PRIORITÉ: Update local state TOUJOURS d'abord (offline-friendly)
     setData(prev => {
       const newTotalMissions = (prev.totalApprovedMissions || 0) + 1;
@@ -807,11 +810,12 @@ const App: React.FC = () => {
           });
         } catch (err: any) {
           console.warn('⚠️ Sync Supabase (offline?):', err?.message);
-          // Détecter si c'est une erreur réseau
           const isNetworkError = !err?.status || err?.message?.includes('Failed to fetch') || err?.message?.includes('network');
           if (isNetworkError) {
             setIsOfflineMode(true);
           }
+        } finally {
+          setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
         }
       })();
     }
