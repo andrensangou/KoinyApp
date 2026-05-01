@@ -17,14 +17,22 @@ export const updateWidgetData = async (children: ChildProfile[], language?: stri
 
     const lang = language || localStorage.getItem('koiny_language') || 'fr';
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    // History dates are stored as DD/MM/YYYY — convert to Date for comparison
+    const parseHistoryDate = (dateStr: string): Date => {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+      return new Date(dateStr); // fallback for ISO format
+    };
+
+    const today = new Date();
+    const todayDateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
     const lastApprovedEntry = (child.history ?? [])
       .filter(h => h.amount > 0)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      .sort((a, b) => parseHistoryDate(b.date).getTime() - parseHistoryDate(a.date).getTime())[0];
 
     const todayEarned = (child.history ?? [])
-      .filter(h => h.amount > 0 && h.date.startsWith(todayStr))
+      .filter(h => h.amount > 0 && h.date === todayDateStr)
       .reduce((sum, h) => sum + h.amount, 0);
 
     const pendingMissionsCount = (child.missions ?? [])
@@ -36,7 +44,9 @@ export const updateWidgetData = async (children: ChildProfile[], language?: stri
       goalName: primaryGoal?.name ?? null,
       goalTarget: primaryGoal?.target ?? 0,
       language: lang,
-      lastMissionApprovedDate: lastApprovedEntry?.date ?? null,
+      lastMissionApprovedDate: lastApprovedEntry
+        ? parseHistoryDate(lastApprovedEntry.date).toISOString()
+        : null,
       pendingMissionsCount,
       todayEarned,
     };
