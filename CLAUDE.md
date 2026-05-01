@@ -8,7 +8,7 @@
 Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
-**Statut:** Publiée sur l'App Store (version 1.0.5). Version 1.0.6 build 1 prête à archiver depuis la branche `redesign` (30/04/2026). Android en cours de finalisation.
+**Statut:** Publiée sur l'App Store (version 1.0.6 build 3). Version 1.0.6 build 4 prête à archiver depuis la branche `redesign` (01/05/2026) — inclut fix widget SceneDelegate + widget dynamique. Android en cours de finalisation.
 
 ## Regles critiques
 
@@ -167,6 +167,15 @@ const t = translations[data.language || 'fr'];
 - ✅ Refresh premium périodique: `visibilitychange` (retour premier plan) + intervalle 6h → détecte annulations
 - ✅ Fix: `waitForInit()` — produits ne chargeaient pas car modal ouvert avant init RevenueCat
 - ✅ Fix: SubscriptionModal retry auto + bouton "Réessayer" + spinner achat + anti double-clic
+
+### Corrections appliquées (01/05/2026 — widget dynamique, fix SceneDelegate, nettoyage Supabase)
+**Contexte**: Widget iOS affichait 0.00€ pour tous les utilisateurs. Diagnostic + fix + amélioration visuelle Duolingo-style + nettoyage des comptes fantômes Supabase.
+- ✅ **Widget dynamique** (`ios/App/KoinyWidget/KoinyWidget.swift` + `services/widgetBridge.ts`): widget change de couleur selon l'état de l'enfant — amber 🔔 (missions en attente), vert 🎉 (argent gagné aujourd'hui), rouge 😴 (inactivité 3+ jours), indigo par défaut. Messages contextuels en FR/NL/EN. Nouveaux champs dans le payload: `pendingMissionsCount`, `lastMissionApprovedDate`, `todayEarned`.
+- ✅ **Bug widget 0.00€** (`ios/App/App/SceneDelegate.swift`): `syncWidgetData()` décodait le JSON en `Payload` (5 champs seulement) puis ré-encodait — les nouveaux champs étaient perdus ET le pont App Group ne fonctionnait pas correctement. Fix: copie du JSON brut directement depuis `UserDefaults.standard["CapacitorStorage.koiny_widget_data"]` vers l'App Group sans re-encodage. Import `WidgetKit` manquant ajouté.
+- ✅ **Nettoyage comptes fantômes Supabase**: 11 comptes `auth.users` sans profil ni enfant supprimés via Admin API. Base passe de 23 → 12 comptes. Stats de conversion réelles: 6 actifs / 12 = 50% (vs 26% avec fantômes). 3 comptes de test (`steevex35`, `steevesobiang`) conservés.
+- ✅ **CHANGELOG.md créé**: historique complet 1.0.0 → 1.0.6 documenté dans `CHANGELOG.md`.
+- ✅ **Bump build**: 1.0.6 build 1 → build 4 (builds 2 et 3 rejetés/auto-incrémentés par Apple/Xcode).
+- 📝 **Supabase stats au 01/05/2026**: 12 comptes auth, 9 profils, 6 avec enfants. Drop-off principal: entre AUTH_SUCCESS et CHILD_CREATED (33%). Apple Private Relay emails (`@privaterelay.appleid.com`) ne reçoivent les emails que si `koiny.app` est enregistré dans Apple Private Relay (App Store Connect → App Information).
 
 ### Corrections appliquées (29-30/04/2026 — birthday persistence, analytics funnel, branch reconcile)
 **Contexte**: Test de la version 1.0.5 build 6 a révélé que la date de naissance se "désactivait" après quelques secondes. Diagnostic + fix + ajout d'un système de tracking funnel pour mesurer la conversion install → activation (Apple Search Ads s'arrête à l'install).
