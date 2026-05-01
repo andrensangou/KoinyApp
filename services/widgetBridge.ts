@@ -17,12 +17,28 @@ export const updateWidgetData = async (children: ChildProfile[], language?: stri
 
     const lang = language || localStorage.getItem('koiny_language') || 'fr';
 
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const lastApprovedEntry = (child.history ?? [])
+      .filter(h => h.amount > 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+    const todayEarned = (child.history ?? [])
+      .filter(h => h.amount > 0 && h.date.startsWith(todayStr))
+      .reduce((sum, h) => sum + h.amount, 0);
+
+    const pendingMissionsCount = (child.missions ?? [])
+      .filter(m => m.status === 'PENDING').length;
+
     const payload = {
       childName: child.name,
       balance: child.balance,
       goalName: primaryGoal?.name ?? null,
       goalTarget: primaryGoal?.target ?? 0,
       language: lang,
+      lastMissionApprovedDate: lastApprovedEntry?.date ?? null,
+      pendingMissionsCount,
+      todayEarned,
     };
 
     // Write to standard Capacitor Preferences

@@ -18,12 +18,71 @@ struct KoinyWidgetData: Codable {
     var goalName: String? = nil
     var goalTarget: Double = 0
     var language: String = "fr"
+    var lastMissionApprovedDate: String? = nil
+    var pendingMissionsCount: Int = 0
+    var todayEarned: Double = 0
 
     var progress: Double {
         guard goalTarget > 0 else { return 0 }
         return min(1.0, balance / goalTarget)
     }
     var remaining: Double { max(0, goalTarget - balance) }
+
+    var daysSinceLastMission: Int? {
+        guard let dateStr = lastMissionApprovedDate else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let date = formatter.date(from: dateStr) ?? ISO8601DateFormatter().date(from: dateStr)
+        guard let d = date else { return nil }
+        return Calendar.current.dateComponents([.day], from: d, to: .now).day
+    }
+
+    // Returns (emoji, bigText, smallText, isWarning)
+    var statusInfo: (emoji: String, big: String, small: String, isWarning: Bool)? {
+        if pendingMissionsCount > 0 {
+            let n = pendingMissionsCount
+            let big = "\(n)"
+            let small: String
+            switch language {
+            case "nl": small = n > 1 ? "missies wachten!" : "missie wacht!"
+            case "en": small = n > 1 ? "missions waiting!" : "mission waiting!"
+            default:   small = n > 1 ? "missions en attente !" : "mission en attente !"
+            }
+            return ("🔔", big, small, false)
+        }
+        if todayEarned > 0 {
+            let big = String(format: "+%.2f€", todayEarned)
+            let small: String
+            switch language {
+            case "nl": small = "verdiend vandaag 🎉"
+            case "en": small = "earned today 🎉"
+            default:   small = "gagné aujourd'hui 🎉"
+            }
+            return ("", big, small, false)
+        }
+        if let days = daysSinceLastMission, days > 2 {
+            let big: String
+            let small: String
+            if days >= 14 {
+                let weeks = days / 7
+                big = "\(weeks)"
+                switch language {
+                case "nl": small = weeks > 1 ? "weken zonder missie" : "week zonder missie"
+                case "en": small = weeks > 1 ? "weeks without mission" : "week without mission"
+                default:   small = weeks > 1 ? "semaines sans mission" : "semaine sans mission"
+                }
+            } else {
+                big = "\(days)"
+                switch language {
+                case "nl": small = "dagen zonder missie"
+                case "en": small = days > 1 ? "days without mission" : "day without mission"
+                default:   small = "jours sans mission"
+                }
+            }
+            return ("😴", big, small, true)
+        }
+        return nil
+    }
 
     // Localized strings
     var goalLabel: String {
@@ -57,7 +116,9 @@ struct KoinyWidgetData: Codable {
     }
 
     static var placeholder: Self {
-        KoinyWidgetData(childName: "Emma", balance: 12.50, goalName: "Vélo 🚲", goalTarget: 50)
+        var d = KoinyWidgetData(childName: "Emma", balance: 12.50, goalName: "Vélo 🚲", goalTarget: 50)
+        d.pendingMissionsCount = 2
+        return d
     }
 }
 
@@ -88,6 +149,41 @@ struct KoinyProvider: TimelineProvider {
 struct KoinyEntry: TimelineEntry {
     let date: Date
     let data: KoinyWidgetData
+}
+
+// MARK: - Dynamic Gradient
+
+func widgetGradient(for data: KoinyWidgetData) -> LinearGradient {
+    if let status = data.statusInfo {
+        if status.isWarning {
+            // Orange/red — inactivity warning
+            return LinearGradient(
+                colors: [Color(red: 0.90, green: 0.35, blue: 0.13),
+                         Color(red: 0.75, green: 0.18, blue: 0.18)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+        } else if data.pendingMissionsCount > 0 {
+            // Amber — missions waiting
+            return LinearGradient(
+                colors: [Color(red: 0.85, green: 0.55, blue: 0.05),
+                         Color(red: 0.70, green: 0.35, blue: 0.05)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+        } else {
+            // Emerald — today earned
+            return LinearGradient(
+                colors: [Color(red: 0.02, green: 0.60, blue: 0.42),
+                         Color(red: 0.02, green: 0.45, blue: 0.32)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+        }
+    }
+    // Default indigo
+    return LinearGradient(
+        colors: [Color(red: 0.29, green: 0.37, blue: 0.96),
+                 Color(red: 0.47, green: 0.33, blue: 0.96)],
+        startPoint: .topLeading, endPoint: .bottomTrailing
+    )
 }
 
 // MARK: - Small Widget View
@@ -121,7 +217,25 @@ struct KoinySmallView: View {
 
             Spacer()
 
-            if let goal = data.goalName, data.goalTarget > 0 {
+            if let status = data.statusInfo {
+                // Dynamic status message (Duolingo-style)
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        if !status.emoji.isEmpty {
+                            Text(status.emoji).font(.system(size: 11))
+                        }
+                        Text(status.big)
+                            .font(.system(size: 22, weight: .black, design: .rounded))
+                            .foregroundStyle(status.isWarning ? Color(red: 1, green: 0.85, blue: 0.5) : .white)
+                            .minimumScaleFactor(0.6)
+                            .lineLimit(1)
+                    }
+                    Text(status.small)
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.65))
+                        .lineLimit(1)
+                }
+            } else if let goal = data.goalName, data.goalTarget > 0 {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack {
                         Text(goal).font(.system(size: 9, weight: .bold))
@@ -144,11 +258,7 @@ struct KoinySmallView: View {
         }
         .padding(14)
         .applyWidgetBackground {
-            LinearGradient(
-                colors: [Color(red: 0.29, green: 0.37, blue: 0.96),
-                         Color(red: 0.47, green: 0.33, blue: 0.96)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
+            widgetGradient(for: data)
         }
     }
 }
@@ -180,6 +290,20 @@ struct KoinyMediumView: View {
                     .foregroundStyle(.white)
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
+                if let status = data.statusInfo {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        if !status.emoji.isEmpty {
+                            Text(status.emoji).font(.system(size: 10))
+                        }
+                        Text(status.big)
+                            .font(.system(size: 13, weight: .black, design: .rounded))
+                            .foregroundStyle(status.isWarning ? Color(red: 1, green: 0.85, blue: 0.5) : .white)
+                        Text(status.small)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    .lineLimit(1)
+                }
                 Spacer()
             }
             .frame(maxWidth: .infinity)
@@ -231,11 +355,7 @@ struct KoinyMediumView: View {
         }
         .padding(16)
         .applyWidgetBackground {
-            LinearGradient(
-                colors: [Color(red: 0.29, green: 0.37, blue: 0.96),
-                         Color(red: 0.47, green: 0.33, blue: 0.96)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
+            widgetGradient(for: data)
         }
     }
 }
