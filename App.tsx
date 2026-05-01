@@ -815,7 +815,8 @@ const App: React.FC = () => {
             setIsOfflineMode(true);
           }
         } finally {
-          setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
+          isDirectSupabaseOperation.current = false;
+          setData(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
         }
       })();
     }
@@ -919,7 +920,9 @@ const App: React.FC = () => {
         } catch (err: any) {
           console.warn('⚠️ Erreur sync Supabase (offline?):', err?.message);
         } finally {
-          setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
+          isDirectSupabaseOperation.current = false;
+          // Re-trigger saveData to flush balance to local storage + Supabase children.balance
+          setData(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
         }
       })();
     }
