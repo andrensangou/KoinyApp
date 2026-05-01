@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import WidgetKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
