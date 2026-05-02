@@ -12,6 +12,14 @@ Toutes les modifications notables de l'app Koiny sont documentées ici.
 ### Corrections
 - Fix widget : données correctement copiées dans l'App Group via JSON brut (widget ne montrait plus 0.00€)
 - Fix import `WidgetKit` manquant dans `SceneDelegate`
+- Fix widget couleurs vert/rouge jamais affichées — comparaison de dates corrigée (`DD/MM/YYYY` vs ISO) dans `widgetBridge.ts`
+- Fix double-tap requis pour valider une mission — guard `isConfirmingRef` ajouté dans `ParentView.tsx`
+- Fix double-tap requis sur dépôt/retrait — guard `isSubmittingTransactionRef` ajouté dans `ParentView.tsx`
+- Fix solde non sauvegardé après dépôt/retrait — fuite du guard `isDirectSupabaseOperation` corrigée dans `handleManualTransaction` (App.tsx)
+- Fix missions créées par le parent n'apparaissant pas sur le profil enfant — fuite du guard dans `handleAddMission` (App.tsx) bloquait toutes les sauvegardes suivantes
+- Fix demandes de mission de l'enfant disparaissant immédiatement — même cause (guard jamais libéré)
+- Fix alerte pénalité réapparaissant à chaque navigation — `acknowledgedPenaltyId` persisté dans `localStorage` au lieu du state React local (ChildView.tsx)
+- Fix premier tap manqué sur les modals iOS — `backdrop-blur` retiré des backdrops de modals approval et transaction (conflit avec `useModal` body-lock `position:fixed`)
 
 ---
 

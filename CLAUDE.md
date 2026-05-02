@@ -8,7 +8,7 @@
 Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
-**Statut:** Publiée sur l'App Store (version 1.0.6). Version 1.0.7 build 1 prête à archiver depuis la branche `redesign` (01/05/2026) — inclut fix widget SceneDelegate + widget dynamique. Train 1.0.6 fermé par Apple (déjà approuvé). Android en cours de finalisation.
+**Statut:** Publiée sur l'App Store (version 1.0.6). Version 1.0.7 build 1 prête à archiver depuis la branche `redesign` (02/05/2026) — inclut tous les fixes UX (double-tap, balance, missions, widget couleurs, alerte pénalité). Train 1.0.6 fermé par Apple (déjà approuvé). Android en cours de finalisation.
 
 ## Regles critiques
 
@@ -176,6 +176,18 @@ const t = translations[data.language || 'fr'];
 - ✅ **CHANGELOG.md créé**: historique complet 1.0.0 → 1.0.6 documenté dans `CHANGELOG.md`.
 - ✅ **Bump versions**: 1.0.6 (1→4) rejeté — train 1.0.6 fermé par Apple car déjà approuvé (erreurs 90062/90186). Migration vers **1.0.7 build 1**.
 - 📝 **Supabase stats au 01/05/2026**: 12 comptes auth, 9 profils, 6 avec enfants. Drop-off principal: entre AUTH_SUCCESS et CHILD_CREATED (33%). Apple Private Relay emails (`@privaterelay.appleid.com`) ne reçoivent les emails que si `koiny.app` est enregistré dans Apple Private Relay (App Store Connect → App Information).
+
+### Corrections appliquées (02/05/2026 — UX fixes: double-tap, balance, missions, widget couleurs, alerte pénalité)
+**Contexte**: Tests en situation réelle ont révélé plusieurs bugs bloquants liés à une fuite du guard `isDirectSupabaseOperation` dans App.tsx et des problèmes d'interaction iOS.
+- ✅ **Fuite guard `isDirectSupabaseOperation` — fix systémique** (`App.tsx`): tous les handlers Supabase directs utilisaient `setTimeout` au lieu d'un bloc `finally` → le guard restait bloqué 2s (ou indéfiniment dans `handleAddMission` qui n'avait pas de `finally` du tout). Pattern corrigé partout: `finally { isDirectSupabaseOperation.current = false; setData(prev => ({ ...prev, updatedAt: new Date().toISOString() })); }`. Handlers corrigés: `handleApprove`, `handleManualTransaction`, `handleAddMission`, `handleDeleteActiveMission`, `handleDeleteGoal`, `handleDeleteChild`, `handleAddChild`, `handlePurchaseGoal`.
+- ✅ **Missions créées par le parent n'apparaissant pas sur le profil enfant** (`App.tsx:handleAddMission`): guard défini hors de l'IIFE async sans `finally` → jamais libéré → toutes les sauvegardes suivantes bloquées. Fix: `finally` avec clear + `setData({updatedAt})` dans l'IIFE.
+- ✅ **Demandes de mission de l'enfant disparaissant immédiatement** — même cause que ci-dessus. Le `saveData` bloqué annulait les demandes créées localement au rechargement Supabase.
+- ✅ **Solde non sauvegardé après dépôt/retrait** (`App.tsx:handleManualTransaction`): `setTimeout 2s` libérait le guard mais rien ne re-déclenchait le `saveData` useEffect. Fix: libération immédiate + `setData({updatedAt})` dans `finally`.
+- ✅ **Double-tap requis sur validation de mission** (`components/ParentView.tsx`): `isConfirmingRef = useRef(false)` + guard dans `confirmAction()` + reset après 500ms. Prévient les doubles envois.
+- ✅ **Double-tap requis sur dépôt/retrait** (`components/ParentView.tsx`): `isSubmittingTransactionRef = useRef(false)` + guard dans `handleTransactionSubmit()`.
+- ✅ **Widget couleurs vert/rouge jamais affichées** (`services/widgetBridge.ts`): `todayEarned` comparait `"01/05/2026"` (DD/MM/YYYY) contre `"2026-05-01"` (ISO) → toujours 0. Fix: `todayDateStr` en format `DD/MM/YYYY` pour le filtre; `parseHistoryDate()` utilisée pour `lastMissionApprovedDate` → `.toISOString()` pour Swift.
+- ✅ **Alerte pénalité réapparaissant à chaque navigation** (`components/ChildView.tsx`): `acknowledgedPenaltyId` était un state React local → reset à chaque remount de ChildView. Fix: initialisé depuis `localStorage.getItem(\`koiny_ack_penalty_\${data.id}\`)` + `localStorage.setItem(...)` dans les deux boutons de fermeture.
+- ✅ **Premier tap manqué sur modals iOS** (`components/ParentView.tsx`): `backdrop-blur-md/sm` sur les backdrops `position:fixed` combiné au `position:fixed` du body-lock `useModal` décale les coordonnées tactiles dans WKWebView. Fix: `backdrop-blur` supprimé des backdrops des modals approval et transaction.
 
 ### Corrections appliquées (29-30/04/2026 — birthday persistence, analytics funnel, branch reconcile)
 **Contexte**: Test de la version 1.0.5 build 6 a révélé que la date de naissance se "désactivait" après quelques secondes. Diagnostic + fix + ajout d'un système de tracking funnel pour mesurer la conversion install → activation (Apple Search Ads s'arrête à l'install).
