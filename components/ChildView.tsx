@@ -93,7 +93,9 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
   const [isNudging, setIsNudging] = useState(false);
   const [isGoalNudging, setIsGoalNudging] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [acknowledgedPenaltyId, setAcknowledgedPenaltyId] = useState<string | null>(null);
+  const [acknowledgedPenaltyId, setAcknowledgedPenaltyId] = useState<string | null>(
+    () => localStorage.getItem(`koiny_ack_penalty_${data.id}`)
+  );
   const [activeGoalIndex, setActiveGoalIndex] = useState(0);
   const goalsScrollRef = useRef<HTMLDivElement>(null);
 
@@ -333,7 +335,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                       {latestPenalty.note ? ` "${latestPenalty.note}"` : ` ${t.child.penaltyAlertDefaultNote}`}
                     </p>
                   </div>
-                  <button onClick={() => setAcknowledgedPenaltyId(latestPenalty.id)} aria-label={language === 'fr' ? 'Fermer l\'alerte' : 'Dismiss alert'} className="w-8 h-8 rounded-full flex items-center justify-center text-amber-500 active:bg-amber-100 dark:active:bg-amber-900/30 shrink-0">
+                  <button onClick={() => { setAcknowledgedPenaltyId(latestPenalty.id); localStorage.setItem(`koiny_ack_penalty_${data.id}`, latestPenalty.id); }} aria-label={language === 'fr' ? 'Fermer l\'alerte' : 'Dismiss alert'} className="w-8 h-8 rounded-full flex items-center justify-center text-amber-500 active:bg-amber-100 dark:active:bg-amber-900/30 shrink-0">
                     <i className="fa-solid fa-xmark text-sm" aria-hidden="true"></i>
                   </button>
                 </div>
@@ -343,7 +345,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
               <div className="mb-6 animate-pop-in max-w-2xl mx-auto">
                 <div style={{ background: 'rgba(251,191,36,0.1)', border: '1.5px solid rgba(251,191,36,0.2)', borderRadius: 20, padding: '16px 18px', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', top: 0, right: 0, padding: 10 }}>
-                    <button onClick={() => setAcknowledgedPenaltyId(latestPenalty.id)} aria-label={language === 'fr' ? 'Fermer l\'alerte' : 'Dismiss alert'} style={{ width: 28, height: 28, background: 'rgba(251,191,36,0.15)', border: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fbbf24' }}>
+                    <button onClick={() => { setAcknowledgedPenaltyId(latestPenalty.id); localStorage.setItem(`koiny_ack_penalty_${data.id}`, latestPenalty.id); }} aria-label={language === 'fr' ? 'Fermer l\'alerte' : 'Dismiss alert'} style={{ width: 28, height: 28, background: 'rgba(251,191,36,0.15)', border: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fbbf24' }}>
                       <i className="fa-solid fa-check" style={{ fontSize: 11 }} aria-hidden="true"></i>
                     </button>
                   </div>

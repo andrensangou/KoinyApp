@@ -1051,11 +1051,11 @@ const App: React.FC = () => {
             .eq('id', childId);
         } catch (err: any) {
           console.warn('⚠️ Sync addMission (offline?):', err?.message);
-          // Détecter si c'est une erreur réseau
           const isNetworkError = !err?.status || err?.message?.includes('Failed to fetch') || err?.message?.includes('network');
-          if (isNetworkError) {
-            setIsOfflineMode(true);
-          }
+          if (isNetworkError) setIsOfflineMode(true);
+        } finally {
+          isDirectSupabaseOperation.current = false;
+          setData(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
         }
       })();
     }
@@ -1078,11 +1078,10 @@ const App: React.FC = () => {
         missions: child.missions.filter(m => m.id !== missionId)
       }));
     } catch (err: any) {
-      console.error('❌ Erreur suppression mission message:', err?.message);
-      console.error('❌ Erreur suppression mission code:', err?.code);
-      console.error('❌ Erreur suppression mission full:', JSON.stringify(err));
+      console.error('❌ Erreur suppression mission:', err?.message);
     } finally {
-      setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
+      isDirectSupabaseOperation.current = false;
+      setData(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
     }
   };
 
@@ -1134,11 +1133,10 @@ const App: React.FC = () => {
         goals: child.goals.filter(g => g.id !== goalId)
       }));
     } catch (err: any) {
-      console.error('❌ Erreur suppression objectif message:', err?.message);
-      console.error('❌ Erreur suppression objectif code:', err?.code);
-      console.error('❌ Erreur suppression objectif full:', JSON.stringify(err));
+      console.error('❌ Erreur suppression objectif:', err?.message);
     } finally {
-      setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
+      isDirectSupabaseOperation.current = false;
+      setData(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
     }
   };
   const handleArchiveGoal = (childId: string, goalId: string) => {
@@ -1174,11 +1172,9 @@ const App: React.FC = () => {
         return newData;
       });
     } catch (err: any) {
-      console.error('❌ Erreur suppression enfant message:', err?.message);
-      console.error('❌ Erreur suppression enfant code:', err?.code);
-      console.error('❌ Erreur suppression enfant full:', JSON.stringify(err));
+      console.error('❌ Erreur suppression enfant:', err?.message);
     } finally {
-      setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
+      isDirectSupabaseOperation.current = false;
     }
   };
   const handleClearHistory = (id: string) => updateChild(id, (c) => ({ ...c, history: [] }));
@@ -1233,7 +1229,8 @@ const App: React.FC = () => {
       console.error('❌ Erreur ajout enfant:', err?.message);
       showAppError(`Impossible de créer l'enfant : ${err?.message || 'Erreur inconnue'}`);
     } finally {
-      setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
+      isDirectSupabaseOperation.current = false;
+      setData(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
     }
   };
   const handlePurchaseGoal = async (childId: string, goal: Goal) => {
@@ -1288,11 +1285,10 @@ const App: React.FC = () => {
         }, ...c.history]
       }));
     } catch (err: any) {
-      console.error('❌ Erreur achat objectif message:', err?.message);
-      console.error('❌ Erreur achat objectif code:', err?.code);
-      console.error('❌ Erreur achat objectif full:', JSON.stringify(err));
+      console.error('❌ Erreur achat objectif:', err?.message);
     } finally {
-      setTimeout(() => { isDirectSupabaseOperation.current = false; }, 2000);
+      isDirectSupabaseOperation.current = false;
+      setData(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
     }
   };
   const handleSetPin = async (pin: string) => {
