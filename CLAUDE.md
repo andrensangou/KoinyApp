@@ -189,6 +189,16 @@ const t = translations[data.language || 'fr'];
 - ✅ **Alerte pénalité réapparaissant à chaque navigation** (`components/ChildView.tsx`): `acknowledgedPenaltyId` était un state React local → reset à chaque remount de ChildView. Fix: initialisé depuis `localStorage.getItem(\`koiny_ack_penalty_\${data.id}\`)` + `localStorage.setItem(...)` dans les deux boutons de fermeture.
 - ✅ **Premier tap manqué sur modals iOS** (`components/ParentView.tsx`): `backdrop-blur-md/sm` sur les backdrops `position:fixed` combiné au `position:fixed` du body-lock `useModal` décale les coordonnées tactiles dans WKWebView. Fix: `backdrop-blur` supprimé des backdrops des modals approval et transaction.
 
+### Actions du 05/05/2026 — suivi users, edge function fix, grants premium
+**Contexte**: Audit complet des nouveaux utilisateurs, correction de la fonction de re-engagement, et offre premium ciblée.
+- 📊 **Stats au 05/05/2026**: 18 auth users, 14 profils, 10 avec enfants. Taux d'activation: 71% (vs 50% le 01/05). 4 nouveaux inscrits en 4 jours avec 80% de conversion.
+- ✅ **Fix `notify-inactive-users` — fenêtre glissante** (`supabase/functions/notify-inactive-users/index.ts`): la fonction utilisait une fenêtre de 1 jour exacte (`cutoffStart`/`cutoffEnd`) → users manqués si la cron ratait un jour. Fix: suppression de `cutoffStart`, utilisation de `< J-N` seulement. L'anti-doublon `email_logs` gère les renvois.
+- ✅ **Fix `notify-inactive-users` — filtre no_children** : `const { count }` retournait `null` en cas d'erreur → `(null ?? 0) > 0` = false → emails `no_children` envoyés à des parents qui avaient des enfants. Fix: `if (countErr || count === null || count > 0) continue`.
+- ✅ **Clé Resend mise à jour** dans Supabase secrets (`RESEND_API_KEY`) — ancienne clé expirée.
+- 🎁 **Grants premium RevenueCat** (via API V1 secret key): Premium 7 jours accordé à Jack, Lance, Elise, Hanne, Leyla (users actifs). Révoqué pour Chase, Vic, Mohamed, Esrom, Kayleigh (inactifs). Expire le 12/05/2026.
+- 📧 **Emails "cadeau premium" envoyés** via Resend: parent de Hanne (`ineheyvaert@hotmail.com`, NL) + parent de Leyla (`leleche993@icloud.com`, FR).
+- 🔑 **Clés RevenueCat**: V1 secret key utilisée pour les grants (`sk_xx...`). V2 incompatible avec l'endpoint `/v1/subscribers/{id}/entitlements/{id}/promotional`. Pour futurs grants: utiliser V1 uniquement.
+
 ### Corrections appliquées (29-30/04/2026 — birthday persistence, analytics funnel, branch reconcile)
 **Contexte**: Test de la version 1.0.5 build 6 a révélé que la date de naissance se "désactivait" après quelques secondes. Diagnostic + fix + ajout d'un système de tracking funnel pour mesurer la conversion install → activation (Apple Search Ads s'arrête à l'install).
 - ✅ **Bug birthday persistence** (`services/supabase.ts:418`): la lecture forçait `birthday: null` à chaque sync depuis Supabase → la date locale était écrasée à chaque reload. Cause racine: la colonne `birth_date` n'existait pas dans `children`. Fix: ajout colonne + lecture `c.birth_date` + écriture `birth_date: child.birthday` dans `childPayload`.
