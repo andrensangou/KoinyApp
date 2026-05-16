@@ -7,16 +7,19 @@ import { getSupabase, signInWithGoogle, signInWithApple } from '../services/supa
 import { SUPABASE_URL } from '../config';
 import { monitoring } from '../services/monitoring';
 import HelpModal from './HelpModal';
+import { isAndroid } from '../hooks/usePlatform';
 
 
 interface AuthViewProps {
   language: Language;
   onSetLanguage: (lang: Language) => void;
   onLoginSuccess: (data?: GlobalState) => void;
+  isPasswordRecovery?: boolean;
+  onPasswordReset?: () => void;
 }
 
-const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuccess }) => {
-  const [authMode, setAuthMode] = useState<'LOGIN' | 'SIGNUP' | 'FORGOT'>('LOGIN');
+const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuccess, isPasswordRecovery = false, onPasswordReset }) => {
+  const [authMode, setAuthMode] = useState<'LOGIN' | 'SIGNUP' | 'FORGOT' | 'RESET'>('LOGIN');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +29,10 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
   const [error, setError] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   const t = translations[language];
   const supabase = getSupabase();
@@ -39,6 +46,41 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
       setRememberMe(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (isPasswordRecovery) setAuthMode('RESET');
+  }, [isPasswordRecovery]);
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setError(language === 'fr' ? 'Les mots de passe ne correspondent pas.' : language === 'nl' ? 'Wachtwoorden komen niet overeen.' : 'Passwords do not match.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError(language === 'fr' ? 'Minimum 8 caractères.' : language === 'nl' ? 'Minimaal 8 tekens.' : 'Minimum 8 characters.');
+      return;
+    }
+    if (!supabase) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setResetSuccess(true);
+      onPasswordReset?.();
+      setTimeout(() => {
+        setAuthMode('LOGIN');
+        setResetSuccess(false);
+        setNewPassword('');
+        setConfirmPassword('');
+      }, 2500);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     monitoring.track('BUSINESS', 'AUTH_MODE_CHANGED', 1, { mode: authMode });
@@ -140,45 +182,76 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center pt-28 pb-10 p-4 sm:p-6 relative overflow-hidden font-sans transition-colors duration-500">
-      <div className="hidden sm:block absolute top-[-10%] right-[-10%] w-[400px] h-[400px] lg:w-[500px] lg:h-[500px] bg-indigo-200 dark:bg-indigo-900 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-      <div className="hidden sm:block absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] lg:w-[500px] lg:h-[500px] bg-pink-200 dark:bg-fuchsia-900 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+    <div className={isAndroid
+      ? "min-h-screen bg-white dark:bg-slate-950 flex flex-col font-sans"
+      : "min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center pt-28 pb-10 p-4 sm:p-6 relative overflow-hidden font-sans transition-colors duration-500"
+    }>
+      {/* iOS blobs */}
+      {!isAndroid && <>
+        <div className="hidden sm:block absolute top-[-10%] right-[-10%] w-[400px] h-[400px] lg:w-[500px] lg:h-[500px] bg-indigo-200 dark:bg-indigo-900 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="hidden sm:block absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] lg:w-[500px] lg:h-[500px] bg-pink-200 dark:bg-fuchsia-900 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+      </>}
 
-      {/* Optimized Header with Safe Area */}
-      <nav className="fixed top-0 left-0 right-0 z-[60] safe-pt bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 transition-colors duration-500">
-        <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex gap-2">
+      {/* Nav */}
+      {isAndroid ? (
+        <div className="bg-indigo-600 pt-10 pb-8 px-6 flex items-end justify-between">
+          <div>
+            <div className="text-white text-2xl font-black"><span className="text-white/70">K</span>oiny</div>
+            <div className="text-white/70 text-sm mt-1">{language === 'fr' ? 'Connexion' : language === 'nl' ? 'Inloggen' : 'Sign in'}</div>
+          </div>
+          <div className="flex items-center gap-2">
             {(['fr', 'nl', 'en'] as Language[]).map((lang) => (
-              <button key={lang}
-                onClick={() => onSetLanguage(lang)}
-                aria-label={lang === 'fr' ? 'Passer en Français' : lang === 'nl' ? 'Schakel over naar Nederlands' : 'Switch to English'}
-                className={`w-10 h-10 rounded-xl border-2 transition-all flex items-center justify-center font-black text-xs ${language === lang ? 'border-indigo-500 bg-white dark:bg-slate-900 shadow-sm scale-110' : 'border-transparent text-slate-400 dark:text-slate-600 opacity-60'}`}
-              >
+              <button key={lang} onClick={() => onSetLanguage(lang)}
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${language === lang ? 'bg-white/20' : 'opacity-50'}`}>
                 {lang === 'fr' ? '🇫🇷' : lang === 'nl' ? '🇳🇱' : '🇬🇧'}
               </button>
             ))}
+            <button onClick={() => setShowHelp(true)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white ml-1">
+              <i className="fa-solid fa-book-bookmark text-sm"></i>
+            </button>
           </div>
-          <button onClick={() => setShowHelp(true)}
-            aria-label={language === 'fr' ? 'Aide' : language === 'nl' ? 'Help' : 'Help'}
-            className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-sm flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-slate-100 dark:border-slate-800 active:scale-90 transition-transform"
-          >
-            <i className="fa-solid fa-book-bookmark" aria-hidden="true"></i>
-          </button>
         </div>
-      </nav>
+      ) : (
+        <nav className="fixed top-0 left-0 right-0 z-[60] safe-pt bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 transition-colors duration-500">
+          <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-between">
+            <div className="flex gap-2">
+              {(['fr', 'nl', 'en'] as Language[]).map((lang) => (
+                <button key={lang}
+                  onClick={() => onSetLanguage(lang)}
+                  aria-label={lang === 'fr' ? 'Passer en Français' : lang === 'nl' ? 'Schakel over naar Nederlands' : 'Switch to English'}
+                  className={`w-10 h-10 rounded-xl border-2 transition-all flex items-center justify-center font-black text-xs ${language === lang ? 'border-indigo-500 bg-white dark:bg-slate-900 shadow-sm scale-110' : 'border-transparent text-slate-400 dark:text-slate-600 opacity-60'}`}
+                >
+                  {lang === 'fr' ? '🇫🇷' : lang === 'nl' ? '🇳🇱' : '🇬🇧'}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowHelp(true)}
+              aria-label={language === 'fr' ? 'Aide' : language === 'nl' ? 'Help' : 'Help'}
+              className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-sm flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-slate-100 dark:border-slate-800 active:scale-90 transition-transform"
+            >
+              <i className="fa-solid fa-book-bookmark" aria-hidden="true"></i>
+            </button>
+          </div>
+        </nav>
+      )}
 
-      <div className="max-w-md w-full mx-auto relative z-10">
+      <div className={isAndroid ? "flex-1 px-6 pt-8 pb-10 max-w-md w-full mx-auto" : "max-w-md w-full mx-auto relative z-10"}>
 
-        {/* Titre simplifié pour l'entrée */}
-        <div className="text-center mb-8 mt-4">
-          {!emailSent && (
-            <h1 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">
-              {t.auth.login}
-            </h1>
-          )}
-        </div>
+        {/* Titre */}
+        {!isAndroid && (
+          <div className="text-center mb-8 mt-4">
+            {!emailSent && (
+              <h1 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">
+                {t.auth.login}
+              </h1>
+            )}
+          </div>
+        )}
 
-        <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-800 animate-fade-in-up transition-colors duration-500">
+        <div className={isAndroid
+          ? "bg-white dark:bg-slate-900 p-6 rounded-[28px] shadow-md border border-slate-100 dark:border-slate-800"
+          : "bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-800 animate-fade-in-up transition-colors duration-500"
+        }>
           {!isConfigured ? (
             <div className="bg-orange-50 dark:bg-orange-950/20 text-orange-800 dark:text-orange-400 p-4 rounded-xl text-sm border border-orange-200 dark:border-orange-900/50">
               <div className="flex items-center gap-2 mb-2 font-bold">
@@ -186,6 +259,63 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
                 {language === 'en' ? 'Service unavailable' : 'Service indisponible'}
               </div>
               <p>{language === 'en' ? 'Please try again later.' : 'Veuillez réessayer plus tard.'}</p>
+            </div>
+          ) : authMode === 'RESET' ? (
+            <div className="py-2">
+              {resetSuccess ? (
+                <div className="text-center py-4">
+                  <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
+                    <i className="fa-solid fa-check"></i>
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
+                    {language === 'fr' ? 'Mot de passe mis à jour !' : language === 'nl' ? 'Wachtwoord bijgewerkt!' : 'Password updated!'}
+                  </h2>
+                  <p className="text-slate-500 text-sm">
+                    {language === 'fr' ? 'Vous allez être redirigé...' : language === 'nl' ? 'U wordt doorgestuurd...' : 'Redirecting...'}
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-5">
+                  <div className="text-center mb-4">
+                    <div className="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">
+                      <i className="fa-solid fa-key"></i>
+                    </div>
+                    <h2 className="text-lg font-bold text-slate-800 dark:text-white">
+                      {language === 'fr' ? 'Nouveau mot de passe' : language === 'nl' ? 'Nieuw wachtwoord' : 'New password'}
+                    </h2>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1">
+                      {language === 'fr' ? 'Nouveau mot de passe' : language === 'nl' ? 'Nieuw wachtwoord' : 'New password'}
+                    </label>
+                    <div className="relative">
+                      <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                      <input type={showNewPassword ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                        className="w-full pl-10 pr-12 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-slate-900 dark:text-white placeholder-slate-400 shadow-inner"
+                        placeholder="••••••••" minLength={8} required />
+                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+                        <i className={`fa-solid ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1">
+                      {language === 'fr' ? 'Confirmer le mot de passe' : language === 'nl' ? 'Bevestig wachtwoord' : 'Confirm password'}
+                    </label>
+                    <div className="relative">
+                      <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                      <input type={showNewPassword ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-slate-900 dark:text-white placeholder-slate-400 shadow-inner"
+                        placeholder="••••••••" minLength={8} required />
+                    </div>
+                  </div>
+                  {error && <div className="bg-red-50 text-red-500 text-sm p-3 rounded-xl flex items-center gap-2 font-bold"><i className="fa-solid fa-circle-exclamation"></i>{error}</div>}
+                  <button type="submit" disabled={loading}
+                    className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 text-lg flex justify-center items-center gap-2">
+                    {loading ? <i className="fa-solid fa-circle-notch fa-spin"></i> : (language === 'fr' ? 'Enregistrer' : language === 'nl' ? 'Opslaan' : 'Save')}
+                  </button>
+                </form>
+              )}
             </div>
           ) : emailSent ? (
             <div className="text-center py-4">
@@ -235,19 +365,27 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
 
               <form onSubmit={handleAuth} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1">{t.auth.email}</label>
+                  <label className={isAndroid ? "block text-xs font-medium text-indigo-600 mb-1 ml-1" : "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1"}>{t.auth.email}</label>
                   <div className="relative">
-                    <i className="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-600"></i>
-                    <input name="email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 shadow-inner" placeholder="parent@email.com" required />
+                    <i className="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input name="email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+                      className={isAndroid
+                        ? "w-full pl-10 pr-4 py-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all text-slate-900 dark:text-white placeholder-slate-400"
+                        : "w-full pl-10 pr-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 shadow-inner"
+                      } placeholder="parent@email.com" required />
                   </div>
                 </div>
 
                 {authMode !== 'FORGOT' && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1">{t.auth.password}</label>
+                    <label className={isAndroid ? "block text-xs font-medium text-indigo-600 mb-1 ml-1" : "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1"}>{t.auth.password}</label>
                     <div className="relative">
-                      <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-600"></i>
-                      <input name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-10 pr-12 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 shadow-inner" placeholder="••••••••" required />
+                      <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                      <input name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
+                        className={isAndroid
+                          ? "w-full pl-10 pr-12 py-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all text-slate-900 dark:text-white placeholder-slate-400"
+                          : "w-full pl-10 pr-12 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 shadow-inner"
+                        } placeholder="••••••••" required />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-slate-600 focus:outline-none"><i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>
                     </div>
                   </div>
@@ -282,7 +420,11 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
 
                 {error && <div className="bg-red-50 text-red-500 text-sm p-3 rounded-xl flex items-center gap-2 font-bold animate-pulse"><i className="fa-solid fa-circle-exclamation"></i>{error}</div>}
 
-                <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 text-lg flex justify-center items-center gap-2">
+                <button type="submit" disabled={loading}
+                  className={isAndroid
+                    ? "w-full bg-indigo-600 text-white font-medium py-3.5 rounded-full active:bg-indigo-700 transition-all disabled:opacity-50 text-base flex justify-center items-center gap-2 shadow-sm"
+                    : "w-full bg-indigo-600 text-white font-bold py-4 rounded-xl hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 text-lg flex justify-center items-center gap-2"
+                  }>
                   {loading ? <i className="fa-solid fa-circle-notch fa-spin"></i> : (authMode === 'LOGIN' ? t.auth.login : authMode === 'SIGNUP' ? t.auth.signup : t.auth.sendLink)}
                 </button>
               </form>

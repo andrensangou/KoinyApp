@@ -90,6 +90,7 @@ const slides: Slide[] = [
             { icon: 'fa-solid fa-circle-1', textFr: 'Crée le profil de ton enfant', textNl: 'Maak het profiel van je kind aan', textEn: 'Create your child\'s profile' },
             { icon: 'fa-solid fa-circle-2', textFr: 'Ajoute une première mission', textNl: 'Voeg een eerste missie toe', textEn: 'Add a first mission' },
             { icon: 'fa-solid fa-circle-3', textFr: 'Valide → l\'argent est crédité !', textNl: 'Valideer → geld wordt bijgeschreven!', textEn: 'Approve → money is credited!' },
+            { icon: 'fa-solid fa-circle-dot', textFr: 'Bouton 🔴 → voir le profil de ton enfant', textNl: 'Rode knop 🔴 → bekijk het profiel van je kind', textEn: 'Red button 🔴 → view your child\'s profile' },
         ],
     },
 ];
@@ -252,7 +253,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ language, onSetLanguage
                         {slide.features.map((f, i) => (
                             <div
                                 key={i}
-                                className="flex items-center gap-3.5 bg-white/[0.08] backdrop-blur-md rounded-2xl px-5 py-3.5 ring-1 ring-white/10"
+                                className={`flex items-center gap-3.5 rounded-2xl px-5 py-3.5 ring-1 ring-white/10 ${isAndroid ? 'bg-white/[0.08]' : 'bg-white/[0.08] backdrop-blur-md'}`}
                                 style={{ animationDelay: `${i * 100}ms` }}
                             >
                                 <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
@@ -291,10 +292,11 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ language, onSetLanguage
                 <button
                     onClick={next}
                     aria-label={buttonLabel}
-                    className={`w-full py-5 rounded-2xl font-black text-lg tracking-tight transition-all duration-300 active:scale-[0.97] shadow-2xl flex items-center justify-center gap-3
+                    className={`w-full py-5 font-black text-lg tracking-tight transition-all duration-300 active:scale-[0.97] shadow-2xl flex items-center justify-center gap-3
+            ${isAndroid ? 'rounded-full' : 'rounded-2xl'}
             ${isLast
                             ? 'bg-white text-slate-900 shadow-white/20 hover:shadow-white/40'
-                            : 'bg-white/15 backdrop-blur-md text-white ring-1 ring-white/20 hover:bg-white/25'}`}
+                            : `text-white ring-1 ring-white/20 hover:bg-white/25 ${isAndroid ? 'bg-white/15' : 'bg-white/15 backdrop-blur-md'}`}`}
                 >
                     {buttonLabel}
                     <i className={`fa-solid ${isLast ? 'fa-arrow-right' : 'fa-chevron-right'} text-sm transition-transform group-hover:translate-x-1`} aria-hidden="true" />

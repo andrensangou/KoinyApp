@@ -202,18 +202,16 @@ Deno.serve(async (req) => {
   const now = new Date();
 
   for (const seq of SEQUENCES) {
-    const cutoffEnd = new Date(now);
-    cutoffEnd.setDate(cutoffEnd.getDate() - seq.days);
-    const cutoffStart = new Date(cutoffEnd);
-    cutoffStart.setDate(cutoffStart.getDate() - 1); // fenêtre 1 jour pour éviter les doublons
+    const cutoff = new Date(now);
+    cutoff.setDate(cutoff.getDate() - seq.days);
 
-    // Récupérer les profils parents dont updated_at tombe dans la fenêtre
+    // Tous les profils inactifs depuis >= seq.days jours
+    // L'anti-doublon via email_logs empêche les renvois
     const { data: targetProfiles, error } = await supabase
       .from('profiles')
       .select('id, language, updated_at')
       .eq('role', 'parent')
-      .lt('updated_at', cutoffEnd.toISOString())
-      .gte('updated_at', cutoffStart.toISOString());
+      .lt('updated_at', cutoff.toISOString());
 
     if (error || !targetProfiles) {
       console.error(`Error fetching profiles for ${seq.type}:`, error);
@@ -222,12 +220,13 @@ Deno.serve(async (req) => {
 
     for (const profile of targetProfiles) {
       // Filtre no_children : ignorer les parents qui ont déjà des enfants
+      // Si count est null (erreur), on skip par sécurité pour éviter faux no_children
       if (seq.onlyWithoutChildren) {
-        const { count } = await supabase
+        const { count, error: countErr } = await supabase
           .from('children')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', profile.id);
-        if ((count ?? 0) > 0) continue;
+        if (countErr || count === null || count > 0) continue;
       }
 
       // Anti-doublon via email_logs

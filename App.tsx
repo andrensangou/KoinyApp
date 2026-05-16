@@ -36,6 +36,7 @@ const App: React.FC = () => {
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [criticalError, setCriticalError] = useState<string | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [appError, setAppError] = useState<string | null>(null);
@@ -218,14 +219,24 @@ const App: React.FC = () => {
         const subStatus = await subscriptionService.getSubscriptionStatus();
         if (subStatus.isSubscribed) {
           localStorage.setItem('koiny_premium_active', 'true');
+          localStorage.setItem('koiny_premium_verified_at', Date.now().toString());
           setData(prev => ({ ...prev, isPremium: true }));
         } else {
           // Explicitly reset premium — prevents stale state from previous user
           localStorage.removeItem('koiny_premium_active');
+          localStorage.removeItem('koiny_premium_verified_at');
           setData(prev => ({ ...prev, isPremium: false }));
         }
       } catch (e) {
         console.warn('⚠️ [INIT] RevenueCat init failed (non-blocking):', e);
+        // Si la dernière vérification réussie date de plus de 7 jours, révoquer le premium
+        const lastVerified = parseInt(localStorage.getItem('koiny_premium_verified_at') || '0');
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+        if (Date.now() - lastVerified > sevenDays) {
+          localStorage.removeItem('koiny_premium_active');
+          localStorage.removeItem('koiny_premium_verified_at');
+          setData(prev => ({ ...prev, isPremium: false }));
+        }
       }
 
       // Sync widget data on initial load
@@ -274,6 +285,7 @@ const App: React.FC = () => {
       try {
         const status = await subscriptionService.getSubscriptionStatus();
         const wasPremium = localStorage.getItem('koiny_premium_active') === 'true';
+        localStorage.setItem('koiny_premium_verified_at', Date.now().toString());
         if (status.isSubscribed && !wasPremium) {
           localStorage.setItem('koiny_premium_active', 'true');
           setData(prev => ({ ...prev, isPremium: true, updatedAt: new Date().toISOString() }));
@@ -583,7 +595,10 @@ const App: React.FC = () => {
     }
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+        setView('AUTH');
+      } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         // Handles both null (no session) and valid session
         await initialize(session);
       } else if (event === 'SIGNED_OUT') {
@@ -950,7 +965,7 @@ const App: React.FC = () => {
     setData(prev => ({ ...prev, currency: symbol, updatedAt: new Date().toISOString() }));
   };
 
-  const handleLogout = () => { setActiveChildId(null); setView('LOGIN'); };
+  const handleLogout = () => { setActiveChildId(null); setView('LOGIN'); monitoring.track('BUSINESS', 'PROFILE_SWITCH', 1, { direction: 'child_to_parent' }); };
   const handleFullSignOut = async () => {
     const supabase = getSupabase();
 
@@ -1407,6 +1422,7 @@ const App: React.FC = () => {
     localStorage.setItem('koiny_last_child_id', childId);
     setActiveChildId(childId);
     setView('CHILD');
+    monitoring.track('BUSINESS', 'PROFILE_SWITCH', 1, { direction: 'parent_to_child' });
   };
 
   return (
@@ -1421,9 +1437,9 @@ const App: React.FC = () => {
               setView('AUTH');
             }}
           />
-          : <AuthView language={data.language} onSetLanguage={setLanguage} onLoginSuccess={handleLoginSuccess} />
+          : <AuthView language={data.language} onSetLanguage={setLanguage} onLoginSuccess={handleLoginSuccess} isPasswordRecovery={false} onPasswordReset={() => setIsPasswordRecovery(false)} />
       )}
-      {view === 'AUTH' && <AuthView language={data.language} onSetLanguage={setLanguage} onLoginSuccess={handleLoginSuccess} />}
+      {view === 'AUTH' && <AuthView language={data.language} onSetLanguage={setLanguage} onLoginSuccess={handleLoginSuccess} isPasswordRecovery={isPasswordRecovery} onPasswordReset={() => setIsPasswordRecovery(false)} />}
       {view === 'LOGIN' && <LoginView data={data} onSelectChild={handleSelectChild} onParentAccess={() => setView('PARENT')} />}
       {view === 'CHILD' && (
         data.children.find(c => c.id === activeChildId) ? (

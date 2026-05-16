@@ -1666,10 +1666,23 @@ const ParentView: React.FC<ParentViewProps> = ({
             {mainView === 'dashboard' && <div className="space-y-8">
               {isAndroid ? (
                 /* ── Android MD3 Balance Card ── */
+                (() => {
+                  const age = (() => {
+                    if (!activeChild.birthday) return null;
+                    const b = new Date(activeChild.birthday), n = new Date();
+                    let a = n.getFullYear() - b.getFullYear();
+                    if (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) a--;
+                    return a >= 0 && a < 120 ? a : null;
+                  })();
+                  const ageLabel = age === null ? null : (language === 'fr' ? `${age} ans` : language === 'nl' ? `${age} jaar` : `${age} yrs`);
+                  return (
                 <section className={`relative bg-indigo-600 rounded-2xl p-5 text-white overflow-hidden`}>
                   <div className="flex justify-between items-start mb-6">
                     <div>
-                      <p className="text-white/70 text-xs font-medium mb-1">{t.parent.childBalance}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-white/70 text-xs font-medium">{t.parent.childBalance}</p>
+                        {ageLabel && <span className="text-white/50 text-xs font-medium">· {ageLabel}</span>}
+                      </div>
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-4xl font-bold tracking-tight tabular-nums leading-none">
                           {activeChild.balance.toFixed(2)}
@@ -1719,6 +1732,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                     <div className="h-8" aria-hidden="true" />
                   )}
                 </section>
+                  );
+                })()
               ) : (
                 /* ── iOS Balance Card (consolidated hero) ── */
                 (() => {
@@ -2195,42 +2210,6 @@ const ParentView: React.FC<ParentViewProps> = ({
                 )
               )}
 
-              {/* Quick Actions (QR & Premium) - Android only */}
-              {isAndroid && (
-                <section className="space-y-4 pt-2">
-                  <div className="flex items-center gap-2 mb-2 px-1">
-                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t.parent.shortcuts}</h2>
-                    <div className="h-px bg-slate-200 flex-1"></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => !data.isPremium && (setActiveTab('ACCOUNT'), setMainView('profile'))}
-                      disabled={data.isPremium}
-                      className={`p-3 rounded-2xl shadow-md flex flex-col items-center justify-center gap-2 text-white text-center py-6 relative overflow-hidden group border transition-all ${data.isPremium
-                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25 border-emerald-400/20 opacity-90 cursor-default'
-                        : 'bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-violet-500/25 border-violet-400/20 hover:translate-y-[-2px]'
-                        }`}
-                    >
-                      <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl transition-colors ${data.isPremium
-                        ? 'bg-white/10'
-                        : 'bg-white/20 group-hover:bg-white/30'
-                        }`}></div>
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm shadow-inner mb-1 ring-2 relative z-10 ${data.isPremium
-                        ? 'bg-white/20 ring-emerald-300/20 text-white'
-                        : 'bg-white/20 ring-white/30 text-yellow-300'
-                        }`}>
-                        <i className={`fa-solid ${data.isPremium ? 'fa-check' : 'fa-crown'} text-xl drop-shadow-sm`}></i>
-                      </div>
-                      <div className="relative z-10">
-                        <p className="font-black text-xs leading-tight mb-1 uppercase tracking-wider">Premium</p>
-                        <p className="text-[10px] text-white/90 font-medium">
-                          {data.isPremium ? t.parent.messages.premiumThankYou : t.parent.premium.upgrade}
-                        </p>
-                      </div>
-                    </button>
-                  </div>
-                </section>
-              )}
             </div>}
 
             {/* Content that was previously side-by-side is now managed via tabs */}

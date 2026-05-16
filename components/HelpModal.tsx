@@ -84,26 +84,26 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
         },
         {
           id: 6,
-          icon: 'fa-piggy-bank',
-          color: 'from-amber-400 to-yellow-500',
-          title: 'Limites de Solde',
-          text: 'Pour rester réaliste et pédagogique :',
+          icon: 'fa-right-left',
+          color: 'from-cyan-400 to-blue-500',
+          title: 'Changer de Profil',
+          text: 'Passer de l\'espace parent à l\'espace enfant :',
           items: [
-            'Le solde est plafonné à 100€ par enfant.',
-            'Si une récompense dépasse ce plafond, le paiement est bloqué.',
-            'C\'est l\'occasion d\'expliquer l\'épargne et la dépense réelle !'
+            'Appuyez sur le bouton ⏻ (power) en haut à droite pour basculer vers l\'espace enfant.',
+            'L\'enfant peut ainsi voir ses missions et marquer "C\'est fait !".',
+            'Pour revenir à l\'espace parent, appuyez à nouveau sur ⏻ et saisissez votre PIN.'
           ]
         },
         {
           id: 7,
-          icon: 'fa-eye',
-          color: 'from-cyan-400 to-blue-500',
-          title: 'Mode Démo',
-          text: 'Information sur le compte d\'essai :',
+          icon: 'fa-piggy-bank',
+          color: 'from-amber-400 to-yellow-500',
+          title: 'Limites de Solde',
+          text: 'Configurable selon vos besoins :',
           items: [
-            'Si vous testez Koiny en mode démo, pensez à vous déconnecter.',
-            'Pour utiliser l\'application avec votre propre famille, il faudra créer un vrai compte.',
-            'Vos données en mode démo ne sont pas transférables.'
+            'Le plafond est réglable dans Profil > Réglages > Limite du portefeuille.',
+            'Valeur possible de 0 à 10 000€ selon votre situation.',
+            'Si une récompense dépasse ce plafond, le paiement est bloqué.'
           ]
         }
       ],
@@ -178,26 +178,26 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
         },
         {
           id: 6,
-          icon: 'fa-piggy-bank',
-          color: 'from-amber-400 to-yellow-500',
-          title: 'Balance Limits',
-          text: 'To stay realistic and educational:',
+          icon: 'fa-right-left',
+          color: 'from-cyan-400 to-blue-500',
+          title: 'Switching Profiles',
+          text: 'Switch between parent and child space:',
           items: [
-            'Balance is capped at €100 per child.',
-            'If a reward exceeds this limit, payment is blocked.',
-            'A great opportunity to talk about real saving and spending!'
+            'Tap the ⏻ (power) button in the top right to switch to the child\'s space.',
+            'Your child can then see their missions and tap "Done!".',
+            'To return to the parent space, tap ⏻ again and enter your PIN.'
           ]
         },
         {
           id: 7,
-          icon: 'fa-eye',
-          color: 'from-cyan-400 to-blue-500',
-          title: 'Demo Mode',
-          text: 'Information about the trial account:',
+          icon: 'fa-piggy-bank',
+          color: 'from-amber-400 to-yellow-500',
+          title: 'Balance Limits',
+          text: 'Configurable to your needs:',
           items: [
-            'If you are testing Koiny via demo mode, remember to log out.',
-            'To use the app with your own family, you will need to create a real account.',
-            'Your data in demo mode is not transferable.'
+            'The cap is adjustable in Profile > Settings > Wallet Limit.',
+            'Set any amount from 0 to 10,000 in your currency.',
+            'If a reward exceeds this limit, payment is blocked.'
           ]
         }
       ],
@@ -272,26 +272,26 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
         },
         {
           id: 6,
-          icon: 'fa-piggy-bank',
-          color: 'from-amber-400 to-yellow-500',
-          title: 'Saldolimieten',
-          text: 'Realistisch en educatief blijven:',
+          icon: 'fa-right-left',
+          color: 'from-cyan-400 to-blue-500',
+          title: 'Profielen wisselen',
+          text: 'Schakelen tussen ouder- en kinderomgeving:',
           items: [
-            'Saldo is geplafonneerd op €100 per kind.',
-            'Als een beloning dit plafond overschrijdt, wordt de betaling geblokkeerd.',
-            'Een mooie gelegenheid om over echt sparen en uitgeven te praten!'
+            'Tik op de ⏻ (power) knop rechtsboven om naar de kinderomgeving te gaan.',
+            'Je kind kan dan missies zien en op "Klaar!" tikken.',
+            'Om terug te keren naar de ouderomgeving, tik opnieuw op ⏻ en voer je PIN in.'
           ]
         },
         {
           id: 7,
-          icon: 'fa-eye',
-          color: 'from-cyan-400 to-blue-500',
-          title: 'Demo Modus',
-          text: 'Informatie over het proefaccount:',
+          icon: 'fa-piggy-bank',
+          color: 'from-amber-400 to-yellow-500',
+          title: 'Saldolimieten',
+          text: 'Instelbaar naar jouw situatie:',
           items: [
-            'Als je Koiny via de demo modus test, vergeet dan niet uit te loggen.',
-            'Om de app met je eigen gezin te gebruiken, moet je een echt account aanmaken.',
-            'Je gegevens in de demo modus kunnen niet worden overgezet.'
+            'Het plafond is aanpasbaar via Profiel > Instellingen > Portemonnee-limiet.',
+            'Stel een bedrag in van €0 tot €10.000.',
+            'Als een beloning dit plafond overschrijdt, wordt de betaling geblokkeerd.'
           ]
         }
       ],

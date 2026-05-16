@@ -8,7 +8,8 @@
 Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
-**Statut:** Publiée sur l'App Store (version 1.0.6). Version 1.0.7 build 1 prête à archiver depuis la branche `redesign` (02/05/2026) — inclut tous les fixes UX (double-tap, balance, missions, widget couleurs, alerte pénalité). Train 1.0.6 fermé par Apple (déjà approuvé). Android en cours de finalisation.
+**Statut:** Publiée sur l'App Store (version 1.0.6). Version 1.0.7 build 5 en cours de préparation depuis la branche `redesign` — inclut fix premium stale (révocation après 7j sans vérification RevenueCat) + fix landing page redesign. Build buildé + synced le 15/05/2026, prêt à archiver depuis Xcode.
+**Android:** Version 1.0 versionCode 2 validée par Google (Tests fermés Alpha) — 0/12 testeurs inscrits. Nécessite 12 testeurs × 14 jours pour accéder à la production. IAP Android à créer dans Play Console après passage en production.
 
 ## Regles critiques
 
@@ -106,11 +107,15 @@ const t = translations[data.language || 'fr'];
 **Produits & Entitlement:**
 - Produits: `com.koiny.premium.monthly` (1,99€/mois) et `com.koiny.premium.yearly` (16,99€/an)
 - Entitlement ID dans RevenueCat: **`'Koiny Premium'`** (maj/espace importants)
-- Clé API dans `.env` (VITE_REVENUECAT_API_KEY)
+- Clé API iOS dans `.env` (`VITE_REVENUECAT_API_KEY` — préfixe `appl_`)
+- Clé API Android dans `.env` (`VITE_REVENUECAT_API_KEY_ANDROID` — préfixe `goog_`)
+- `subscription.ts` choisit la bonne clé selon `Capacitor.getPlatform()`
 
 **Stockage local premium:**
 - localStorage key: `'koiny_premium_active'` (valeur: `'true'` ou absent)
+- localStorage key: `'koiny_premium_verified_at'` (timestamp ms de la dernière vérification RevenueCat réussie)
 - Toujours lu par `migrateData(cloudData)` dans `services/storage.ts`
+- Si RevenueCat échoue au démarrage ET `koiny_premium_verified_at` > 7 jours → premium révoqué automatiquement (`App.tsx`)
 
 **Fallback Xcode Sandbox:**
 1. `purchaseSubscription()`: check `activeSubscriptions` si entitlements.active vide
@@ -188,6 +193,35 @@ const t = translations[data.language || 'fr'];
 - ✅ **Widget couleurs vert/rouge jamais affichées** (`services/widgetBridge.ts`): `todayEarned` comparait `"01/05/2026"` (DD/MM/YYYY) contre `"2026-05-01"` (ISO) → toujours 0. Fix: `todayDateStr` en format `DD/MM/YYYY` pour le filtre; `parseHistoryDate()` utilisée pour `lastMissionApprovedDate` → `.toISOString()` pour Swift.
 - ✅ **Alerte pénalité réapparaissant à chaque navigation** (`components/ChildView.tsx`): `acknowledgedPenaltyId` était un state React local → reset à chaque remount de ChildView. Fix: initialisé depuis `localStorage.getItem(\`koiny_ack_penalty_\${data.id}\`)` + `localStorage.setItem(...)` dans les deux boutons de fermeture.
 - ✅ **Premier tap manqué sur modals iOS** (`components/ParentView.tsx`): `backdrop-blur-md/sm` sur les backdrops `position:fixed` combiné au `position:fixed` du body-lock `useModal` décale les coordonnées tactiles dans WKWebView. Fix: `backdrop-blur` supprimé des backdrops des modals approval et transaction.
+
+### Actions du 15/05/2026 — Fix premium stale, landing page redesign, build 1.0.7 build 5
+
+**Contexte**: Détection d'un bug où un utilisateur ayant eu le premium puis résilié conservait l'accès si RevenueCat échouait au démarrage. Landing page redesignée depuis un bundle Claude Design.
+
+- ✅ **Fix premium stale** (`App.tsx`): ajout de `koiny_premium_verified_at` (timestamp localStorage). Dans le `catch` du init RevenueCat : si la dernière vérification réussie date de plus de 7 jours → révocation automatique du premium. Dans `refreshPremiumStatus` : mise à jour du timestamp à chaque vérification réussie. Tolérance 7 jours pour le mode offline.
+- ✅ **Landing page redesignée** (`public/landing-preview/index.html`): nouveau design depuis bundle Claude Design — gradient indigo, mockup iPhone CSS, 9 sections (hero, pain points, features, how it works, trust, pricing, final CTA, footer). Logo PNG + sélecteur FR/NL/EN + screenshot réel réintégrés depuis l'ancien design.
+- ✅ **Build 1.0.7 build 5**: `npm run build` + `npx cap sync ios` effectués le 15/05/2026. Prêt à archiver depuis Xcode (Product → Archive). CURRENT_PROJECT_VERSION à incrémenter à 5 dans Xcode avant archive.
+- 📊 **Stats au 15/05/2026**: 29 auth users. 2 nouveaux le 14/05 (allalichakib4@gmail.com + Apple Relay). Allali actif : enfant Chakib, 5 transactions, 1 objectif (Trottinette Xiaomi), 0 mission. Android : 0/12 testeurs Alpha inscrits.
+- 📊 **Analytics funnel**: 6 users AUTH_SUCCESS → 6 ONBOARDING_COMPLETED (100%) → 7 CHILD_CREATED. 3 MISSION_APPROVED trackés. APP_OPEN en baisse après pic du 11/05.
+- ⚠️ **RevenueCat Android**: offerings "default" configuré mais packages vides — produits IAP à créer dans Play Console après passage en production (12 testeurs × 14 jours).
+
+### Actions du 10/05/2026 — Android build v2, polyfill UUID, engagement Megan
+**Contexte**: Premier build Android soumis en Tests fermés (Alpha). Fix crash Android 11. Engagement de l'utilisatrice la plus active.
+- ✅ **Polyfill `crypto.randomUUID`** (`index.tsx`): crash sur Android 11 / WebView anciens (`crypto.randomUUID is not a function` — 3 users OnePlus 8 Pro). Polyfill ajouté en tête de `index.tsx` utilisant `crypto.getRandomValues()` (disponible même sur vieux WebView). Pattern UUID v4 RFC 4122 conforme.
+- ✅ **Android versionCode 2** (`android/app/build.gradle`): versionCode 1 → 2 pour uploader le nouveau AAB en remplacement du premier.
+- ✅ **AAB signé uploadé** en Tests fermés Alpha sur Play Console (10/05/2026) — en cours d'examen Google.
+- ✅ **Service account RevenueCat** (`revenuecat@koiny-485111.iam.gserviceaccount.com`): créé dans Google Cloud projet `koiny-485111`, Google Play Android Developer API activée, JSON key générée et uploadée dans RevenueCat. "Credentials need attention" persiste — propagation en attente (se résout à la publication ou après validation Play Console).
+- ✅ **Clé Resend renouvelée**: `re_Jz28p9ti_GXGKnDrQfyeHmjYF7J8bDZAJ` (nom: "koiny-email") — ancienne expirée.
+- 📊 **Stats au 10/05/2026**: 22 auth users. User la plus active: **Megan** (`meganscutt@live.co.uk`) — 15 missions créées, revient quotidiennement. Trial 14 jours actif jusqu'au 22/05/2026 (RevenueCat ID: `5c9bb440...`).
+- 📧 **Emails envoyés à Megan**: (1) explication flow parent/enfant + comment valider les missions; (2) tip interrupteur power pour sortir du profil enfant.
+- ⏳ **Tests fermés**: nécessite 12 testeurs × 14 jours — actuellement 0 enrollés. Ajouter testers via Play Console > Tests fermés > Canal Alpha > Gérer testeurs.
+- ⏳ **Produits IAP Android**: à créer dans Play Console (`com.koiny.premium.monthly` + `com.koiny.premium.yearly`) après validation de l'app.
+
+### Actions du 07/05/2026 — RevenueCat Android + Play Store
+- ✅ **RevenueCat Android configuré** (`services/subscription.ts`, `config.ts`, `.env`): app "Koiny (Play Store)" créée dans RevenueCat avec package `com.koiny.app`. Clé Android `goog_xxx` ajoutée dans `.env` (`VITE_REVENUECAT_API_KEY_ANDROID`). `subscription.ts` utilise désormais la bonne clé selon la plateforme (`Capacitor.getPlatform() === 'android'`).
+- 📋 **À faire (Play Console validé)**: créer produits IAP `com.koiny.premium.monthly` + `com.koiny.premium.yearly` dans Play Console, uploader le service account JSON dans RevenueCat.
+- 🖼️ **Screenshots Play Store prêts**: 7 screenshots × 3 langues (FR/EN/NL) générés via Rubixscript avec Samsung S24, gradient indigo foncé, captions bold blanches.
+- ⏳ **Play Console validation identité en cours** (compte "Koiny Studio", soumis le 07/05/2026) — bouton "Créer une application" grisé jusqu'à approbation Google (1-3 jours ouvrables).
 
 ### Actions du 05/05/2026 — suivi users, edge function fix, grants premium
 **Contexte**: Audit complet des nouveaux utilisateurs, correction de la fonction de re-engagement, et offre premium ciblée.
@@ -355,8 +389,25 @@ npm run dev
 
 **Android:**
 - Gradle JDK: `jbr-21` (configuré dans `android/.idea/gradle.xml`)
-- Build: `cd android && ./gradlew assembleDebug` (~14s)
+- Build debug: `cd android && ./gradlew assembleDebug` (~14s)
+- Build release AAB: `cd android && ./gradlew bundleRelease` (~2 min)
 - Sync: `npx cap sync android`
+- versionCode actuel: **2** (versionName "1.0") — soumis en Tests fermés Alpha le 10/05/2026
+- Keystore: `android/koiny-release.jks`, alias `koiny`, props dans `android/keystore.properties`
+- Package: `app.koiny.parent`
+
+**Play Console — Tests fermés (Alpha):**
+- Statut: en cours d'examen (soumis 10/05/2026)
+- Nécessite 12 testeurs × 14 jours pour débloquer la production
+- Ajouter testeurs via: Tests fermés > Canal Alpha > Testeurs > Gérer les testeurs
+
+**RevenueCat Android:**
+- App "Koiny (Play Store)" créée dans RevenueCat, package `com.koiny.app`
+- Service account: `revenuecat@koiny-485111.iam.gserviceaccount.com` (projet GCP `koiny-485111`)
+- Google Play Android Developer API activée dans GCP
+- JSON uploadé dans RevenueCat > Android app > Service credentials
+- Statut: "Credentials need attention" — propagation en cours, se résoudra à la publication
+- Produits IAP à créer dans Play Console: `com.koiny.premium.monthly` + `com.koiny.premium.yearly`
 
 **Contrat "Apps payantes":**
 - Statut: "Actif" (signé le 16/03/2026)
@@ -367,6 +418,7 @@ npm run dev
 - WatchdogTermination (RAM) — iOS tue l'app pour mémoire excessive, à investiguer
 - HTTP 406 sur `app_alerts` — table créée (19/03), devrait être résolu
 - Requêtes profiles Supabase redondantes (3-4x par init)
+- `crypto.randomUUID is not a function` sur Android 11 (OnePlus 8 Pro) — **fixé** (polyfill dans `index.tsx`)
 
 **Migration possible:**
 - Sentry → Firebase Crashlytics (gratuit illimité, simple à intégrer)

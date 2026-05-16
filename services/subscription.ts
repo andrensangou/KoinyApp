@@ -5,7 +5,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { Purchases, LOG_LEVEL, PURCHASES_ERROR_CODE } from '@revenuecat/purchases-capacitor';
-import { REVENUECAT_API_KEY, IS_PRODUCTION } from '../config';
+import { REVENUECAT_API_KEY, REVENUECAT_API_KEY_ANDROID, IS_PRODUCTION } from '../config';
 import { logger } from './logger';
 
 export interface SubscriptionProduct {
@@ -60,8 +60,9 @@ class SubscriptionService {
 
       await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
 
+      const apiKey = Capacitor.getPlatform() === 'android' ? REVENUECAT_API_KEY_ANDROID : REVENUECAT_API_KEY;
       await Purchases.configure({
-        apiKey: REVENUECAT_API_KEY,
+        apiKey,
         appUserID: userId || null // null = RevenueCat génère un ID anonyme
       });
 

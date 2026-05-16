@@ -73,7 +73,7 @@ export const alertService = {
         .eq('is_active', true)
         .order('updated_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         // Supabase échoue → utiliser le cache
@@ -92,7 +92,7 @@ export const alertService = {
   /**
    * Récupère l'alerte du cache localStorage
    */
-  getCachedAlert(language: 'fr' | 'en' | 'nl'): AppAlert | null {
+  getCachedAlert(_language: 'fr' | 'en' | 'nl'): AppAlert | null {
     try {
       const cached = localStorage.getItem('koiny_cached_alert');
       if (cached) {
