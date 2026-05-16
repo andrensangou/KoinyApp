@@ -211,7 +211,7 @@ const t = translations[data.language || 'fr'];
 - ✅ **Android versionCode 2** (`android/app/build.gradle`): versionCode 1 → 2 pour uploader le nouveau AAB en remplacement du premier.
 - ✅ **AAB signé uploadé** en Tests fermés Alpha sur Play Console (10/05/2026) — en cours d'examen Google.
 - ✅ **Service account RevenueCat** (`revenuecat@koiny-485111.iam.gserviceaccount.com`): créé dans Google Cloud projet `koiny-485111`, Google Play Android Developer API activée, JSON key générée et uploadée dans RevenueCat. "Credentials need attention" persiste — propagation en attente (se résout à la publication ou après validation Play Console).
-- ✅ **Clé Resend renouvelée**: `re_Jz28p9ti_GXGKnDrQfyeHmjYF7J8bDZAJ` (nom: "koiny-email") — ancienne expirée.
+- ✅ **Clé Resend renouvelée**: [révoquée — ne jamais commiter de clés API].
 - 📊 **Stats au 10/05/2026**: 22 auth users. User la plus active: **Megan** (`meganscutt@live.co.uk`) — 15 missions créées, revient quotidiennement. Trial 14 jours actif jusqu'au 22/05/2026 (RevenueCat ID: `5c9bb440...`).
 - 📧 **Emails envoyés à Megan**: (1) explication flow parent/enfant + comment valider les missions; (2) tip interrupteur power pour sortir du profil enfant.
 - ⏳ **Tests fermés**: nécessite 12 testeurs × 14 jours — actuellement 0 enrollés. Ajouter testers via Play Console > Tests fermés > Canal Alpha > Gérer testeurs.
