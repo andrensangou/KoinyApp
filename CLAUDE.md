@@ -12,7 +12,7 @@ Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 an
 **Android:** Version 1.0 versionCode 4 — AAB release buildé le 20/05/2026, prêt à uploader en Tests fermés Alpha. Nécessite 12 testeurs × 14 jours pour accéder à la production. IAP Android à créer dans Play Console après passage en production.
 **AndroidParentView:** Dashboard parent Android (`components/AndroidParentView.tsx`) — activé via `isAndroid` dans `App.tsx`. Wirée avec `App.tsx` le 20/05/2026. Voir section "Actions du 20/05/2026 — AndroidParentView" et "Actions du 21/05/2026 — AndroidParentView améliorations" ci-dessous.
 **AndroidChildView:** Dashboard enfant Android (`components/AndroidChildView.tsx`) — activé via `isAndroid` dans `App.tsx`. Implémenté le 21/05/2026. Design Material 3, 4 onglets (Home, Missions, Historique, Badges), safe area corrigée, bottom nav fixe, bouton power pour logout.
-**Push Notifications (FCM):** Système cross-device opérationnel depuis le 21/05/2026. Firebase projet `koiny-d30a7`. Edge function `send-push` déployée sur Supabase. Table `device_tokens` créée. Voir section "Actions du 21/05/2026 — Push Notifications FCM" ci-dessous.
+**Push Notifications (FCM):** Système cross-device opérationnel depuis le 21/05/2026. Firebase projet `koiny-d30a7`. Edge function `send-push` déployée sur Supabase. Table `device_tokens` créée. APNs configuré le 21/05/2026 pour iOS : clé `koiny APNs` (Key ID `7SDAU3PXVL`, Team ID `K828G7C5CB`) uploadée dans Firebase Cloud Messaging. `GoogleService-Info.plist` ajouté dans Xcode (`ios/App/App/`). Capability Push Notifications activée. Push iOS fonctionnel sur appareil physique (pas simulateur). Voir section "Actions du 21/05/2026 — Push Notifications FCM" ci-dessous.
 
 ## Regles critiques
 

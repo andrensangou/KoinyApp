@@ -1178,8 +1178,9 @@ const App: React.FC = () => {
 
     try {
       if (goalId.includes('-')) {
-        const { error } = await supabase.from('goals').delete().eq('id', goalId);
+        const { error, count } = await supabase.from('goals').delete({ count: 'exact' }).eq('id', goalId);
         if (error) throw new Error(`Suppression objectif echouée : ${error.message}`);
+        if (count === 0) throw new Error('Objectif introuvable ou session expirée');
       }
 
       // 2. Update local state

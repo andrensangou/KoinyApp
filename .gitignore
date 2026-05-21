@@ -54,3 +54,6 @@ supabase/.temp/
 
 # Claude Code settings (may contain sensitive tokens)
 .claude/
+
+# Apple private keys (APNs, etc.)
+*.p8

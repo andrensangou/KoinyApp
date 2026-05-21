@@ -211,6 +211,7 @@ Deno.serve(async (req) => {
       .from('profiles')
       .select('id, language, updated_at')
       .eq('role', 'parent')
+      .eq('marketing_consent', true)
       .lt('updated_at', cutoff.toISOString());
 
     if (error || !targetProfiles) {
