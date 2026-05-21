@@ -6,7 +6,7 @@ import { isAndroid } from '../hooks/usePlatform';
 interface OnboardingViewProps {
     language: Language;
     onSetLanguage: (lang: Language) => void;
-    onComplete: () => void;
+    onComplete: (marketingConsent: boolean) => void;
 }
 
 interface Slide {
@@ -103,29 +103,28 @@ const languages: { code: Language; label: string; flag: string }[] = [
 
 const OnboardingView: React.FC<OnboardingViewProps> = ({ language, onSetLanguage, onComplete }) => {
     const [current, setCurrent] = useState(0);
-    const [direction, setDirection] = useState<'next' | 'prev'>('next');
     const [isAnimating, setIsAnimating] = useState(false);
+    const [marketingConsent, setMarketingConsent] = useState(false);
     const touchStartX = useRef(0);
     const touchDeltaX = useRef(0);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const isLast = current === slides.length - 1;
 
-    const goTo = useCallback((index: number, dir: 'next' | 'prev') => {
+    const goTo = useCallback((index: number, _dir: 'next' | 'prev') => {
         if (isAnimating || index < 0 || index >= slides.length) return;
         setIsAnimating(true);
-        setDirection(dir);
         setCurrent(index);
         setTimeout(() => setIsAnimating(false), 500);
     }, [isAnimating]);
 
     const next = useCallback(() => {
         if (isLast) {
-            onComplete();
+            onComplete(marketingConsent);
         } else {
             goTo(current + 1, 'next');
         }
-    }, [current, isLast, goTo, onComplete]);
+    }, [current, isLast, goTo, onComplete, marketingConsent]);
 
     const prev = useCallback(() => {
         goTo(current - 1, 'prev');
@@ -206,7 +205,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ language, onSetLanguage
                     {/* Skip */}
                     {!isLast && (
                         <button
-                            onClick={onComplete}
+                            onClick={() => onComplete(false)}
                             aria-label={language === 'fr' ? 'Passer l\'introduction' : language === 'nl' ? 'Introductie overslaan' : 'Skip introduction'}
                             className="text-white/70 text-xs font-bold uppercase tracking-widest hover:text-white/90 transition-all active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center px-3"
                         >
@@ -287,6 +286,26 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ language, onSetLanguage
                         </button>
                     ))}
                 </div>
+
+                {/* Marketing consent checkbox — last slide only */}
+                {isLast && (
+                    <button
+                        onClick={() => setMarketingConsent(v => !v)}
+                        className="flex items-start gap-3 w-full mb-5 text-left"
+                        aria-pressed={marketingConsent}
+                    >
+                        <div className={`mt-0.5 w-5 h-5 rounded-md border-2 flex-shrink-0 flex items-center justify-center transition-all duration-200 ${marketingConsent ? 'bg-white border-white' : 'border-white/50 bg-white/10'}`}>
+                            {marketingConsent && <i className="fa-solid fa-check text-[10px] text-slate-900" />}
+                        </div>
+                        <span className="text-white/80 text-xs leading-relaxed">
+                            {language === 'fr'
+                                ? 'J\'accepte de recevoir des conseils et actualités Koiny par email'
+                                : language === 'nl'
+                                    ? 'Ik ga akkoord met het ontvangen van tips en nieuws van Koiny per e-mail'
+                                    : 'I agree to receive Koiny tips and updates by email'}
+                        </span>
+                    </button>
+                )}
 
                 {/* CTA button */}
                 <button

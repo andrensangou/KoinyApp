@@ -9,7 +9,10 @@ Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 an
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
 **Statut:** Publiée sur l'App Store (version 1.0.6). Version 1.0.7 build 5 en cours de préparation depuis la branche `redesign` — inclut fix premium stale (révocation après 7j sans vérification RevenueCat) + fix landing page redesign. Build buildé + synced le 15/05/2026, prêt à archiver depuis Xcode.
-**Android:** Version 1.0 versionCode 2 validée par Google (Tests fermés Alpha) — 0/12 testeurs inscrits. Nécessite 12 testeurs × 14 jours pour accéder à la production. IAP Android à créer dans Play Console après passage en production.
+**Android:** Version 1.0 versionCode 4 — AAB release buildé le 20/05/2026, prêt à uploader en Tests fermés Alpha. Nécessite 12 testeurs × 14 jours pour accéder à la production. IAP Android à créer dans Play Console après passage en production.
+**AndroidParentView:** Dashboard parent Android (`components/AndroidParentView.tsx`) — activé via `isAndroid` dans `App.tsx`. Wirée avec `App.tsx` le 20/05/2026. Voir section "Actions du 20/05/2026 — AndroidParentView" et "Actions du 21/05/2026 — AndroidParentView améliorations" ci-dessous.
+**AndroidChildView:** Dashboard enfant Android (`components/AndroidChildView.tsx`) — activé via `isAndroid` dans `App.tsx`. Implémenté le 21/05/2026. Design Material 3, 4 onglets (Home, Missions, Historique, Badges), safe area corrigée, bottom nav fixe, bouton power pour logout.
+**Push Notifications (FCM):** Système cross-device opérationnel depuis le 21/05/2026. Firebase projet `koiny-d30a7`. Edge function `send-push` déployée sur Supabase. Table `device_tokens` créée. Voir section "Actions du 21/05/2026 — Push Notifications FCM" ci-dessous.
 
 ## Regles critiques
 
@@ -57,7 +60,8 @@ Build prend ~24 minutes sur cette machine.
 | `services/storage.ts` | loadData/saveData, cache hybride (+ `persistentStorage`) |
 | `services/subscription.ts` | RevenueCat SDK, IAP |
 | `services/pinStorage.ts` | Stockage PIN local + sync |
-| `services/notifications.ts` | Notifications locales |
+| `services/notifications.ts` | Notifications locales (same device) |
+| `services/pushService.ts` | Push notifications cross-device via FCM |
 | `services/realtime.ts` | Supabase Realtime |
 | `services/widgetBridge.ts` | Bridge JS -> iOS Widget |
 | `services/logger.ts` | Logger sécurisé avec anonymisation |
@@ -193,6 +197,175 @@ const t = translations[data.language || 'fr'];
 - ✅ **Widget couleurs vert/rouge jamais affichées** (`services/widgetBridge.ts`): `todayEarned` comparait `"01/05/2026"` (DD/MM/YYYY) contre `"2026-05-01"` (ISO) → toujours 0. Fix: `todayDateStr` en format `DD/MM/YYYY` pour le filtre; `parseHistoryDate()` utilisée pour `lastMissionApprovedDate` → `.toISOString()` pour Swift.
 - ✅ **Alerte pénalité réapparaissant à chaque navigation** (`components/ChildView.tsx`): `acknowledgedPenaltyId` était un state React local → reset à chaque remount de ChildView. Fix: initialisé depuis `localStorage.getItem(\`koiny_ack_penalty_\${data.id}\`)` + `localStorage.setItem(...)` dans les deux boutons de fermeture.
 - ✅ **Premier tap manqué sur modals iOS** (`components/ParentView.tsx`): `backdrop-blur-md/sm` sur les backdrops `position:fixed` combiné au `position:fixed` du body-lock `useModal` décale les coordonnées tactiles dans WKWebView. Fix: `backdrop-blur` supprimé des backdrops des modals approval et transaction.
+
+### Actions du 20/05/2026 (session 2) — AndroidParentView intégration complète
+
+**Contexte**: Intégration du dashboard parent Android (`AndroidParentView.tsx`) dans `App.tsx` via `isAndroid` conditionnel. Corrections bugs React Rules of Hooks + ajout fonctionnalités manquantes par rapport au dashboard iOS.
+
+**Fichiers modifiés:**
+- `App.tsx`: import `AndroidParentView` + `isAndroid`, split du render `view === 'PARENT'` en Android (`<AndroidParentView>`) et iOS (`<ParentView>`). Props ajoutées: `onDeleteMission`, `onAddChild`, `onClearHistory`.
+- `components/AndroidParentView.tsx`: corrections et nouvelles fonctionnalités (voir ci-dessous).
+
+**Corrections bugs:**
+- ✅ **React Rules of Hooks — fix critique** (`AndroidParentView.tsx`): tous les hooks (`useState` pour `tab`, `childId`, `showAddMission`, `showTransaction`, `reviewMission`, `toast`, `toastTimer`; `useCallback` pour `showToast`, `handleAddMission`, `handleTransaction`, `handleApprove`, `handleReject`, `handleOpenReview`; `useEffect` sync childId) étaient déclarés **après** le `if (!isAuthenticated) return` → violation flagrante des Rules of Hooks → crash au runtime. Tous déplacés avant la conditional return.
+- ✅ **PIN gate sécurité** (`AndroidParentView.tsx`): `AndroidParentView` n'avait pas de vérification PIN contrairement à `ParentView.tsx`. Ajout d'un PIN gate complet (state machine `idle|validating|error|success`, PBKDF2 via `verifyPin`, keypad 3×4, dots animés, auto-auth si aucun PIN configuré).
+- ✅ **`t.parent.wrongPin` inexistant** → remplacé par `t.parent.incorrectCode` (clé correcte dans `i18n.ts`).
+
+**Nouvelles fonctionnalités:**
+- ✅ **Bouton supprimer mission** (dashboard, missions actives): bouton corbeille rouge sur chaque carte de mission active → appelle `onDeleteMission(childId, missionId)`.
+- ✅ **Bouton Ajouter enfant** (profil, section "Mes Enfants"): bouton "+ AJOUTER" ouvre `AddChildSheet` (bottom sheet avec champs prénom, picker avatar DiceBear × 10 seeds, picker couleur × 7). Appelle `onAddChild({ name, colorClass, avatar })` async.
+- ✅ **Bouton Effacer historique** (profil, card enfant): bouton "Effacer" par enfant → dialog de confirmation inline → appelle `onClearHistory(childId)`.
+- ✅ **Pré-sélection action dans ReviewSheet**: quand le parent tape "APPROUVER" depuis l'onglet Demandes, la feuille s'ouvre avec "approve" pré-sélectionné (vert). Idem "REFUSER" → "reject" pré-sélectionné (rouge). Prop `defaultAction?: 'approve' | 'reject'` ajoutée à `ReviewSheet` + `handleOpenReview`.
+- ✅ **Prix premium corrects**: bannière premium affiche `1,99€/mois · 16,99€/an · Économies 30%` (FR), idem NL/EN.
+- ✅ **Safe area corrigé**: hero gradient avec `paddingTop: 'calc(env(safe-area-inset-top) + 60px)'`, overlay greeting avec `height: 'calc(56px + env(safe-area-inset-top))'`, TopBar avec `paddingTop: 'env(safe-area-inset-top)'`, BottomNav avec `paddingBottom: 'env(safe-area-inset-bottom)'`.
+- ✅ **Tous les boutons settings fonctionnels**: Notifications → toast info, Langue → cycle fr→nl→en, Code PIN → toast info (configuration iOS uniquement), Aide → `mailto:hello@koiny.app`, Déconnexion → `onSignOut`.
+
+**Props interface `AndroidParentViewProps`:**
+```typescript
+onDeleteMission: (childId: string, missionId: string) => void;
+onAddChild: (childData: { name: string; colorClass: string; avatar: string }) => Promise<void>;
+onClearHistory: (childId: string) => void;
+```
+
+**À tester sur émulateur Android:**
+1. Login → dashboard parent Android s'affiche (pas l'ancien iOS)
+2. PIN gate si PIN configuré, bypass si aucun PIN
+3. Missions actives → bouton corbeille → mission supprimée
+4. Onglet Demandes → "APPROUVER" → sheet s'ouvre avec bouton vert pré-sélectionné
+5. Onglet Demandes → "REFUSER" → sheet s'ouvre avec bouton rouge pré-sélectionné
+6. Onglet Profil → "AJOUTER" → AddChildSheet → créer un enfant
+7. Onglet Profil → "Effacer" sur un enfant → confirmation → historique vide
+8. Onglet Profil → Langue → cycle FR/NL/EN
+
+### Corrections appliquées (20/05/2026 — Android auth fixes, favicon landing, versionCode 4)
+
+- ✅ **Bouton Apple masqué sur Android** (`components/AuthView.tsx`): bouton "Continue with Apple" enveloppé dans `{!isAndroid && ...}` — n'apparaît plus sur Android.
+- ✅ **Google Sign-In Android fallback corrigé** (`services/supabase.ts`): quand le native Google Auth échoue sur Android, le fallback utilisait `window.location.origin` comme `redirectTo` → renvoyait vers la landing page. Fix: fallback utilise `Browser.open` avec `redirectTo: 'com.koiny.app://callback'` + `skipBrowserRedirect: true`, comme iOS.
+- ✅ **versionCode Android 4** (`android/app/build.gradle`): bumped 3 → 4. AAB release buildé et prêt à uploader en Play Console.
+- ✅ **Favicon landing page** (`public/landing-preview/index.html`): `<link rel="icon" type="image/png" href="favicon.png" />` ajouté dans `<head>`. Fichier `favicon.png` était déjà présent sur Hostinger.
+
+### Actions du 21/05/2026 (session 4) — AndroidChildView bouton objectif + fixes TypeScript
+
+**Contexte**: Ajout du bouton "Demander un objectif" manquant dans le dashboard enfant Android, et correction d'erreurs TypeScript résiduelles dans AndroidParentView.
+
+**Fichiers modifiés:**
+- `components/AndroidChildView.tsx`: bouton demande d'objectif dans `HomeScreen` + nouvelles clés i18n + `handleRequestGift` callback.
+- `components/AndroidParentView.tsx`: corrections TypeScript (`ccc.border` → `ccc.light`, `ccc.main` → `ccc.bg`, `FREE_CHILDREN_LIMIT` inliné à `1` dans `ProfileScreen`).
+
+**Bouton demande d'objectif (`AndroidChildView.tsx`):**
+- `HomeScreen` accepte désormais `onRequestGift?: () => void` en prop (passé depuis le main component via `handleRequestGift`).
+- Quand `activeGoals.length === 0`: carte vide avec icône bullseye + texte `noGoals` + bouton full-width "🎁 Demander un objectif" → `onRequestGift()`.
+- Quand `activeGoals.length > 0`: pill "+ Demander un objectif" dans le header de section (via `SecLabel right=` prop) → même callback.
+- Nouvelles clés i18n dans `TKeys` + `T` (fr/nl/en): `askGoal`, `noGoals`, `goalSent`.
+- `handleRequestGift` dans le main component: appelle `onRequestGift?.()` + affiche snack `goalSent`.
+
+**Corrections TypeScript (`AndroidParentView.tsx`):**
+- `RequestsScreen` mission request cards: `ccc.border` n'existe pas dans `COLOR_PAL` → remplacé par `ccc.light`. `ccc.main` → `ccc.bg`.
+- `ProfileScreen` bouton ajouter enfant: `FREE_CHILDREN_LIMIT` était défini dans le main component → inaccessible. Remplacé par valeur littérale `1`.
+
+### Actions du 21/05/2026 (session 3) — Push Notifications FCM + AndroidChildView
+
+**Contexte**: Implémentation du dashboard enfant Android et du système de push notifications cross-device (parent iOS ↔ enfant Android).
+
+**Fichiers créés:**
+- `components/AndroidChildView.tsx` (~1500 lignes): Dashboard enfant Android Material 3 complet. 4 onglets: Home (solde, objectif principal, missions actives, historique récent), Missions (liste complète avec feedback parent), Historique, Badges. Power button en haut à droite pour logout. Safe area: `paddingTop: 'env(safe-area-inset-top)'` sur TopBar, bottom nav `position: fixed` avec `height: 'calc(62px + env(safe-area-inset-bottom))'`. `entry.note` affiché dans Historique (commentaire parent sur approbation), `m.feedback` affiché dans Missions (commentaire parent sur refus).
+- `services/pushService.ts`: Service FCM complet. `registerPushToken()`, `sendPushNewMission()`, `sendPushMissionComplete()`, `sendPushMissionApproved()`, `sendPushMissionRejected()`, `sendPushMissionRequested()`, `sendPushGiftRequested()`, `unregisterPushToken()`. Fire-and-forget.
+- `supabase/functions/send-push/index.ts`: Edge function Deno FCM v1 API. JWT signing via `crypto.subtle`, échange OAuth2. Secrets: `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`.
+
+**Fichiers modifiés:**
+- `App.tsx`: Rendu conditionnel `isAndroid` pour `AndroidChildView`. Wiring complet push: `registerPushToken` (parent au login + enfant à la sélection), `sendPushMissionApproved/Rejected/Complete/Requested/GiftRequested/NewMission`, `unregisterPushToken` au logout.
+- `android/app/build.gradle`: Firebase BoM `34.0.0` + `firebase-messaging`.
+- `index.css`: 11 animations `@keyframes kcv-*` pour AndroidChildView.
+
+**Infrastructure Firebase:**
+- Projet: `koiny-d30a7` (Forfait Spark), app `com.koiny.app`
+- `google-services.json` dans `android/app/`
+- Secrets Supabase: `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` configurés
+- Edge function `send-push` déployée
+- Table `device_tokens` créée avec RLS: `UNIQUE(user_id, platform, mode, child_id)`
+
+**Flux de notifications:**
+
+| Action | Destinataire |
+|---|---|
+| Parent crée/valide/refuse mission | Enfant (son appareil) |
+| Enfant termine mission | Parent (son appareil) |
+| Enfant demande mission ou cadeau | Parent (son appareil) |
+
+**Principe**: même compte Supabase → `device_tokens` stocke un token par `(platform, mode, child_id)`. Parent iOS + enfant Android = 2 tokens, même `user_id`.
+
+### Actions du 21/05/2026 (session 2) — AndroidParentView fixes filtrage + âge
+
+**Contexte**: Corrections suite aux tests sur émulateur.
+
+**Fichiers modifiés:**
+- `components/AndroidParentView.tsx`: filtrage RequestsScreen + badge âge
+
+**Corrections:**
+- ✅ **Filtrage RequestsScreen par enfant sélectionné**: `RequestsScreen` accepte désormais `selectedChildId`. Quand un enfant est sélectionné dans la TopBar (onglet Demandes, uniquement si plusieurs enfants), la liste filtre pour n'afficher que ses demandes en attente. Si aucun enfant sélectionné ou enfant unique → toutes les demandes affichées.
+- ✅ **Badge âge dans MES ENFANTS**: badge coloré `X ans/jaar/yrs` affiché à côté du prénom si `c.birthday` est renseigné. L'âge se calcule depuis `birthday` (format ISO `YYYY-MM-DD`). S'affiche uniquement si 0 ≤ âge ≤ 18. Si pas de date de naissance → aucun badge (à renseigner via le bouton crayon).
+
+**Pattern filtrage RequestsScreen:**
+```typescript
+const allItems = data.children.flatMap(c => c.missions.filter(m => m.status === 'PENDING').map(...));
+const items = selectedChildId ? allItems.filter(i => i.childId === selectedChildId) : allItems;
+// selectedChildId passé depuis le render: data.children.length > 1 ? childId : undefined
+```
+
+### Actions du 21/05/2026 — AndroidParentView améliorations UX
+
+**Contexte**: Suite de développement du dashboard parent Android. Aucune modification iOS — `components/ParentView.tsx` et les composants iOS restent intacts.
+
+**Fichiers modifiés:**
+- `components/AndroidParentView.tsx`: toutes les modifications ci-dessous
+- `App.tsx`: ajout des props `onDeleteAccount`, `onSetMaxBalance` sur `<AndroidParentView>`
+
+**UX / couleurs:**
+- ✅ **Couleurs dynamiques dans TopBar** (onglets Historique + Demandes): les pills de sélection d'enfant utilisent maintenant `kGetColor(c.colorClass)` — fond, bordure et texte selon la couleur choisie de l'enfant (plus de indigo fixe).
+- ✅ **Couleurs dynamiques dans RequestsScreen**: badge nom de l'enfant sur chaque carte de demande utilise la couleur propre de l'enfant.
+- ✅ **Pills masquées sur l'onglet Profil**: `TopBar` n'affiche plus les sélecteurs d'enfants sur l'onglet Profil (tab === 'profile') — seul le titre "Profil" reste.
+
+**Dashboard (DashboardScreen):**
+- ✅ **Greeting supprimé**: overlay "BONJOUR / Espace Parents" retiré du hero — seul le bouton power reste en haut à droite.
+- ✅ **Jauge de solde supprimée**: barre de progression + "X% du plafond" + "Plafond: Xe" retirés de la balance card.
+- ✅ **Objectifs éditables**: bouton crayon sur chaque carte objectif → ouvre `AddGoalSheet` en mode édition (`prefill` + `editMode`) → appelle `onEditChild(childId, { goals: goals.map(...) })`.
+- ✅ **Jauge objectif colorée**: fond de la barre change selon progression — rouge (0–33%), orange (34–66%), couleur de l'enfant (67–99%), vert (100%). Prop `cc` (couleur enfant) utilisée.
+
+**Profil (ProfileScreen):**
+- ✅ **Icône "Espace Parent" supprimée**: la carte gradient indigo n'affiche plus l'icône seedling — juste le texte "Espace Parent".
+- ✅ **Bannière Premium cliquable**: ouvre `SubscriptionModal` (via `showSubscriptionModal` state) — ne déclenche PAS `onSetPremium(true)` directement.
+- ✅ **Bouton "Supprimer mon compte"**: bouton outline rouge en bas de page → dialog de confirmation avec icône ⚠️ + texte irréversible → appelle `onDeleteAccount()`.
+- ✅ **Row "Guide utilisateur"**: ouvre `HelpModal` (layout bottom sheet MD3 Android, contenu spécifique Android via objet `tAndroid` dans `HelpModal.tsx`).
+- ✅ **Row "Contacter le support"**: ouvre `mailto:hello@koiny.app`.
+- ✅ **Row "Limite du portefeuille"**: affiche la limite actuelle (ex: "100€" ou "Illimitée"), dialog de saisie numérique 0–1000€ → appelle `onSetMaxBalance(val)`.
+
+**HelpModal.tsx — contenu Android:**
+- Objet `tAndroid` séparé avec 7 étapes spécifiques Android: Navigation (4 onglets), Sécurité (PIN, pas Face ID), Gérer les enfants (crayon Profil), Objectifs, Missions, Changer de profil (bouton ⏻), Limite du portefeuille.
+- FR/NL/EN mis à jour.
+
+**Notification cloche:**
+- Bannière de cloche en dashboard → `onClick` navigue vers l'onglet Demandes (`onGoToRequests` prop).
+
+**Props ajoutées à `AndroidParentViewProps`:**
+```typescript
+onDeleteAccount?: () => Promise<void>;
+onSetMaxBalance?: (limit: number) => void;
+```
+
+**Co-parenting — état actuel:**
+- Pas de fonctionnalité UI de co-parenting implémentée. Les références dans `pinStorage.ts` sont des commentaires sur la sync PIN.
+- Deux parents peuvent partager les mêmes identifiants (email + mdp) depuis deux appareils — la sync Supabase maintient les données à jour.
+- Une vraie implémentation (invitation email, comptes séparés liés par `family_id`) est envisageable mais non planifiée.
+
+**Biométrie Android — état actuel:**
+- Le service `services/biometric.ts` utilise un plugin natif custom `KoinyBiometric` (iOS uniquement via `BiometricPlugin.swift`).
+- Android nécessite un `BiometricPlugin.kt` + enregistrement dans `MainActivity.kt` (~50 lignes Kotlin).
+- Non implémenté car nécessite un appareil physique Android pour tester (ne fonctionne pas sur émulateur).
+- À faire quand un appareil physique est disponible.
+
+**iOS non touché:**
+- `components/ParentView.tsx`, `components/ChildView.tsx`, `components/HelpModal.tsx` (layout) — inchangés.
+- `App.tsx`: seules les props de `<AndroidParentView>` ont été ajoutées, le bloc `<ParentView>` (iOS) est intact.
 
 ### Actions du 15/05/2026 — Fix premium stale, landing page redesign, build 1.0.7 build 5
 

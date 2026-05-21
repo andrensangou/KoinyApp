@@ -14,6 +14,266 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
   useModal(isOpen);
   if (!isOpen) return null;
 
+  const tAndroid = {
+    fr: {
+      title: 'Guide Utilisateur',
+      welcomeTitle: 'Bienvenue sur Koiny !',
+      welcomeText: "Koiny transforme l'éducation financière en jeu. Voici comment utiliser l'app Android en famille.",
+      steps: [
+        {
+          id: 1,
+          icon: 'fa-border-all',
+          color: 'from-indigo-400 to-purple-600',
+          title: 'Navigation',
+          text: '4 onglets en bas de l\'écran :',
+          items: [
+            'Accueil : Vue d\'ensemble, missions actives et objectifs de l\'enfant.',
+            'Historique : Toutes les transactions, filtres Ce mois / Tout, effacer l\'historique.',
+            'Demandes : Valider ou refuser les missions soumises par l\'enfant.',
+            'Profil : Gérer les enfants, paramètres et compte.',
+          ]
+        },
+        {
+          id: 2,
+          icon: 'fa-lock',
+          color: 'from-rose-400 to-pink-600',
+          title: 'Espace Parents — Sécurité',
+          text: 'Accès protégé par code PIN :',
+          items: [
+            'Code PIN à 4 chiffres configuré dans Profil > Paramètres > Code PIN.',
+            'Si aucun PIN n\'est configuré, l\'accès est direct.',
+            'Oubli du PIN : déconnectez-vous et reconnectez-vous avec votre email/mot de passe, puis reconfigurez le PIN.',
+          ]
+        },
+        {
+          id: 3,
+          icon: 'fa-child',
+          color: 'from-emerald-400 to-teal-600',
+          title: 'Gérer les Enfants',
+          text: 'Dans l\'onglet Profil > MES ENFANTS :',
+          items: [
+            'Ajoutez un enfant : prénom, date de naissance, avatar et couleur.',
+            'Modifiez un profil avec le bouton crayon (nom, avatar, couleur, anniversaire).',
+            'Supprimez un profil enfant depuis le formulaire de modification.',
+          ]
+        },
+        {
+          id: 4,
+          icon: 'fa-bullseye',
+          color: 'from-amber-400 to-orange-500',
+          title: 'Objectifs d\'épargne',
+          text: 'Dans l\'onglet Accueil, section Objectifs :',
+          items: [
+            'Créez un objectif avec nom, montant cible et icône.',
+            'La jauge change de couleur : rouge → orange → couleur de l\'enfant → vert à l\'atteinte.',
+            'Modifiez ou supprimez un objectif avec le bouton crayon ou corbeille.',
+            'Quand l\'objectif est atteint, l\'enfant peut le réclamer depuis son espace.',
+          ]
+        },
+        {
+          id: 5,
+          icon: 'fa-check-double',
+          color: 'from-blue-400 to-indigo-600',
+          title: 'Les Missions',
+          text: 'Cycle complet d\'une mission :',
+          items: [
+            'Création : dans Accueil, tapez "+ MISSION" pour ajouter titre et récompense.',
+            'Action : l\'enfant clique sur "C\'est fait !" dans son espace.',
+            'Validation : dans l\'onglet Demandes, approuvez ou refusez.',
+            'Paiement : la récompense est automatiquement ajoutée au solde.',
+          ]
+        },
+        {
+          id: 6,
+          icon: 'fa-right-left',
+          color: 'from-cyan-400 to-blue-500',
+          title: 'Changer de Profil',
+          text: 'Passer de l\'espace parent à l\'espace enfant :',
+          items: [
+            'Appuyez sur le bouton ⏻ (power) en haut à droite du tableau de bord.',
+            'L\'enfant voit ses missions, son solde et peut marquer "C\'est fait !".',
+            'Pour revenir, appuyez à nouveau sur ⏻ et saisissez votre PIN si configuré.',
+          ]
+        },
+        {
+          id: 7,
+          icon: 'fa-wallet',
+          color: 'from-teal-400 to-emerald-500',
+          title: 'Limite du portefeuille',
+          text: 'Dans Profil > Paramètres > Limite du portefeuille :',
+          items: [
+            'Définissez le solde maximum autorisé pour l\'enfant (0 à 1 000€).',
+            '0 = illimité. Utile pour responsabiliser sans risque.',
+            'Si une récompense dépasse ce plafond, le paiement est bloqué.',
+          ]
+        },
+      ],
+      close: 'C\'est parti !'
+    },
+    en: {
+      title: 'User Guide',
+      welcomeTitle: 'Welcome to Koiny!',
+      welcomeText: "Koiny turns financial education into a game. Here's how to use the Android app as a family.",
+      steps: [
+        {
+          id: 1, icon: 'fa-border-all', color: 'from-indigo-400 to-purple-600',
+          title: 'Navigation',
+          text: '4 tabs at the bottom of the screen:',
+          items: [
+            'Home: Overview, active missions and child goals.',
+            'History: All transactions, This month / All filter, clear history.',
+            'Requests: Approve or reject missions submitted by the child.',
+            'Profile: Manage children, settings and account.',
+          ]
+        },
+        {
+          id: 2, icon: 'fa-lock', color: 'from-rose-400 to-pink-600',
+          title: 'Parent Space — Security',
+          text: 'Access protected by PIN code:',
+          items: [
+            '4-digit PIN code set in Profile > Settings > PIN Code.',
+            'If no PIN is set, access is direct.',
+            'Forgot PIN: sign out and sign back in with email/password, then set a new PIN.',
+          ]
+        },
+        {
+          id: 3, icon: 'fa-child', color: 'from-emerald-400 to-teal-600',
+          title: 'Managing Children',
+          text: 'In the Profile tab > MY CHILDREN:',
+          items: [
+            'Add a child: name, date of birth, avatar and colour.',
+            'Edit a profile with the pencil button (name, avatar, colour, birthday).',
+            'Delete a child profile from the edit form.',
+          ]
+        },
+        {
+          id: 4, icon: 'fa-bullseye', color: 'from-amber-400 to-orange-500',
+          title: 'Savings Goals',
+          text: 'In the Home tab, Goals section:',
+          items: [
+            'Create a goal with a name, target amount and icon.',
+            'Progress bar changes colour: red → orange → child colour → green when reached.',
+            'Edit or delete a goal with the pencil or trash button.',
+            'Once reached, the child can claim it from their space.',
+          ]
+        },
+        {
+          id: 5, icon: 'fa-check-double', color: 'from-blue-400 to-indigo-600',
+          title: 'Missions',
+          text: 'Full mission cycle:',
+          items: [
+            'Create: in Home, tap "+ MISSION" to add a title and reward.',
+            'Action: child taps "Done!" in their space.',
+            'Validation: in the Requests tab, approve or reject.',
+            'Payment: reward is automatically added to the balance.',
+          ]
+        },
+        {
+          id: 6, icon: 'fa-right-left', color: 'from-cyan-400 to-blue-500',
+          title: 'Switching Profiles',
+          text: 'Switch between parent and child space:',
+          items: [
+            'Tap the ⏻ (power) button top-right on the dashboard.',
+            'Child sees their missions, balance and can tap "Done!".',
+            'To return, tap ⏻ again and enter your PIN if set.',
+          ]
+        },
+        {
+          id: 7, icon: 'fa-wallet', color: 'from-teal-400 to-emerald-500',
+          title: 'Wallet Limit',
+          text: 'In Profile > Settings > Wallet limit:',
+          items: [
+            'Set the maximum balance allowed for the child (0–1,000).',
+            '0 = unlimited. Useful to teach responsibility safely.',
+            'If a reward exceeds this limit, payment is blocked.',
+          ]
+        },
+      ],
+      close: "Let's go!"
+    },
+    nl: {
+      title: 'Gebruikershandleiding',
+      welcomeTitle: 'Welkom bij Koiny!',
+      welcomeText: "Koiny maakt financiële educatie tot een spel. Zo gebruik je de Android-app als gezin.",
+      steps: [
+        {
+          id: 1, icon: 'fa-border-all', color: 'from-indigo-400 to-purple-600',
+          title: 'Navigatie',
+          text: '4 tabbladen onderaan het scherm:',
+          items: [
+            'Home: Overzicht, actieve missies en doelen van het kind.',
+            'Historiek: Alle transacties, filter Deze maand / Alles, geschiedenis wissen.',
+            'Aanvragen: Missies van het kind goedkeuren of weigeren.',
+            'Profiel: Kinderen, instellingen en account beheren.',
+          ]
+        },
+        {
+          id: 2, icon: 'fa-lock', color: 'from-rose-400 to-pink-600',
+          title: 'Ouderomgeving — Beveiliging',
+          text: 'Toegang beveiligd met PIN-code:',
+          items: [
+            '4-cijferige PIN-code instellen via Profiel > Instellingen > PIN-code.',
+            'Als er geen PIN is ingesteld, is toegang direct.',
+            'PIN vergeten: afmelden en opnieuw aanmelden met e-mail/wachtwoord, daarna nieuwe PIN instellen.',
+          ]
+        },
+        {
+          id: 3, icon: 'fa-child', color: 'from-emerald-400 to-teal-600',
+          title: 'Kinderen beheren',
+          text: 'In het tabblad Profiel > MIJN KINDEREN:',
+          items: [
+            'Voeg een kind toe: naam, geboortedatum, avatar en kleur.',
+            'Bewerk een profiel met de potloodknop (naam, avatar, kleur, verjaardag).',
+            'Verwijder een kindprofiel vanuit het bewerkingsformulier.',
+          ]
+        },
+        {
+          id: 4, icon: 'fa-bullseye', color: 'from-amber-400 to-orange-500',
+          title: 'Spaardoelen',
+          text: 'In het tabblad Home, sectie Doelen:',
+          items: [
+            'Maak een doel met naam, doelbedrag en icoon.',
+            'De balk verandert van kleur: rood → oranje → kleur kind → groen bij bereiken.',
+            'Bewerk of verwijder een doel met het potlood of prullenbak.',
+            'Wanneer bereikt, kan het kind het opeisen vanuit zijn/haar ruimte.',
+          ]
+        },
+        {
+          id: 5, icon: 'fa-check-double', color: 'from-blue-400 to-indigo-600',
+          title: 'Missies',
+          text: 'Volledige missiecyclus:',
+          items: [
+            'Aanmaken: in Home, tik "+ MISSIE" om titel en beloning toe te voegen.',
+            'Actie: kind tikt op "Klaar!" in zijn/haar ruimte.',
+            'Validatie: in het tabblad Aanvragen, goed- of afkeuren.',
+            'Betaling: beloning wordt automatisch aan het saldo toegevoegd.',
+          ]
+        },
+        {
+          id: 6, icon: 'fa-right-left', color: 'from-cyan-400 to-blue-500',
+          title: 'Profielen wisselen',
+          text: 'Schakelen tussen ouder- en kinderomgeving:',
+          items: [
+            'Tik op de ⏻ (power) knop rechtsboven op het dashboard.',
+            'Kind ziet missies, saldo en kan op "Klaar!" tikken.',
+            'Om terug te keren, tik opnieuw op ⏻ en voer PIN in indien ingesteld.',
+          ]
+        },
+        {
+          id: 7, icon: 'fa-wallet', color: 'from-teal-400 to-emerald-500',
+          title: 'Portemonnee-limiet',
+          text: 'Via Profiel > Instellingen > Portemonnee-limiet:',
+          items: [
+            'Stel het maximale saldo in voor het kind (0–1.000€).',
+            '0 = onbeperkt. Handig om verantwoordelijkheid bij te brengen.',
+            'Als een beloning dit plafond overschrijdt, wordt de betaling geblokkeerd.',
+          ]
+        },
+      ],
+      close: 'Aan de slag!'
+    },
+  }[language] ?? { title: 'User Guide', welcomeTitle: 'Welcome!', welcomeText: '', steps: [], close: "Let's go!" };
+
   const t = {
     fr: {
       title: 'Guide Utilisateur',
@@ -321,7 +581,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
               <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
                 <i className="fa-solid fa-book-open text-indigo-500 text-sm"></i>
               </div>
-              <h3 id="help-dialog-title" className="text-xl font-medium text-slate-900 dark:text-white">{t.title}</h3>
+              <h3 id="help-dialog-title" className="text-xl font-medium text-slate-900 dark:text-white">{tAndroid.title}</h3>
             </div>
             <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 transition-colors">
               <i className="fa-solid fa-xmark text-lg"></i>
@@ -333,14 +593,14 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
             {/* Welcome Card */}
             <div className="relative overflow-hidden mb-6 p-5 rounded-3xl bg-gradient-to-br from-indigo-600 to-indigo-800 text-white">
               <div className="relative z-10">
-                <h4 className="font-semibold text-lg mb-1">{t.welcomeTitle}</h4>
-                <p className="text-sm text-indigo-100 leading-relaxed">{t.welcomeText}</p>
+                <h4 className="font-semibold text-lg mb-1">{tAndroid.welcomeTitle}</h4>
+                <p className="text-sm text-indigo-100 leading-relaxed">{tAndroid.welcomeText}</p>
               </div>
               <i className="fa-solid fa-piggy-bank absolute -bottom-4 -right-4 text-8xl text-white/10 rotate-12"></i>
             </div>
 
             <div className="space-y-6">
-              {t.steps.map((step) => (
+              {tAndroid.steps.map((step) => (
                 <section key={step.id}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${step.color} flex items-center justify-center text-white shrink-0`}>
@@ -368,7 +628,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
               <button onClick={onClose}
                 className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold active:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
               >
-                {t.close}
+                {tAndroid.close}
                 <i className="fa-solid fa-arrow-right text-xs"></i>
               </button>
             </div>

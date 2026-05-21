@@ -62,3 +62,16 @@ a {
 .overflow-active {
     animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both, overflowPulse 1.5s ease-in-out infinite;
 }
+
+/* ── AndroidChildView animations ── */
+@keyframes kcv-ripple { to { transform: scale(60); opacity: 0; } }
+@keyframes kcv-scale-in { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes kcv-toast-in { from { opacity: 0; transform: translateY(12px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes kcv-toast-out { from { opacity: 1; } to { opacity: 0; transform: translateY(8px); } }
+@keyframes kcv-slide-right { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes kcv-slide-left { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes kcv-badge-bounce { 0% { transform: scale(0); } 60% { transform: scale(1.2); } 80% { transform: scale(0.9); } 100% { transform: scale(1); } }
+@keyframes kcv-badge-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes kcv-fab-enter { 0% { transform: scale(0) rotate(-90deg); opacity: 0; } 60% { transform: scale(1.1) rotate(5deg); opacity: 1; } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
+@keyframes kcv-pulse-badge { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+@keyframes kcv-card-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }

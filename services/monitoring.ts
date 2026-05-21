@@ -50,7 +50,15 @@ class MonitoringService {
     Sentry.init({
       dsn,
       tracesSampleRate: 0.2,
-      sendDefaultPii: false, // RGPD : pas d'IP ni de données personnelles
+      sendDefaultPii: false,
+      ignoreErrors: [
+        // Web Locks API conflict from Supabase auth token refresh — benign, app recovers
+        'Lock was stolen by another request',
+        // Network errors that are not actionable
+        'NetworkError',
+        'Failed to fetch',
+        'Load failed',
+      ],
     }, SentryReact.init);
   }
 

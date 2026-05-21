@@ -3,7 +3,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import LoginView from './components/LoginView';
 import AuthView from './components/AuthView';
 import ChildView from './components/ChildView';
+import AndroidChildView from './components/AndroidChildView';
 import ParentView from './components/ParentView';
+import AndroidParentView from './components/AndroidParentView';
 import LandingView from './components/LandingView';
 import OnboardingView from './components/OnboardingView';
 import LegalModal from './components/LegalModal';
@@ -21,11 +23,13 @@ import { saveParentPinLocally, loadParentPinLocally } from './services/pinStorag
 import { hashPin } from './services/security';
 import { subscriptionService } from './services/subscription';
 import { Capacitor } from '@capacitor/core';
+import { isAndroid } from './hooks/usePlatform';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Network } from '@capacitor/network';
+import { registerPushToken, sendPushNewMission, sendPushMissionComplete, sendPushMissionApproved, sendPushMissionRejected, sendPushMissionRequested, sendPushGiftRequested, unregisterPushToken } from './services/pushService';
 
 type ViewState = 'LANDING' | 'AUTH' | 'LOGIN' | 'CHILD' | 'PARENT';
 
@@ -243,6 +247,11 @@ const App: React.FC = () => {
       if (cloudData.children?.length > 0) {
         const lang = savedLanguage || cloudData.language || 'fr';
         updateWidgetData(cloudData.children, lang);
+      }
+
+      // Enregistrer le token push en mode parent
+      if (result.ownerId && result.ownerId !== 'local-owner' && result.ownerId !== 'demo') {
+        registerPushToken({ userId: result.ownerId, mode: 'parent' });
       }
 
       // ✅ FIX DU FLASH : Ne pas écraser la vue si on a déjà restauré (CHILD ou PARENT)
@@ -774,6 +783,10 @@ const App: React.FC = () => {
       };
     });
 
+    if (userId) {
+      sendPushMissionApproved({ userId, childId, missionTitle: mission.title, reward: effectiveReward, currency: data.currency || '€', note, language: data.language });
+    }
+
     // 🔔 Notification Habit Test: vérifier les milestones d'objectifs après l'augmentation du solde
     const newBalance = Number((child.balance + effectiveReward).toFixed(2));
     if (child.goals && child.goals.length > 0) {
@@ -996,6 +1009,12 @@ const App: React.FC = () => {
       console.warn('⚠️ [APP] Erreur logout RevenueCat:', e);
     }
 
+    // Nettoyer le token push
+    if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
+      const mode = view === 'CHILD' ? 'child' : 'parent';
+      unregisterPushToken({ userId: ownerId, mode, childId: activeChildId || undefined }).catch(() => {});
+    }
+
     // Nettoyer les données locales pour éviter qu'un autre compte les charge
     try {
       const { Preferences } = await import('@capacitor/preferences');
@@ -1009,8 +1028,26 @@ const App: React.FC = () => {
     setData(INITIAL_DATA);
     setOwnerId(undefined);
   };
-  const handleMissionComplete = (id: string) => { updateChild(activeChildId!, (child) => ({ ...child, missions: child.missions.map(m => m.id === id ? { ...m, status: 'PENDING', feedback: undefined } : m) })); };
-  const handleReject = (childId: string, missionId: string, note?: string) => { updateChild(childId, (child) => ({ ...child, missions: child.missions.map(m => m.id === missionId ? { ...m, status: 'ACTIVE', feedback: note } : m) })); };
+  const handleMissionComplete = (id: string) => {
+    updateChild(activeChildId!, (child) => ({ ...child, missions: child.missions.map(m => m.id === id ? { ...m, status: 'PENDING', feedback: undefined } : m) }));
+    if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo' && activeChildId) {
+      const child = data.children.find(c => c.id === activeChildId);
+      const mission = child?.missions.find(m => m.id === id);
+      if (child && mission) {
+        sendPushMissionComplete({ userId: ownerId, childName: child.name, missionTitle: mission.title, language: data.language });
+      }
+    }
+  };
+  const handleReject = (childId: string, missionId: string, note?: string) => {
+    updateChild(childId, (child) => ({ ...child, missions: child.missions.map(m => m.id === missionId ? { ...m, status: 'ACTIVE', feedback: note } : m) }));
+    if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
+      const child = data.children.find(c => c.id === childId);
+      const mission = child?.missions.find(m => m.id === missionId);
+      if (child && mission) {
+        sendPushMissionRejected({ userId: ownerId, childId, missionTitle: mission.title, note, language: data.language });
+      }
+    }
+  };
   const handleAddMission = async (childId: string, title: string, amount: number) => {
     const supabase = getSupabase();
     // ⭐ ownerId est déjà en cache React — zéro appel réseau (fonctionne offline)
@@ -1041,6 +1078,9 @@ const App: React.FC = () => {
         .replace('{mission}', title)
         .replace('{amount}', amount.toString())
     );
+    if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
+      sendPushNewMission({ userId: ownerId, childId, missionTitle: title, reward: amount, currency: data.currency || '€', language: data.language });
+    }
 
     // 2. Sync Supabase en arrière-plan (seulement si connecté)
     if (userId) {
@@ -1336,6 +1376,7 @@ const App: React.FC = () => {
     }
   };
   const handleToggleSound = (enabled: boolean) => setData(prev => ({ ...prev, soundEnabled: enabled, updatedAt: new Date().toISOString() }));
+  const handleToggleNotifications = (enabled: boolean) => setData(prev => ({ ...prev, notificationsEnabled: enabled, updatedAt: new Date().toISOString() }));
   const handleUpdateMaxBalance = (limit: number) => setData(prev => ({ ...prev, maxBalance: limit, updatedAt: new Date().toISOString() }));
   const handleSetPremium = (enabled: boolean) => {
     if (enabled) {
@@ -1361,7 +1402,12 @@ const App: React.FC = () => {
       monitoring.track('BUSINESS', 'AUTH_SUCCESS', 1, { isFirstSession: !result.data?.children?.length });
       // Track onboarding completion at login if onboarding was seen but not yet tracked
       if (localStorage.getItem('koiny_onboarding_seen') && result.ownerId && result.ownerId !== 'demo') {
-        getSupabase().from('profiles').update({ onboarding_completed_at: new Date().toISOString() }).eq('id', result.ownerId).then(() => {});
+        const profileUpdate: Record<string, any> = { onboarding_completed_at: new Date().toISOString() };
+        if (localStorage.getItem('koiny_marketing_consent')) {
+          profileUpdate.marketing_consent = true;
+          localStorage.removeItem('koiny_marketing_consent');
+        }
+        getSupabase().from('profiles').update(profileUpdate).eq('id', result.ownerId).then(() => {});
         monitoring.track('BUSINESS', 'ONBOARDING_COMPLETED');
       }
     }
@@ -1415,14 +1461,29 @@ const App: React.FC = () => {
     </div>
   );
 
-  const handleRequestGift = () => { updateChild(activeChildId!, (child) => ({ ...child, giftRequested: true })); };
-  const handleRequestMission = () => { updateChild(activeChildId!, (child) => ({ ...child, missionRequested: true })); };
+  const handleRequestGift = () => {
+    updateChild(activeChildId!, (child) => ({ ...child, giftRequested: true }));
+    if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo' && activeChildId) {
+      const child = data.children.find(c => c.id === activeChildId);
+      if (child) sendPushGiftRequested({ userId: ownerId, childName: child.name, language: data.language });
+    }
+  };
+  const handleRequestMission = () => {
+    updateChild(activeChildId!, (child) => ({ ...child, missionRequested: true }));
+    if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo' && activeChildId) {
+      const child = data.children.find(c => c.id === activeChildId);
+      if (child) sendPushMissionRequested({ userId: ownerId, childName: child.name, language: data.language });
+    }
+  };
   const handleSelectChild = (childId: string) => {
     localStorage.setItem('koiny_last_view', 'CHILD');
     localStorage.setItem('koiny_last_child_id', childId);
     setActiveChildId(childId);
     setView('CHILD');
     monitoring.track('BUSINESS', 'PROFILE_SWITCH', 1, { direction: 'parent_to_child' });
+    if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
+      registerPushToken({ userId: ownerId, mode: 'child', childId });
+    }
   };
 
   return (
@@ -1432,8 +1493,11 @@ const App: React.FC = () => {
           ? <OnboardingView
             language={data.language}
             onSetLanguage={setLanguage}
-            onComplete={() => {
+            onComplete={(marketingConsent) => {
               localStorage.setItem('koiny_onboarding_seen', '1');
+              if (marketingConsent) {
+                localStorage.setItem('koiny_marketing_consent', '1');
+              }
               setView('AUTH');
             }}
           />
@@ -1443,9 +1507,25 @@ const App: React.FC = () => {
       {view === 'LOGIN' && <LoginView data={data} onSelectChild={handleSelectChild} onParentAccess={() => setView('PARENT')} />}
       {view === 'CHILD' && (
         data.children.find(c => c.id === activeChildId) ? (
-          <ChildView
-            data={data.children.find(c => c.id === activeChildId)!} language={data.language} currency={data.currency || '€'} onCompleteMission={handleMissionComplete} onLogout={handleLogout} onTutorialComplete={handleChildTutorialComplete} onSetPrimaryGoal={(gid) => handleSetGoalPrimary(activeChildId!, gid)} soundEnabled={data.soundEnabled} onPurchaseGoal={(g) => handlePurchaseGoal(activeChildId!, g)} onRequestGift={handleRequestGift} onRequestMission={handleRequestMission}
-          />
+          isAndroid ? (
+            <AndroidChildView
+              data={data.children.find(c => c.id === activeChildId)!}
+              language={data.language}
+              currency={data.currency || '€'}
+              onCompleteMission={handleMissionComplete}
+              onLogout={handleLogout}
+              onTutorialComplete={handleChildTutorialComplete}
+              onSetPrimaryGoal={(gid) => handleSetGoalPrimary(activeChildId!, gid)}
+              soundEnabled={data.soundEnabled}
+              onPurchaseGoal={(g) => handlePurchaseGoal(activeChildId!, g)}
+              onRequestGift={handleRequestGift}
+              onRequestMission={handleRequestMission}
+            />
+          ) : (
+            <ChildView
+              data={data.children.find(c => c.id === activeChildId)!} language={data.language} currency={data.currency || '€'} onCompleteMission={handleMissionComplete} onLogout={handleLogout} onTutorialComplete={handleChildTutorialComplete} onSetPrimaryGoal={(gid) => handleSetGoalPrimary(activeChildId!, gid)} soundEnabled={data.soundEnabled} onPurchaseGoal={(g) => handlePurchaseGoal(activeChildId!, g)} onRequestGift={handleRequestGift} onRequestMission={handleRequestMission}
+            />
+          )
         ) : (
           <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-6 text-center">
             <div className="animate-spin w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
@@ -1463,7 +1543,31 @@ const App: React.FC = () => {
           />
         </div>
       )}
-      {view === 'PARENT' && (
+      {view === 'PARENT' && isAndroid && (
+        <AndroidParentView
+          data={data} language={data.language}
+          onApprove={(childId, missionId, note) => handleApprove(childId, missionId, note)}
+          onReject={(childId, missionId, note) => handleReject(childId, missionId, note)}
+          onAddMission={(childId, title, amount) => handleAddMission(childId, title, amount)}
+          onEditMission={(childId, missionId, updates) => handleEditMission(childId, missionId, updates)}
+          onDeleteMission={(childId, missionId) => handleDeleteActiveMission(childId, missionId)}
+          onManualTransaction={(childId, amount, reason) => handleManualTransaction(childId, amount, reason)}
+          onAddChild={async (childData) => { await handleAddChild(childData); }}
+          onEditChild={handleEditChild}
+          onDeleteChild={handleDeleteChild}
+          onClearHistory={handleClearHistory}
+          onSetPin={handleSetPin}
+          onToggleNotifications={handleToggleNotifications}
+          onExit={handleLogout}
+          onSignOut={handleFullSignOut}
+          onDeleteAccount={async () => { await deleteAccount(); localStorage.removeItem('koiny_last_view'); localStorage.removeItem('koiny_last_child_id'); setData(INITIAL_DATA); setOwnerId(undefined); setView('LANDING'); }}
+          onSetPremium={handleSetPremium}
+          onSetMaxBalance={handleUpdateMaxBalance}
+          onSetLanguage={setLanguage}
+          isOfflineMode={isOfflineMode}
+        />
+      )}
+      {view === 'PARENT' && !isAndroid && (
         <ParentView
           data={data} ownerId={ownerId} language={data.language} onApprove={handleApprove} onReject={handleReject} onAddMission={handleAddMission}
           onDeleteActiveMission={handleDeleteActiveMission} onEditMission={handleEditMission} onManualTransaction={handleManualTransaction} onAddChild={handleAddChild}

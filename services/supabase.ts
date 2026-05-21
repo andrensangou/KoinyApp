@@ -99,7 +99,16 @@ export const signInWithGoogle = async () => {
                 return { data, error: null };
             } catch (nativeError: any) {
                 console.warn('⚠️ [GOOGLE] Native sign-in failed, falling back to browser:', nativeError.message);
-                // Fallback to browser if native fails
+                // Fallback OAuth browser (Android)
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: 'com.koiny.app://callback', skipBrowserRedirect: true },
+                });
+                if (error) throw error;
+                if (data?.url) {
+                    await Browser.open({ url: data.url });
+                }
+                return { data, error: null };
             }
         }
 
@@ -602,76 +611,45 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
 
             // Sync Goals
             if (child.goals?.length > 0) {
-                // ✅ Sépare clairement nouveaux goals vs existants
-                const newGoals = child.goals.filter((g: any) => !isUUID(g.id) && g.target > 0);
-                const existingGoals = child.goals.filter((g: any) => isUUID(g.id) && g.target > 0);
+                // Charger tous les goals existants en DB pour cet enfant
+                const { data: existingDbGoals } = await supabase
+                    .from('goals')
+                    .select('id, title, target_amount')
+                    .eq('child_id', savedChildId);
 
-                // ✅ Insert uniquement les nouveaux (avec vérification anti-doublon)
-                if (newGoals.length > 0) {
-                    // Charger les goals existants pour cet enfant afin d'éviter les doublons
-                    const { data: existingDbGoals } = await supabase
-                        .from('goals')
-                        .select('id, title, target_amount')
-                        .eq('child_id', savedChildId);
+                const dbGoalIds = new Set((existingDbGoals || []).map((g: any) => g.id));
 
-                    const goalsToInsert = newGoals
-                        .filter((g: any) => {
-                            // Vérifier si un goal avec le même titre ET montant existe déjà
-                            const isDuplicate = (existingDbGoals || []).some(
-                                (existing: any) => existing.title === (g.name || 'Objectif') && existing.target_amount === g.target
-                            );
-                            if (isDuplicate) {
-                                log(`♻️ [SUPABASE] Goal "${g.name}" already exists for child, skipping insert`);
-                                // Mapper l'ID local vers l'ID existant en DB
-                                const matchingGoal = (existingDbGoals || []).find(
-                                    (existing: any) => existing.title === (g.name || 'Objectif') && existing.target_amount === g.target
-                                );
-                                if (matchingGoal) {
-                                    idMapping[g.id] = matchingGoal.id;
-                                }
-                            }
-                            return !isDuplicate;
-                        })
-                        .map((g: any) => ({
-                            id: crypto.randomUUID(),
-                            child_id: savedChildId,
-                            title: g.name || 'Objectif',
-                            target_amount: g.target,
-                            current_amount: g.current || 0,
-                            image_url: g.icon || null,
-                            status: g.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE',
-                            is_achieved: g.status === 'COMPLETED'
-                        }));
+                const activeGoals = child.goals.filter((g: any) => g.target > 0);
+                const goalsToInsert = activeGoals.filter((g: any) => !dbGoalIds.has(g.id));
+                const goalsToUpdate = activeGoals.filter((g: any) => dbGoalIds.has(g.id));
 
-                    if (goalsToInsert.length > 0) {
-                        const { error } = await supabase.from('goals').insert(goalsToInsert);
-                        if (error) {
-                            console.error('❌ Goals insert error:', error.message);
-                        } else {
-                            // Mapper les IDs des goals réellement insérés
-                            const filteredNewGoals = newGoals.filter((g: any) => !idMapping[g.id]);
-                            filteredNewGoals.forEach((g: any, i: number) => {
-                                if (goalsToInsert[i]) {
-                                    idMapping[g.id] = goalsToInsert[i].id;
-                                }
-                            });
-                        }
-                    }
+                // Insert les goals qui n'existent pas encore en DB
+                if (goalsToInsert.length > 0) {
+                    const rows = goalsToInsert.map((g: any) => ({
+                        id: isUUID(g.id) ? g.id : crypto.randomUUID(),
+                        child_id: savedChildId,
+                        title: g.name || 'Objectif',
+                        target_amount: g.target,
+                        current_amount: g.current || 0,
+                        image_url: g.icon || null,
+                        status: g.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE',
+                        is_achieved: g.status === 'COMPLETED'
+                    }));
+                    const { error } = await supabase.from('goals').insert(rows);
+                    if (error) console.error('❌ Goals insert error:', error.message);
                 }
 
-                // ✅ Update les existants sans les recréer
-                if (existingGoals.length > 0) {
-                    for (const g of existingGoals) {
-                        await supabase.from('goals')
-                            .update({
-                                title: g.name,
-                                target_amount: g.target,
-                                current_amount: g.current || 0,
-                                status: g.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE',
-                                is_achieved: g.status === 'COMPLETED'
-                            })
-                            .eq('id', g.id);
-                    }
+                // Update les goals qui existent déjà en DB
+                for (const g of goalsToUpdate) {
+                    await supabase.from('goals')
+                        .update({
+                            title: g.name,
+                            target_amount: g.target,
+                            current_amount: g.current || 0,
+                            status: g.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE',
+                            is_achieved: g.status === 'COMPLETED'
+                        })
+                        .eq('id', g.id);
                 }
             }
 
