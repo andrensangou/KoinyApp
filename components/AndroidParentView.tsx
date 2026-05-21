@@ -1943,7 +1943,23 @@ export default function AndroidParentView({
 
       {/* Scrollable content — padding-bottom pour laisser place à la nav fixe */}
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative', paddingBottom: 'calc(62px + env(safe-area-inset-bottom))' }}>
-        {tab === 'dashboard' && (
+        {tab === 'dashboard' && data.children.length === 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', padding: 32, textAlign: 'center' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+              <i className="fa-solid fa-child" style={{ fontSize: 36, color: KT.primary }} />
+            </div>
+            <p style={{ fontSize: 18, fontWeight: 700, color: KT.text, margin: '0 0 8px', fontFamily: KT.poppins }}>
+              {language === 'fr' ? 'Ajoute ton premier enfant' : language === 'nl' ? 'Voeg je eerste kind toe' : 'Add your first child'}
+            </p>
+            <p style={{ fontSize: 14, color: KT.textSoft, margin: '0 0 28px', fontFamily: KT.poppins }}>
+              {language === 'fr' ? 'Va dans l\'onglet Profil pour commencer' : language === 'nl' ? 'Ga naar het tabblad Profiel om te beginnen' : 'Go to the Profile tab to get started'}
+            </p>
+            <button onClick={() => setTab('profile')} style={{ background: KT.primary, color: '#fff', border: 'none', borderRadius: 24, padding: '12px 28px', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: KT.poppins }}>
+              {language === 'fr' ? '+ Ajouter un enfant' : language === 'nl' ? '+ Kind toevoegen' : '+ Add a child'}
+            </button>
+          </div>
+        )}
+        {tab === 'dashboard' && data.children.length > 0 && (
           <DashboardScreen
             data={data} childId={childId}
             onSelectChild={setChildId}

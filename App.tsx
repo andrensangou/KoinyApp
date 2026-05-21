@@ -1275,6 +1275,7 @@ const App: React.FC = () => {
             id: childId,
             ...childData,
             balance: 0,
+            goals: [],
             missions: [],
             history: [],
             tutorialSeen: false
