@@ -57,3 +57,7 @@ supabase/.temp/
 
 # Apple private keys (APNs, etc.)
 *.p8
+
+# Firebase config files (contain API keys — distribute via CI/CD or manual copy)
+GoogleService-Info.plist
+google-services.json
