@@ -52,8 +52,9 @@ class MonitoringService {
       tracesSampleRate: 0.2,
       sendDefaultPii: false,
       ignoreErrors: [
-        // Web Locks API conflict from Supabase auth token refresh — benign, app recovers
+        // Web Locks API conflict from Capacitor storage — benign, app recovers
         'Lock was stolen by another request',
+        'Lock broken by another request',
         // Network errors that are not actionable
         'NetworkError',
         'Failed to fetch',
