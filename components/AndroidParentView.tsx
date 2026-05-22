@@ -1811,6 +1811,7 @@ export default function AndroidParentView({
   const [tab, setTab] = useState<TabId>('dashboard');
   const [childId, setChildId] = useState<string>(data.children[0]?.id ?? '');
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showAddChildEmpty, setShowAddChildEmpty] = useState(false);
   const [showAddMission, setShowAddMission] = useState(false);
   const [editingMission, setEditingMission] = useState<Mission | null>(null);
   const [showTransaction, setShowTransaction] = useState(false);
@@ -1944,19 +1945,21 @@ export default function AndroidParentView({
       {/* Scrollable content — padding-bottom pour laisser place à la nav fixe */}
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative', paddingBottom: 'calc(62px + env(safe-area-inset-bottom))' }}>
         {tab === 'dashboard' && data.children.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', padding: 32, textAlign: 'center' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-              <i className="fa-solid fa-child" style={{ fontSize: 36, color: KT.primary }} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: 24 }}>
+            <div style={{ background: '#fff', borderRadius: 24, padding: '36px 28px 32px', textAlign: 'center', width: '100%', maxWidth: 360, boxShadow: '0 4px 24px rgba(91,95,232,0.10)' }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                <i className="fa-solid fa-people-roof" style={{ fontSize: 34, color: KT.primary }} />
+              </div>
+              <p style={{ fontSize: 20, fontWeight: 700, color: KT.text, margin: '0 0 12px', fontFamily: KT.poppins, lineHeight: 1.3 }}>
+                {language === 'fr' ? 'Bienvenue sur votre Dashboard !' : language === 'nl' ? 'Welkom op uw Dashboard!' : 'Welcome to your Dashboard!'}
+              </p>
+              <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 28px', fontFamily: KT.poppins, lineHeight: 1.6 }}>
+                {language === 'fr' ? "Koiny vous aide à enseigner la valeur de l'effort. Commencez par créer le premier profil de votre enfant." : language === 'nl' ? 'Koiny helpt u de waarde van inspanning te leren. Begin met het aanmaken van het eerste profiel van uw kind.' : "Koiny helps you teach the value of effort. Start by creating your child's first profile."}
+              </p>
+              <button onClick={() => setShowAddChildEmpty(true)} style={{ width: '100%', background: KT.primary, color: '#fff', border: 'none', borderRadius: 14, padding: '16px', fontSize: 16, fontWeight: 600, cursor: 'pointer', fontFamily: KT.poppins }}>
+                + {language === 'fr' ? 'Ajouter un enfant' : language === 'nl' ? 'Kind toevoegen' : 'Add a child'}
+              </button>
             </div>
-            <p style={{ fontSize: 18, fontWeight: 700, color: KT.text, margin: '0 0 8px', fontFamily: KT.poppins }}>
-              {language === 'fr' ? 'Ajoute ton premier enfant' : language === 'nl' ? 'Voeg je eerste kind toe' : 'Add your first child'}
-            </p>
-            <p style={{ fontSize: 14, color: KT.textSoft, margin: '0 0 28px', fontFamily: KT.poppins }}>
-              {language === 'fr' ? 'Va dans l\'onglet Profil pour commencer' : language === 'nl' ? 'Ga naar het tabblad Profiel om te beginnen' : 'Go to the Profile tab to get started'}
-            </p>
-            <button onClick={() => setTab('profile')} style={{ background: KT.primary, color: '#fff', border: 'none', borderRadius: 24, padding: '12px 28px', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: KT.poppins }}>
-              {language === 'fr' ? '+ Ajouter un enfant' : language === 'nl' ? '+ Kind toevoegen' : '+ Add a child'}
-            </button>
           </div>
         )}
         {tab === 'dashboard' && data.children.length > 0 && (
@@ -2023,6 +2026,9 @@ export default function AndroidParentView({
 
       {/* Bottom nav */}
       <BottomNav active={tab} onChange={setTab} pendingCount={totalPending} language={language} />
+
+      {/* AddChild from empty state */}
+      <AddChildSheet isOpen={showAddChildEmpty} onClose={() => setShowAddChildEmpty(false)} onAdd={async (childData) => { await onAddChild(childData); setShowAddChildEmpty(false); }} language={language} />
 
       {/* Sheets */}
       <AddMissionSheet
