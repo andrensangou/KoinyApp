@@ -244,6 +244,25 @@ onClearHistory: (childId: string) => void;
 - ✅ **versionCode Android 4** (`android/app/build.gradle`): bumped 3 → 4. AAB release buildé et prêt à uploader en Play Console.
 - ✅ **Favicon landing page** (`public/landing-preview/index.html`): `<link rel="icon" type="image/png" href="favicon.png" />` ajouté dans `<head>`. Fichier `favicon.png` était déjà présent sur Hostinger.
 
+### Actions du 22/05/2026 — Fixes Android + iOS 1.1.0 soumission App Store
+
+**Contexte**: Corrections de bugs Android détectés en test + soumission iOS 1.1.0 (build 3) pour review Apple.
+
+**Fixes Android (`App.tsx`, `components/AndroidParentView.tsx`):**
+- ✅ **Fix suppression objectif désync Supabase** (`App.tsx:handleDeleteGoal`): RLS Supabase retourne `{error: null}` silencieusement si l'utilisateur n'est pas authentifié — objectif supprimé localement mais restait en base. Fix: ajout `count: 'exact'` sur le DELETE + vérification `if (count === 0) throw`. Pattern à appliquer sur tout DELETE Supabase critique.
+- ✅ **Fix écran blanc nouveaux users Android** (`components/AndroidParentView.tsx`): `DashboardScreen` retournait `null` quand `childId=''` (aucun enfant). Fix: état `showAddChildEmpty` + carte d'accueil avec icône famille, texte de bienvenue, bouton "+ Ajouter un enfant" → `AddChildSheet`. S'affiche quand `tab === 'dashboard' && data.children.length === 0`.
+- ✅ **Fix crash switch profil enfant** (`App.tsx:handleAddChild`): `goals: []` manquant dans l'initialisation du nouvel enfant → `AndroidChildView` crashait sur `data.goals.filter()`. Fix: ajout de `goals: []` dans le payload du nouvel enfant.
+- ✅ **Fix Sentry AbortError** (`services/monitoring.ts`): erreur Capacitor Web Locks `'Lock broken by another request'` ajoutée à `ignoreErrors`.
+- ✅ **GoogleService-Info.plist retiré du tracking git** (`.gitignore`): GitHub Secret Scanning avait détecté la clé Firebase. Fichier supprimé de l'historique git via `filter-branch`. À placer manuellement dans `ios/App/App/` après clone.
+
+**iOS:**
+- ✅ **Version 1.1.0 build 3 soumise pour review Apple** (22/05/2026): version 1.0.9.1 invalide (4 composantes refusées par Apple) → renommée 1.1.0. Build 3 contient `aps-environment: production` (push notifications APNs). Testé sur TestFlight avant soumission.
+- ✅ **Android versionCode 6** (`android/app/build.gradle`, local uniquement — `android/` gitignore): AAB release buildé, à uploader en Play Console.
+
+**Divers:**
+- ✅ **RevenueCat lifetime premium** accordé à `nsjdre@gmail.com` (compte dev) — expire 2226.
+- ✅ **`REVENUECAT_SECRET_KEY`** ajouté dans `.env` (clé V1 `sk_xx...` pour les grants promotionnels).
+
 ### Actions du 21/05/2026 (session 4) — AndroidChildView bouton objectif + fixes TypeScript
 
 **Contexte**: Ajout du bouton "Demander un objectif" manquant dans le dashboard enfant Android, et correction d'erreurs TypeScript résiduelles dans AndroidParentView.
