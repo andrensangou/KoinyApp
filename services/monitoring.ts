@@ -6,6 +6,7 @@
  */
 import * as Sentry from '@sentry/capacitor';
 import * as SentryReact from '@sentry/react';
+import { Capacitor } from '@capacitor/core';
 import { getSupabase } from './supabase';
 
 type MetricType = 'PERF' | 'BUSINESS' | 'ERROR' | 'SECURITY';
@@ -76,7 +77,8 @@ class MonitoringService {
         ...metadata,
         url: window.location.href,
         screenSize: `${window.innerWidth}x${window.innerHeight}`,
-        connection: (navigator as any).connection?.effectiveType || 'unknown'
+        connection: (navigator as any).connection?.effectiveType || 'unknown',
+        platform: Capacitor.getPlatform()
       },
       timestamp: new Date().toISOString(),
     };
