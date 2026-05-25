@@ -9,7 +9,7 @@ Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 an
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
 **Statut:** Publiée sur l'App Store (version 1.0.9). Version **1.1.0 build 3** soumise pour review Apple le 22/05/2026 depuis la branche `feature/android-redesign` — inclut push notifications FCM (APNs), fix objectifs Supabase (count exact), fix écran vide Android nouveaux users, fix crash switch profil enfant (goals: []).
-**Android:** Version 1.0 versionCode 6 — AAB release buildé le 22/05/2026, à uploader en Play Console (Tests fermés Alpha). Nécessite 12 testeurs × 14 jours pour accéder à la production. IAP Android à créer dans Play Console après passage en production.
+**Android:** Version 1.0 versionCode 7 — AAB release buildé le 25/05/2026, à uploader en Play Console (Tests fermés Alpha). Nécessite 12 testeurs × 14 jours pour accéder à la production. IAP Android à créer dans Play Console après passage en production.
 **AndroidParentView:** Dashboard parent Android (`components/AndroidParentView.tsx`) — activé via `isAndroid` dans `App.tsx`. Wirée avec `App.tsx` le 20/05/2026. Voir section "Actions du 20/05/2026 — AndroidParentView" et "Actions du 21/05/2026 — AndroidParentView améliorations" ci-dessous.
 **AndroidChildView:** Dashboard enfant Android (`components/AndroidChildView.tsx`) — activé via `isAndroid` dans `App.tsx`. Implémenté le 21/05/2026. Design Material 3, 4 onglets (Home, Missions, Historique, Badges), safe area corrigée, bottom nav fixe, bouton power pour logout.
 **Push Notifications (FCM):** Système cross-device opérationnel depuis le 21/05/2026. Firebase projet `koiny-d30a7`. Edge function `send-push` déployée sur Supabase. Table `device_tokens` créée. APNs configuré le 21/05/2026 pour iOS : clé `koiny APNs` (Key ID `7SDAU3PXVL`, Team ID `K828G7C5CB`) uploadée dans Firebase Cloud Messaging. `GoogleService-Info.plist` ajouté dans Xcode (`ios/App/App/`). Capability Push Notifications activée. Push iOS fonctionnel sur appareil physique (pas simulateur). Voir section "Actions du 21/05/2026 — Push Notifications FCM" ci-dessous.
@@ -243,6 +243,23 @@ onClearHistory: (childId: string) => void;
 - ✅ **Google Sign-In Android fallback corrigé** (`services/supabase.ts`): quand le native Google Auth échoue sur Android, le fallback utilisait `window.location.origin` comme `redirectTo` → renvoyait vers la landing page. Fix: fallback utilise `Browser.open` avec `redirectTo: 'com.koiny.app://callback'` + `skipBrowserRedirect: true`, comme iOS.
 - ✅ **versionCode Android 4** (`android/app/build.gradle`): bumped 3 → 4. AAB release buildé et prêt à uploader en Play Console.
 - ✅ **Favicon landing page** (`public/landing-preview/index.html`): `<link rel="icon" type="image/png" href="favicon.png" />` ajouté dans `<head>`. Fichier `favicon.png` était déjà présent sur Hostinger.
+
+### Actions du 25/05/2026 — Forgot PIN Android + versionCode 7
+
+**Contexte**: Ajout du flux "Code oublié ?" dans le PIN gate Android + fix du bypass post-magic-link + build release versionCode 7.
+
+**Fichiers modifiés:**
+- `components/AndroidParentView.tsx`: flux "Code oublié ?" complet + fix bypass PIN gate après magic link
+
+**Nouvelles fonctionnalités:**
+- ✅ **Flux "Code oublié ?" (`AndroidParentView.tsx`)**: bouton "Code oublié ?" sous le clavier PIN → `handleForgotPin` : efface `pin_hash` en Supabase + supprime le PIN local (`deleteParentPinLocally`) + envoie un magic link OTP (`signInWithOtp`) → écran de confirmation "Lien envoyé !".
+- ✅ **Fix bypass PIN gate après magic link** (`AndroidParentView.tsx`): ajout d'un listener `supabase.auth.onAuthStateChange` dans le `useEffect` initial. Quand l'event `SIGNED_IN` ou `TOKEN_REFRESHED` est reçu (deep link `com.koiny.app://callback` traité), re-vérifie `pin_hash` en Supabase — si null → `setIsAuthenticated(true)` directement sans remount. Fonctionne sur vrai appareil Android (pas émulateur — deep link s'ouvre dans Chrome sur émulateur).
+- ✅ **PIN loading refactorisé**: extraction de `checkPin(userId)` réutilisée par le load initial ET le listener `onAuthStateChange`.
+
+**Android versionCode 7:**
+- `android/app/build.gradle`: versionCode 6 → 7 (local uniquement — `android/` gitignore)
+- AAB release buildé le 25/05/2026 : `android/app/build/outputs/bundle/release/app-release.aab` (36 Mo)
+- À uploader en Play Console (Tests fermés Alpha)
 
 ### Actions du 22/05/2026 — Fixes Android + iOS 1.1.0 soumission App Store
 

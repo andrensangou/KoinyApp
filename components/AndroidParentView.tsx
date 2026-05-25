@@ -1756,28 +1756,44 @@ export default function AndroidParentView({
   const pinValidationIdRef = useRef(0);
 
   useEffect(() => {
+    const checkPin = async (userId: string) => {
+      const supabase = getSupabase();
+      if (!supabase) { setIsAuthenticated(true); return; }
+      try {
+        const pin = await loadParentPinLocally(userId);
+        if (pin) {
+          setLocalPin(pin);
+        } else {
+          // Local vide — vérifier Supabase (cas reset PIN via magic link)
+          const { data: profile } = await supabase.from('profiles').select('pin_hash').eq('id', userId).single();
+          if (!profile?.pin_hash) {
+            setIsAuthenticated(true);
+          } else {
+            setLocalPin(profile.pin_hash);
+          }
+        }
+      } catch { /* ignore */ }
+    };
+
     const load = async () => {
       const supabase = getSupabase();
       if (!supabase) { setIsAuthenticated(true); return; }
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const pin = await loadParentPinLocally(user.id);
-          if (pin) {
-            setLocalPin(pin);
-          } else {
-            // Local vide — vérifier Supabase (cas reset PIN via magic link)
-            const { data: profile } = await supabase.from('profiles').select('pin_hash').eq('id', user.id).single();
-            if (!profile?.pin_hash) {
-              setIsAuthenticated(true);
-            } else {
-              setLocalPin(profile.pin_hash);
-            }
-          }
-        }
+        if (user) await checkPin(user.id);
       } catch { /* ignore */ }
     };
     load();
+
+    // Écouter le retour magic link (SIGNED_IN déclenché par le deep link)
+    const supabase = getSupabase();
+    if (!supabase) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        await checkPin(session.user.id);
+      }
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // Auto-authenticate when no PIN is configured
