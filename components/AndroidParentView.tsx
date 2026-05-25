@@ -1763,7 +1763,17 @@ export default function AndroidParentView({
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const pin = await loadParentPinLocally(user.id);
-          if (pin) setLocalPin(pin);
+          if (pin) {
+            setLocalPin(pin);
+          } else {
+            // Local vide — vérifier Supabase (cas reset PIN via magic link)
+            const { data: profile } = await supabase.from('profiles').select('pin_hash').eq('id', user.id).single();
+            if (!profile?.pin_hash) {
+              setIsAuthenticated(true);
+            } else {
+              setLocalPin(profile.pin_hash);
+            }
+          }
         }
       } catch { /* ignore */ }
     };
