@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { GlobalState, Language, ChildProfile, Mission, HistoryEntry, Goal } from '../types';
 import { translations } from '../i18n';
 import { verifyPin } from '../services/security';
-import { loadParentPinLocally } from '../services/pinStorage';
+import { loadParentPinLocally, deleteParentPinLocally } from '../services/pinStorage';
 import { getSupabase } from '../services/supabase';
 import HelpModal from './HelpModal';
 import { SubscriptionModal } from './SubscriptionModal';
@@ -1751,6 +1751,7 @@ export default function AndroidParentView({
   const [localPin, setLocalPin] = useState<string | null>(null);
   const [pinValue, setPinValue] = useState('');
   const [pinState, setPinState] = useState<'idle' | 'validating' | 'error' | 'success'>('idle');
+  const [pinResetState, setPinResetState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const pinErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pinValidationIdRef = useRef(0);
 
@@ -1806,6 +1807,23 @@ export default function AndroidParentView({
       pinErrorTimeoutRef.current = setTimeout(() => { setPinState('error'); setPinValue(''); }, 150);
     }
   }, [pinValue, pinState, localPin, data.parentPin]);
+
+  const handleForgotPin = useCallback(async () => {
+    const supabase = getSupabase();
+    if (!supabase || pinResetState === 'sending' || pinResetState === 'sent') return;
+    setPinResetState('sending');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) { setPinResetState('error'); return; }
+      await supabase.from('profiles').update({ pin_hash: null }).eq('id', user.id);
+      await deleteParentPinLocally(user.id);
+      await supabase.auth.signInWithOtp({ email: user.email, options: { emailRedirectTo: 'com.koiny.app://callback' } });
+      setLocalPin(null);
+      setPinResetState('sent');
+    } catch {
+      setPinResetState('error');
+    }
+  }, [pinResetState]);
 
   // ── Main component state (must be before any conditional return)
   const [tab, setTab] = useState<TabId>('dashboard');
@@ -1902,18 +1920,43 @@ export default function AndroidParentView({
             })}
           </div>
           {isError && <p style={{ fontSize: 12, color: KT.danger, marginBottom: 24, fontWeight: 600 }}>{t.parent.incorrectCode}</p>}
-          {/* Keypad */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, width: 264 }}>
-            {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k, idx) => (
-              <button key={idx} onClick={() => {
-                if (k === '') return;
-                if (k === '⌫') { setPinValue(p => p.slice(0, -1)); setPinState('idle'); return; }
-                handlePinDigit(k);
-              }}
-                style={{ height: 64, borderRadius: 16, border: 'none', fontSize: k === '⌫' ? 18 : 22, fontWeight: 600, cursor: k === '' ? 'default' : 'pointer', background: k === '' ? 'transparent' : '#f8fafc', color: KT.text, boxShadow: k === '' ? 'none' : '0 2px 8px rgba(0,0,0,0.06)', fontFamily: KT.poppins }}
-              >{k}</button>
-            ))}
-          </div>
+          {pinResetState === 'sent' ? (
+            <div style={{ textAlign: 'center', padding: '0 32px', marginTop: 8 }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: KT.successLight, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <i className="fa-solid fa-envelope-circle-check" style={{ fontSize: 24, color: KT.success }} />
+              </div>
+              <p style={{ fontSize: 15, fontWeight: 600, color: KT.text, margin: '0 0 8px' }}>
+                {language === 'fr' ? 'Lien envoyé !' : language === 'nl' ? 'Link verzonden!' : 'Link sent!'}
+              </p>
+              <p style={{ fontSize: 13, color: KT.textSm, margin: 0, lineHeight: 1.5 }}>
+                {language === 'fr' ? 'Cliquez le lien dans votre email pour accéder à votre espace parent.' : language === 'nl' ? 'Klik op de link in uw e-mail om toegang te krijgen.' : 'Click the link in your email to access your parent space.'}
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Keypad */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, width: 264 }}>
+                {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k, idx) => (
+                  <button key={idx} onClick={() => {
+                    if (k === '') return;
+                    if (k === '⌫') { setPinValue(p => p.slice(0, -1)); setPinState('idle'); return; }
+                    handlePinDigit(k);
+                  }}
+                    style={{ height: 64, borderRadius: 16, border: 'none', fontSize: k === '⌫' ? 18 : 22, fontWeight: 600, cursor: k === '' ? 'default' : 'pointer', background: k === '' ? 'transparent' : '#f8fafc', color: KT.text, boxShadow: k === '' ? 'none' : '0 2px 8px rgba(0,0,0,0.06)', fontFamily: KT.poppins }}
+                  >{k}</button>
+                ))}
+              </div>
+              {/* Forgot PIN */}
+              <button onClick={handleForgotPin} disabled={pinResetState === 'sending'}
+                style={{ marginTop: 28, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: pinResetState === 'error' ? KT.danger : KT.textSm, fontFamily: KT.poppins, textDecoration: 'underline' }}>
+                {pinResetState === 'sending'
+                  ? (language === 'fr' ? 'Envoi...' : language === 'nl' ? 'Verzenden...' : 'Sending...')
+                  : pinResetState === 'error'
+                    ? (language === 'fr' ? 'Erreur, réessayez' : language === 'nl' ? 'Fout, probeer opnieuw' : 'Error, try again')
+                    : (language === 'fr' ? 'Code oublié ?' : language === 'nl' ? 'Code vergeten?' : 'Forgot code?')}
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
