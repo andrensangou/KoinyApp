@@ -1363,18 +1363,14 @@ const App: React.FC = () => {
     // Sauvegarder le HASH dans le state global (pour Supabase si owner)
     setData(prev => ({ ...prev, parentPin: pinToStore, updatedAt: new Date().toISOString() }));
 
-    // Sauvegarder LOCALEMENT sur cet appareil (pour co-parents)
+    // Sauvegarder LOCALEMENT sur cet appareil — fire-and-forget pour ne pas bloquer l'UI
     const supabase = getSupabase();
     if (supabase) {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await saveParentPinLocally(user.id, pinToStore);
-          console.log('✅ [APP] PIN haché et sauvegardé localement pour:', user.id);
-        }
-      } catch (error) {
-        console.error('❌ [APP] Erreur sauvegarde PIN local:', error);
-      }
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) saveParentPinLocally(user.id, pinToStore)
+          .then(() => console.log('✅ [APP] PIN sauvegardé localement'))
+          .catch(e => console.error('❌ [APP] Erreur sauvegarde PIN local:', e));
+      }).catch(e => console.error('❌ [APP] getUser error in handleSetPin:', e));
     }
   };
   const handleToggleSound = (enabled: boolean) => setData(prev => ({ ...prev, soundEnabled: enabled, updatedAt: new Date().toISOString() }));

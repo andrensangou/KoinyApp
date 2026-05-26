@@ -503,7 +503,7 @@ function ReviewSheet({ isOpen, onClose, mission, childName, onApprove, onReject,
               {language === 'fr' ? `MESSAGE POUR ${childName.toUpperCase()} (OPTIONNEL)` : language === 'nl' ? `BERICHT VOOR ${childName.toUpperCase()} (OPTIONEEL)` : `MESSAGE FOR ${childName.toUpperCase()} (OPTIONAL)`}
             </label>
             <textarea value={note} onChange={e => setNote(e.target.value)}
-              placeholder="Bravo, super travail ! 🌟" rows={2}
+              placeholder={language === 'fr' ? 'Bravo, super travail ! 🌟' : language === 'nl' ? 'Goed gedaan, super werk! 🌟' : 'Great job, well done! 🌟'} rows={2}
               style={{ width: '100%', padding: '13px 14px', borderRadius: 12, border: `1.5px solid ${KT.border}`, fontFamily: KT.poppins, fontSize: 14, color: KT.text, background: KT.bg, boxSizing: 'border-box', outline: 'none', resize: 'none' }} />
           </div>
           <button onClick={confirm} disabled={!action}
@@ -1333,17 +1333,22 @@ function PinSetupSheet({ isOpen, onClose, onSave, onRemove, hasExisting, languag
       if (step === 'enter') {
         setTimeout(() => setStep('confirm'), 150);
       } else {
+        setSaving(true);
         setTimeout(async () => {
+          console.log('[PinSetup] confirm — match:', pin1 === next);
           if (pin1 !== next) {
             setErr(language === 'fr' ? 'Les codes sont différents' : language === 'nl' ? 'Codes komen niet overeen' : 'Codes do not match');
             setStep('enter'); setPin1(''); setPin2('');
+            setSaving(false);
             return;
           }
-          setSaving(true);
           try {
+            console.log('[PinSetup] calling onSave...');
             await onSave(next);
+            console.log('[PinSetup] onSave done');
             onClose();
           } catch (e: any) {
+            console.error('[PinSetup] onSave error:', e?.message || e);
             setErr(e?.message || 'Error');
             setStep('enter'); setPin1(''); setPin2('');
           } finally {
@@ -1370,6 +1375,14 @@ function PinSetupSheet({ isOpen, onClose, onSave, onRemove, hasExisting, languag
           })}
         </div>
         {err && <p style={{ fontFamily: KT.poppins, fontSize: 12, color: KT.danger, fontWeight: 600, margin: '0 0 14px' }}>{err}</p>}
+        {saving && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <div style={{ width: 16, height: 16, border: `2.5px solid ${KT.border}`, borderTopColor: KT.primary, borderRadius: '50%', animation: 'kcv-spin 0.8s linear infinite' }} />
+            <span style={{ fontFamily: KT.poppins, fontSize: 12, color: KT.textSm, fontWeight: 600 }}>
+              {language === 'fr' ? 'Enregistrement...' : language === 'nl' ? 'Opslaan...' : 'Saving...'}
+            </span>
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, width: 260, marginBottom: 16 }}>
           {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k, idx) => (
             <button key={idx} onClick={() => k && press(k)} disabled={!k || saving}
@@ -1390,7 +1403,7 @@ function PinSetupSheet({ isOpen, onClose, onSave, onRemove, hasExisting, languag
 }
 
 // ══ PROFILE SCREEN ════════════════════════════════════════════
-function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremium, onSetLanguage, onSetMaxBalance, onAddChild, onEditChild, onDeleteChild, onSetPin, onToggleNotifications, showToast }: {
+function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremium, onSetLanguage, onSetMaxBalance, onAddChild, onEditChild, onDeleteChild, onSetPin, onToggleNotifications, showToast, autoOpenPinSheet, onPinSetupShown }: {
   data: GlobalState; language: Language; onSignOut: () => Promise<void>;
   onDeleteAccount?: () => Promise<void>;
   onOpenPremium?: () => void;
@@ -1402,10 +1415,19 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
   onSetPin: (pin: string) => Promise<void>;
   onToggleNotifications: (enabled: boolean) => void;
   showToast: (msg: string, type?: 'success' | 'danger' | 'info') => void;
+  autoOpenPinSheet?: boolean;
+  onPinSetupShown?: () => void;
 }) {
   const [showAddChild, setShowAddChild] = useState(false);
   const [editingChild, setEditingChild] = useState<ChildProfile | null>(null);
   const [showPinSheet, setShowPinSheet] = useState(false);
+
+  useEffect(() => {
+    if (autoOpenPinSheet) {
+      setShowPinSheet(true);
+      onPinSetupShown?.();
+    }
+  }, [autoOpenPinSheet]);
   const [showHelp, setShowHelp] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showWalletLimit, setShowWalletLimit] = useState(false);
@@ -1754,6 +1776,8 @@ export default function AndroidParentView({
   const [pinResetState, setPinResetState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const pinErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pinValidationIdRef = useRef(0);
+  const pinWasResetRef = useRef(false);
+  const [triggerPinSetup, setTriggerPinSetup] = useState(false);
 
   useEffect(() => {
     const checkPin = async (userId: string) => {
@@ -1790,10 +1814,39 @@ export default function AndroidParentView({
     if (!supabase) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-        await checkPin(session.user.id);
+        // Only bypass PIN on SIGNED_IN (deep link click) — TOKEN_REFRESHED fires from
+        // signInWithOtp on an already-authenticated user and must NOT bypass the gate.
+        if (event === 'SIGNED_IN' && pinWasResetRef.current) {
+          pinWasResetRef.current = false;
+          setIsAuthenticated(true);
+          setTab('profile');
+          setTriggerPinSetup(true);
+        } else {
+          await checkPin(session.user.id);
+        }
       }
     });
-    return () => subscription.unsubscribe();
+
+    // Fallback: re-vérifier quand l'app revient en foreground (après magic link)
+    const handleVisibility = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      if (pinWasResetRef.current) {
+        pinWasResetRef.current = false;
+        setIsAuthenticated(true);
+        setTab('profile');
+        setTriggerPinSetup(true);
+        return;
+      }
+      await checkPin(user.id);
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   // Auto-authenticate when no PIN is configured
@@ -1841,12 +1894,25 @@ export default function AndroidParentView({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.email) { setPinResetState('error'); return; }
+      // Send OTP with 10s timeout (rate limit ou réseau lent peuvent bloquer indéfiniment)
+      const otpPromise = supabase.auth.signInWithOtp({ email: user.email, options: { emailRedirectTo: 'com.koiny.app://callback' } });
+      const timeoutPromise = new Promise<{ error: Error }>(resolve =>
+        setTimeout(() => resolve({ error: new Error('timeout') }), 10000)
+      );
+      const { error: otpError } = await Promise.race([otpPromise, timeoutPromise]) as any;
+      if (otpError) {
+        console.error('[handleForgotPin] OTP error:', otpError.message);
+        setPinResetState('error');
+        return;
+      }
+      // Only clear PIN after OTP is queued
       await supabase.from('profiles').update({ pin_hash: null }).eq('id', user.id);
-      await deleteParentPinLocally(user.id);
-      await supabase.auth.signInWithOtp({ email: user.email, options: { emailRedirectTo: 'com.koiny.app://callback' } });
+      try { await deleteParentPinLocally(user.id); } catch (e) { console.warn('[handleForgotPin] local delete failed (ignored):', e); }
       setLocalPin(null);
+      pinWasResetRef.current = true;
       setPinResetState('sent');
-    } catch {
+    } catch (e: any) {
+      console.error('[handleForgotPin] error:', e?.message || e?.code || JSON.stringify(e));
       setPinResetState('error');
     }
   }, [pinResetState]);
@@ -2088,8 +2154,25 @@ export default function AndroidParentView({
         {tab === 'profile' && (
           <ProfileScreen data={data} language={language} onSignOut={onSignOut} onDeleteAccount={onDeleteAccount} onSetLanguage={onSetLanguage}
             onAddChild={onAddChild} onEditChild={onEditChild} onDeleteChild={onDeleteChild}
-            onSetPin={onSetPin} onToggleNotifications={onToggleNotifications}
-            onOpenPremium={() => setShowSubscriptionModal(true)} onSetMaxBalance={onSetMaxBalance} showToast={showToast} />
+            onSetPin={async (pin: string) => {
+              await onSetPin(pin);
+              // Sync localPin immédiatement après la sauvegarde pour éviter la race condition
+              // entre fire-and-forget et initialize() qui peut écraser data.parentPin
+              const supabase = getSupabase();
+              if (supabase) {
+                supabase.auth.getUser().then(({ data: { user } }) => {
+                  if (!user) return;
+                  setTimeout(() => {
+                    loadParentPinLocally(user.id).then(hash => {
+                      if (hash) setLocalPin(hash);
+                    }).catch(() => {});
+                  }, 400);
+                }).catch(() => {});
+              }
+            }}
+            onToggleNotifications={onToggleNotifications}
+            onOpenPremium={() => setShowSubscriptionModal(true)} onSetMaxBalance={onSetMaxBalance} showToast={showToast}
+            autoOpenPinSheet={triggerPinSetup} onPinSetupShown={() => setTriggerPinSetup(false)} />
         )}
       </div>
 

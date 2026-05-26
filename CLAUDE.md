@@ -9,7 +9,7 @@ Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 an
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
 **Statut:** Publiée sur l'App Store (version 1.0.9). Version **1.1.0 build 3** soumise pour review Apple le 22/05/2026 depuis la branche `feature/android-redesign` — inclut push notifications FCM (APNs), fix objectifs Supabase (count exact), fix écran vide Android nouveaux users, fix crash switch profil enfant (goals: []).
-**Android:** Version 1.0 versionCode 7 — AAB release buildé le 25/05/2026, à uploader en Play Console (Tests fermés Alpha). Nécessite 12 testeurs × 14 jours pour accéder à la production. IAP Android à créer dans Play Console après passage en production.
+**Android:** Version 1.0 versionCode 9 — AAB release buildé le 26/05/2026, à uploader en Play Console (Tests fermés Alpha). Nécessite 12 testeurs × 14 jours pour accéder à la production. IAP Android à créer dans Play Console après passage en production.
 **AndroidParentView:** Dashboard parent Android (`components/AndroidParentView.tsx`) — activé via `isAndroid` dans `App.tsx`. Wirée avec `App.tsx` le 20/05/2026. Voir section "Actions du 20/05/2026 — AndroidParentView" et "Actions du 21/05/2026 — AndroidParentView améliorations" ci-dessous.
 **AndroidChildView:** Dashboard enfant Android (`components/AndroidChildView.tsx`) — activé via `isAndroid` dans `App.tsx`. Implémenté le 21/05/2026. Design Material 3, 4 onglets (Home, Missions, Historique, Badges), safe area corrigée, bottom nav fixe, bouton power pour logout.
 **Push Notifications (FCM):** Système cross-device opérationnel depuis le 21/05/2026. Firebase projet `koiny-d30a7`. Edge function `send-push` déployée sur Supabase. Table `device_tokens` créée. APNs configuré le 21/05/2026 pour iOS : clé `koiny APNs` (Key ID `7SDAU3PXVL`, Team ID `K828G7C5CB`) uploadée dans Firebase Cloud Messaging. `GoogleService-Info.plist` ajouté dans Xcode (`ios/App/App/`). Capability Push Notifications activée. Push iOS fonctionnel sur appareil physique (pas simulateur). Voir section "Actions du 21/05/2026 — Push Notifications FCM" ci-dessous.
@@ -243,6 +243,28 @@ onClearHistory: (childId: string) => void;
 - ✅ **Google Sign-In Android fallback corrigé** (`services/supabase.ts`): quand le native Google Auth échoue sur Android, le fallback utilisait `window.location.origin` comme `redirectTo` → renvoyait vers la landing page. Fix: fallback utilise `Browser.open` avec `redirectTo: 'com.koiny.app://callback'` + `skipBrowserRedirect: true`, comme iOS.
 - ✅ **versionCode Android 4** (`android/app/build.gradle`): bumped 3 → 4. AAB release buildé et prêt à uploader en Play Console.
 - ✅ **Favicon landing page** (`public/landing-preview/index.html`): `<link rel="icon" type="image/png" href="favicon.png" />` ajouté dans `<head>`. Fichier `favicon.png` était déjà présent sur Hostinger.
+
+### Actions du 26/05/2026 — Fix PIN gate bypass + fix handleSetPin hang
+
+**Contexte**: Corrections des bugs du flux "Code oublié ?" introduits la veille + build versionCode 9.
+
+**Fichiers modifiés:**
+- `components/AndroidParentView.tsx`: fix bypass immédiat PIN gate + fix spinner "Enregistrement..." bloqué
+- `App.tsx`: fix `handleSetPin` bloquant sur appels réseau
+
+**Fichiers modifiés (suite):**
+- `components/AndroidParentView.tsx`: fix timeout "Envoi..." bloqué + fix race condition localPin + placeholder ReviewSheet traduit
+
+**Corrections:**
+- ✅ **Fix bypass immédiat PIN gate** (`AndroidParentView.tsx`): `pinWasResetRef.current = true` était set dans `handleForgotPin` après `signInWithOtp`. Or `signInWithOtp` sur un user déjà authentifié déclenche `TOKEN_REFRESHED` dans `onAuthStateChange` → bypass se déclenchait immédiatement sans que l'utilisateur clique le lien. Fix: dans `onAuthStateChange`, le bypass (`pinWasResetRef.current`) n'est vérifié QUE sur `event === 'SIGNED_IN'` (deep link), jamais sur `TOKEN_REFRESHED` (signInWithOtp).
+- ✅ **Fix spinner "Enregistrement..." bloqué** (`App.tsx:handleSetPin`): `handleSetPin` awaitait `supabase.auth.getUser()` + `saveParentPinLocally()`. Sur appareil réel après magic link, ces appels réseau pouvaient rester bloqués → `setSaving(false)` jamais appelé. Fix: appels réseau convertis en fire-and-forget. `handleSetPin` résout immédiatement après `hashPin` + `setData`.
+- ✅ **Fix race condition localPin** (`AndroidParentView.tsx`): après `onSetPin`, `initialize()` (appelé 2s après le deep link) pouvait écraser `data.parentPin` avec l'ancienne valeur Supabase avant que `saveParentPinLocally` fire-and-forget ait terminé. Fix: wrapper de `onSetPin` dans ProfileScreen qui recharge `localPin` depuis Preferences 400ms après la sauvegarde.
+- ✅ **Fix "Envoi..." bloqué indéfiniment** (`AndroidParentView.tsx:handleForgotPin`): `signInWithOtp` pouvait ne jamais répondre (rate limit, réseau émulateur) → `pinResetState` restait sur `'sending'` pour toujours. Fix: `Promise.race` avec timeout 10s → passe en `'error'` si pas de réponse.
+- ✅ **Placeholder ReviewSheet traduit** (`AndroidParentView.tsx`): placeholder textarea `"Bravo, super travail ! 🌟"` hardcodé en FR. Fix: `language === 'fr' ? ... : language === 'nl' ? 'Goed gedaan, super werk! 🌟' : 'Great job, well done! 🌟'`.
+
+**Android versionCode 9:**
+- `android/app/build.gradle`: versionCode 8 → 9 (local uniquement — `android/` gitignore)
+- AAB release buildé le 26/05/2026, uploadé en Play Console (Tests fermés Alpha)
 
 ### Actions du 25/05/2026 — Forgot PIN Android + versionCode 7
 
