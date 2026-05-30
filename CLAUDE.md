@@ -260,6 +260,17 @@ onClearHistory: (childId: string) => void;
 - versionCode 10 : fix getSession (buildé + uploadé ce matin)
 - versionCode 11 : fix texte Google Play SubscriptionModal (buildé le 30/05/2026)
 
+**RevenueCat Android offerings configurés (30/05/2026):**
+- Produits importés depuis Play Console dans RevenueCat (Product catalog → Products → Import)
+- Entitlement "Koiny Premium" attaché aux deux produits Android
+- Package `$rc_monthly` : ajout de `com.koiny.premium.monthly:monthly-base` (Play Store)
+- Package `$rc_annual` : ajout de `com.koiny.premium.yearly:yearly-base` (Play Store)
+- SubscriptionModal Android affiche maintenant mensuel (1,99€) + annuel (16,99€) ✅
+
+**License testers Play Console configurés (30/05/2026):**
+- Play Console → (compte développeur) → Paramètres → Test de licence
+- Liste "Testkoiny" (14 users) cochée et enregistrée → testeurs peuvent tester IAP sans être débités, sans blocage Family
+
 ### Actions du 26/05/2026 — Fix PIN gate bypass + fix handleSetPin hang
 
 **Contexte**: Corrections des bugs du flux "Code oublié ?" introduits la veille + build versionCode 9.
@@ -450,7 +461,7 @@ onSetMaxBalance?: (limit: number) => void;
 - ✅ **Build 1.0.7 build 5**: `npm run build` + `npx cap sync ios` effectués le 15/05/2026. Prêt à archiver depuis Xcode (Product → Archive). CURRENT_PROJECT_VERSION à incrémenter à 5 dans Xcode avant archive.
 - 📊 **Stats au 15/05/2026**: 29 auth users. 2 nouveaux le 14/05 (allalichakib4@gmail.com + Apple Relay). Allali actif : enfant Chakib, 5 transactions, 1 objectif (Trottinette Xiaomi), 0 mission. Android : 0/12 testeurs Alpha inscrits.
 - 📊 **Analytics funnel**: 6 users AUTH_SUCCESS → 6 ONBOARDING_COMPLETED (100%) → 7 CHILD_CREATED. 3 MISSION_APPROVED trackés. APP_OPEN en baisse après pic du 11/05.
-- ⚠️ **RevenueCat Android**: offerings "default" configuré mais packages vides — produits IAP à créer dans Play Console après passage en production (12 testeurs × 14 jours).
+- ✅ **RevenueCat Android**: offerings "default" configuré avec produits iOS + Android dans les packages Monthly et Yearly (configuré le 30/05/2026).
 
 ### Actions du 10/05/2026 — Android build v2, polyfill UUID, engagement Megan
 **Contexte**: Premier build Android soumis en Tests fermés (Alpha). Fix crash Android 11. Engagement de l'utilisatrice la plus active.
