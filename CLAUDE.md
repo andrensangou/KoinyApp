@@ -9,7 +9,7 @@ Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 an
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
 **Statut:** Publiée sur l'App Store (version 1.0.9). Version **1.1.0 build 3** soumise pour review Apple le 22/05/2026 depuis la branche `feature/android-redesign` — inclut push notifications FCM (APNs), fix objectifs Supabase (count exact), fix écran vide Android nouveaux users, fix crash switch profil enfant (goals: []).
-**Android:** Version 1.0 versionCode 9 — AAB release buildé le 26/05/2026, à uploader en Play Console (Tests fermés Alpha). Nécessite 12 testeurs × 14 jours pour accéder à la production. IAP Android à créer dans Play Console après passage en production.
+**Android:** Version 1.0 versionCode 11 — AAB release buildé le 30/05/2026, uploadé en Play Console (Tests fermés Alpha). 12 testeurs inscrits depuis 8 jours — accès production débloqué ~6 jours. IAP Android (`com.koiny.premium.monthly` + `com.koiny.premium.yearly`) créés dans Play Console le 08/05/2026, RevenueCat configuré (Valid credentials ✅).
 **AndroidParentView:** Dashboard parent Android (`components/AndroidParentView.tsx`) — activé via `isAndroid` dans `App.tsx`. Wirée avec `App.tsx` le 20/05/2026. Voir section "Actions du 20/05/2026 — AndroidParentView" et "Actions du 21/05/2026 — AndroidParentView améliorations" ci-dessous.
 **AndroidChildView:** Dashboard enfant Android (`components/AndroidChildView.tsx`) — activé via `isAndroid` dans `App.tsx`. Implémenté le 21/05/2026. Design Material 3, 4 onglets (Home, Missions, Historique, Badges), safe area corrigée, bottom nav fixe, bouton power pour logout.
 **Push Notifications (FCM):** Système cross-device opérationnel depuis le 21/05/2026. Firebase projet `koiny-d30a7`. Edge function `send-push` déployée sur Supabase. Table `device_tokens` créée. APNs configuré le 21/05/2026 pour iOS : clé `koiny APNs` (Key ID `7SDAU3PXVL`, Team ID `K828G7C5CB`) uploadée dans Firebase Cloud Messaging. `GoogleService-Info.plist` ajouté dans Xcode (`ios/App/App/`). Capability Push Notifications activée. Push iOS fonctionnel sur appareil physique (pas simulateur). Voir section "Actions du 21/05/2026 — Push Notifications FCM" ci-dessous.
@@ -243,6 +243,22 @@ onClearHistory: (childId: string) => void;
 - ✅ **Google Sign-In Android fallback corrigé** (`services/supabase.ts`): quand le native Google Auth échoue sur Android, le fallback utilisait `window.location.origin` comme `redirectTo` → renvoyait vers la landing page. Fix: fallback utilise `Browser.open` avec `redirectTo: 'com.koiny.app://callback'` + `skipBrowserRedirect: true`, comme iOS.
 - ✅ **versionCode Android 4** (`android/app/build.gradle`): bumped 3 → 4. AAB release buildé et prêt à uploader en Play Console.
 - ✅ **Favicon landing page** (`public/landing-preview/index.html`): `<link rel="icon" type="image/png" href="favicon.png" />` ajouté dans `<head>`. Fichier `favicon.png` était déjà présent sur Hostinger.
+
+### Actions du 30/05/2026 — Fix création enfant Android + fix texte Google Play
+
+**Contexte**: Bug bloquant signalé par testeur Android — impossible de créer un enfant. Fix du texte "App Store" affiché sur Android dans SubscriptionModal.
+
+**Fichiers modifiés:**
+- `App.tsx`: fix `handleAddChild` + `handlePurchaseGoal`
+- `components/SubscriptionModal.tsx`: fix footerNote Android
+
+**Corrections:**
+- ✅ **Fix "Vous n'êtes pas connecté" à la création d'enfant** (`App.tsx:handleAddChild`): `supabase.auth.getUser()` (appel réseau) retournait `null` sur certains appareils Android si la session n'était pas encore restaurée → erreur "Vous n'êtes pas connecté" malgré un user authentifié. Fix: remplacé par `supabase.auth.getSession()` (cache local, instantané). Même fix appliqué à `handlePurchaseGoal`.
+- ✅ **Fix texte "App Store" sur Android** (`components/SubscriptionModal.tsx`): footerNote affichait "facturé via votre compte App Store" sur Android. Fix: conditionnel `isAndroid` → "facturé via votre compte Google Play" (FR/NL/EN).
+
+**Android versionCode 10 → 11:**
+- versionCode 10 : fix getSession (buildé + uploadé ce matin)
+- versionCode 11 : fix texte Google Play SubscriptionModal (buildé le 30/05/2026)
 
 ### Actions du 26/05/2026 — Fix PIN gate bypass + fix handleSetPin hang
 

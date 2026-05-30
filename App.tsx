@@ -1242,7 +1242,8 @@ const App: React.FC = () => {
   const handleAddChild = async (childData: any) => {
     const supabase = getSupabase();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) {
       showAppError('Vous n\'êtes pas connecté.');
       return;
@@ -1292,7 +1293,8 @@ const App: React.FC = () => {
   };
   const handlePurchaseGoal = async (childId: string, goal: Goal) => {
     const supabase = getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user || !ownerId) return;
 
     const transactionId = crypto.randomUUID();

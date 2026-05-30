@@ -270,7 +270,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           )}
 
           <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl mb-4">
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 text-center leading-relaxed">{t?.parent?.premium?.footerNote}</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 text-center leading-relaxed">{isAndroid ? (language === 'fr' ? "L'abonnement sera facturé via votre compte Google Play." : language === 'nl' ? 'Het abonnement wordt gefactureerd via je Google Play account.' : 'The subscription will be charged via your Google Play account.') : t?.parent?.premium?.footerNote}</p>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-2">
               <a href="https://koiny.app/privacy.html#terms" target="_blank" rel="noopener noreferrer" className="text-indigo-500 underline">{language === 'fr' ? "Conditions d'utilisation" : language === 'nl' ? 'Gebruiksvoorwaarden' : 'Terms of Use'}</a>
               {' · '}
@@ -477,7 +477,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         {/* Legal footer */}
         <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <div style={{ fontSize: 10, color: 'rgba(100,116,139,0.8)', fontWeight: 500, textAlign: 'center', lineHeight: 1.7 }}>
-            {t?.parent?.premium?.footerNote}
+            {isAndroid ? (language === 'fr' ? "L'abonnement sera facturé via votre compte Google Play." : language === 'nl' ? 'Het abonnement wordt gefactureerd via je Google Play account.' : 'The subscription will be charged via your Google Play account.') : t?.parent?.premium?.footerNote}
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 8 }}>
             <a href="https://koiny.app/privacy.html#terms" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: 'rgba(99,102,241,0.6)', fontWeight: 700 }}>
