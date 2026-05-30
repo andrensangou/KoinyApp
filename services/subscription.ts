@@ -181,9 +181,10 @@ class SubscriptionService {
 
       // Vérifier si l'entitlement est actif après l'achat
       // Fallback: vérifier aussi activeSubscriptions (Xcode sandbox peut ne pas remplir entitlements.active)
+      // Sur Android, activeSubscriptions contient l'ID avec suffixe base plan: "com.koiny.premium.monthly:monthly-base"
       const isPremium =
         customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined ||
-        customerInfo.activeSubscriptions.some(id => PREMIUM_PRODUCTS.includes(id));
+        customerInfo.activeSubscriptions.some(id => PREMIUM_PRODUCTS.some(p => id === p || id.startsWith(p + ':')));
 
       if (isPremium) {
         logger.info('[Subscription] Achat réussi, Premium activé');
@@ -223,7 +224,7 @@ class SubscriptionService {
     try {
       const { customerInfo } = await Purchases.getCustomerInfo();
       const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
-      const hasActiveSubscription = customerInfo.activeSubscriptions.some(id => PREMIUM_PRODUCTS.includes(id));
+      const hasActiveSubscription = customerInfo.activeSubscriptions.some(id => PREMIUM_PRODUCTS.some(p => id === p || id.startsWith(p + ':')));
 
       if (entitlement) {
         return {
@@ -234,7 +235,7 @@ class SubscriptionService {
       }
 
       if (hasActiveSubscription) {
-        const activeProductId = customerInfo.activeSubscriptions.find(id => PREMIUM_PRODUCTS.includes(id));
+        const activeProductId = customerInfo.activeSubscriptions.find(id => PREMIUM_PRODUCTS.some(p => id === p || id.startsWith(p + ':')));
         return { isSubscribed: true, productId: activeProductId };
       }
 
@@ -270,7 +271,7 @@ class SubscriptionService {
       const { customerInfo } = await Purchases.restorePurchases();
       const isPremium =
         customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined ||
-        customerInfo.activeSubscriptions.some(id => PREMIUM_PRODUCTS.includes(id));
+        customerInfo.activeSubscriptions.some(id => PREMIUM_PRODUCTS.some(p => id === p || id.startsWith(p + ':')));
 
       if (isPremium) {
         localStorage.setItem('koiny_premium_active', 'true');
