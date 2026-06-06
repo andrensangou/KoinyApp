@@ -244,6 +244,28 @@ onClearHistory: (childId: string) => void;
 - ✅ **versionCode Android 4** (`android/app/build.gradle`): bumped 3 → 4. AAB release buildé et prêt à uploader en Play Console.
 - ✅ **Favicon landing page** (`public/landing-preview/index.html`): `<link rel="icon" type="image/png" href="favicon.png" />` ajouté dans `<head>`. Fichier `favicon.png` était déjà présent sur Hostinger.
 
+### Actions du 06/06/2026 (session 2) — Audit notifs/widget + RGPD (feature/notifications-rgpd)
+
+**Contexte**: Audit de l'implémentation push + widget, puis corrections. **Branche `feature/notifications-rgpd`** (à partir de `feature/qr-login`, donc inclut le QR). Tout le serveur (edge functions) est **déployé**; le code app nécessite un nouveau build pour prendre effet.
+
+**RGPD — désinscription email fonctionnelle:**
+- ✅ **Problème détecté**: les emails de relance (`notify-inactive-users`) avaient un lien `/unsubscribe` **non fonctionnel** → violation RGPD (l'opt-out doit être honoré). Le consentement à l'envoi était déjà respecté (`.eq('marketing_consent', true)`, opt-in explicite séparé dans l'onboarding), mais pas la désinscription.
+- ✅ **Fix**: nouvelle edge function `unsubscribe` (`supabase/functions/unsubscribe/index.ts`) — vérifie un lien signé HMAC-SHA256(uid) (clé = `SERVICE_ROLE_KEY`, pas de nouveau secret), passe `marketing_consent = false`, renvoie une page de confirmation FR/NL/EN. **Déployée `--no-verify-jwt`** (lien public depuis email). `notify-inactive-users` injecte désormais le lien signé par user. Testé: mauvaise signature rejetée, bonne signature acceptée.
+
+**Push notifications — améliorations (`services/pushService.ts`, `supabase/functions/send-push/index.ts`, `App.tsx`, `components/ParentView.tsx`, `components/AndroidParentView.tsx`):**
+- ✅ **Tap notif → navigation**: ajout d'un listener `pushNotificationActionPerformed` (manquait — seul le local existait). Tap sur push parent (mission terminée/demandée, cadeau) → onglet Demandes; push enfant (nouvelle mission, validée, refusée) → vue enfant. Câblé iOS (ParentView) **et** Android (AndroidParentView via nouvelles props `notificationAction`/`onClearNotificationAction`). Les 3 push parents incluent maintenant `childId` dans `data`.
+- ✅ **Nettoyage tokens FCM morts** (`send-push`): sur erreur `UNREGISTERED`/404, suppression du token de `device_tokens` (sinon accumulation de tokens d'apps désinstallées). Token OAuth FCM récupéré 1× par batch au lieu d'1× par envoi.
+- ✅ **Bloc APNs iOS** (`send-push`): ajout `apns.payload.aps` (son + badge) — les push iOS arrivaient sans personnalisation.
+
+**Rappel hebdo intelligent (`services/notifications.ts`):**
+- ✅ **Avant**: rappel fixe dimanche 10h pour tous → spam des parents actifs. **Après**: rappel "rolling" reprogrammé à `now + 7j` à chaque ouverture d'app. Un parent actif le repousse sans cesse (jamais spammé); un parent inactif est relancé 7j après sa dernière visite.
+
+**Widget iOS — devise dynamique (`services/widgetBridge.ts`, `services/widget.ts`, `App.tsx`, `ios/App/KoinyWidget/KoinyWidget.swift`):**
+- ✅ **Fix**: la devise était hardcodée `€` (4 endroits Swift) → un user en £/$ voyait quand même €. `currency` transmis JS → bridge → payload → modèle Swift, avec fallback `€` (rétro-compatible).
+- 📋 **Non fait (suivi)**: widget **multi-enfants** affiche toujours `children[0]`. Un vrai sélecteur nécessite un widget configurable (App Intents Swift) — gros chantier natif à part.
+
+**À tester**: tap notif → navigation (2 appareils), désinscription email, widget en devise non-€. Build app requis pour les changements non-serveur.
+
 ### Actions du 06/06/2026 — Connexion par QR code (feature/qr-login)
 
 **Contexte**: Permettre à un parent de connecter un 2ème appareil (ex: tablette de l'enfant) sans saisir ses identifiants, en scannant un QR code depuis son téléphone déjà connecté (façon WhatsApp Web). Cross-platform iOS ↔ Android. **Branche dédiée `feature/qr-login`** (partie de `feature/android-redesign`, code de prod non touché).
