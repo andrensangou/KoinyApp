@@ -6,9 +6,9 @@ import { ChildProfile } from '../types';
  * so the native AppDelegate can read it from UserDefaults.standard
  * and forward it to the widget's App Group.
  */
-export const updateWidgetData = async (children: ChildProfile[], language?: string, currency?: string) => {
+export const updateWidgetData = async (children: ChildProfile[], language?: string, currency?: string, activeChildId?: string | null) => {
   try {
-    const child = children[0];
+    const child = (activeChildId && children.find(c => c.id === activeChildId)) || children[0];
     if (!child) return;
 
     // Pick the first non-archived goal
