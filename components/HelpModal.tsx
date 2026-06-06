@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Language } from '../types';
 import { useModal } from '../hooks/useModal';
 import { isAndroid } from '../hooks/usePlatform';
@@ -8,10 +8,22 @@ interface HelpModalProps {
   isOpen: boolean;
   onClose: () => void;
   language: Language;
+  scrollToQr?: boolean; // ouvrir directement sur la section "Connecter l'appareil" (QR)
 }
 
-const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
+const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language, scrollToQr }) => {
   useModal(isOpen);
+
+  // Scroll auto vers l'étape QR (id 8) quand ouvert depuis le tip "Comment faire"
+  useEffect(() => {
+    if (isOpen && scrollToQr) {
+      const t = setTimeout(() => {
+        document.getElementById('help-step-8')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300); // attendre le rendu + l'animation d'ouverture
+      return () => clearTimeout(t);
+    }
+  }, [isOpen, scrollToQr]);
+
   if (!isOpen) return null;
 
   const tAndroid = {
@@ -673,7 +685,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
 
             <div className="space-y-6">
               {tAndroid.steps.map((step) => (
-                <section key={step.id}>
+                <section key={step.id} id={`help-step-${step.id}`}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${step.color} flex items-center justify-center text-white shrink-0`}>
                       <i className={`fa-solid ${step.icon} text-xs`}></i>
@@ -759,7 +771,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
 
           <div className="space-y-12">
             {t.steps.map((step) => (
-              <section key={step.id} className="relative pl-12">
+              <section key={step.id} id={`help-step-${step.id}`} className="relative pl-12">
                 {/* Number/Icon Divider */}
                 <div className="absolute left-0 top-0 bottom-[-2.5rem] w-px bg-slate-200 dark:bg-slate-800 last:hidden"></div>
                 <div className={`absolute left-[-16px] top-0 w-8 h-8 rounded-xl bg-gradient-to-br ${step.color} flex items-center justify-center text-white shadow-lg z-10 border-2 border-white dark:border-slate-900`}>

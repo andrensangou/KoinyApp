@@ -80,28 +80,37 @@ export const loadData = async (knownUserId?: string): Promise<{ data: GlobalStat
       const cloudData = await loadFromSupabase(user.id);
 
       if (cloudData) {
-        // Comparer les timestamps : si local plus récent → garder local et sync vers cloud
-        const localUpdatedAt = localData?.updatedAt ? new Date(localData.updatedAt).getTime() : 0;
-        const cloudUpdatedAt = cloudData?.updatedAt ? new Date(cloudData.updatedAt).getTime() : 0;
-
         const localHasChildren = (localData?.children?.length || 0) > 0;
         const cloudHasChildren = (cloudData?.children?.length || 0) > 0;
 
-        // Local wins only if it has children OR cloud has none
-        // (avoids keeping empty local cache over real cloud data)
-        if (localData && localUpdatedAt > cloudUpdatedAt && (localHasChildren || !cloudHasChildren)) {
-          console.log('⚡ [STORAGE] Cache local plus récent que le cloud — données offline prioritaires');
-          // Déclencher un sync cloud en arrière-plan
+        // 🔀 Les DEUX côtés ont des données → MERGE par ID (anti-perte multi-appareils).
+        // Avant: on prenait tout local OU tout cloud selon un seul updatedAt global →
+        // un appareil avec un timestamp plus récent écrasait les enfants/objectifs/
+        // missions créés sur l'autre appareil (QR / co-parent). Le merge fusionne les
+        // entités par ID des deux côtés, donc rien n'est perdu.
+        if (localData && localHasChildren && cloudHasChildren) {
+          console.log('🔀 [STORAGE] Merge local + cloud (multi-appareils)');
+          const merged = mergeGlobalStates(migrateData(localData), migrateData(cloudData));
+          await persistentStorage.set(STORAGE_KEY, JSON.stringify(merged));
+          // Converger : repousser le résultat fusionné vers le cloud
+          saveToSupabase(user.id, merged).catch(e =>
+            console.warn('⚠️ [STORAGE] Sync merge→cloud échouée:', e)
+          );
+          return { data: merged, ownerId: user.id };
+        }
+
+        // Local a des enfants mais le cloud est vide → garder local, repousser au cloud
+        // (évite d'écraser des données offline par un cloud vide)
+        if (localData && localHasChildren && !cloudHasChildren) {
+          console.log('⚡ [STORAGE] Cache local prioritaire (cloud vide)');
           saveToSupabase(user.id, localData).catch(e =>
             console.warn('⚠️ [STORAGE] Sync offline→cloud échouée:', e)
           );
-          return {
-            data: migrateData(localData),
-            ownerId: user.id
-          };
+          return { data: migrateData(localData), ownerId: user.id };
         }
 
-        console.log('✅ [STORAGE] Données cloud plus récentes, chargement cloud');
+        // Sinon (local vide ou inexistant) → charger le cloud
+        console.log('✅ [STORAGE] Chargement cloud');
         await persistentStorage.set(STORAGE_KEY, JSON.stringify(cloudData));
         return {
           data: migrateData(cloudData),

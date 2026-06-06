@@ -259,6 +259,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [historyView, setHistoryView] = useState<'LIST' | 'CHART'>('LIST');
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('THIS_MONTH');
   const [showHelp, setShowHelp] = useState(false);
+  const [helpScrollToQr, setHelpScrollToQr] = useState(false);
   const [showQrScanner, setShowQrScanner] = useState(false);
   const [showQrTip, setShowQrTip] = useState(() => !isQrTipDismissed());
   const [goalsFilter, setGoalsFilter] = useState<GoalsFilter>('ALL');
@@ -3519,13 +3520,13 @@ const ParentView: React.FC<ParentViewProps> = ({
         )
       }
 
-      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} language={language} />
+      <HelpModal isOpen={showHelp} scrollToQr={helpScrollToQr} onClose={() => { setShowHelp(false); setHelpScrollToQr(false); }} language={language} />
       <QrScannerModal isOpen={showQrScanner} onClose={() => setShowQrScanner(false)} language={language} />
       <QrConnectTip
         isOpen={showQrTip && mainView === 'dashboard' && (data.children?.length ?? 0) > 0}
         childName={activeChild?.name || ''}
         language={language}
-        onHowTo={() => setShowHelp(true)}
+        onHowTo={() => { setHelpScrollToQr(true); setShowHelp(true); }}
         onDismiss={() => setShowQrTip(false)}
       />
 

@@ -1435,9 +1435,11 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
     }
   }, [autoOpenPinSheet]);
   const [showHelp, setShowHelp] = useState(false);
+  const [helpScrollToQr, setHelpScrollToQr] = useState(false);
 
   useEffect(() => {
     if (autoOpenHelp) {
+      setHelpScrollToQr(true); // auto-open vient du tip QR → scroller vers la section QR
       setShowHelp(true);
       onHelpShown?.();
     }
@@ -1502,7 +1504,7 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
       icon: 'fa-book-open', color: KT.warning,
       label: language === 'fr' ? 'Guide utilisateur' : language === 'nl' ? 'Gebruikersgids' : 'User guide',
       detail: '',
-      onClick: () => setShowHelp(true),
+      onClick: () => { setHelpScrollToQr(false); setShowHelp(true); },
     },
     {
       icon: 'fa-circle-question', color: '#0891b2',
@@ -1676,7 +1678,7 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
         </div>
       )}
 
-      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} language={language} />
+      <HelpModal isOpen={showHelp} scrollToQr={helpScrollToQr} onClose={() => { setShowHelp(false); setHelpScrollToQr(false); }} language={language} />
       <QrScannerModal isOpen={showQrScanner} onClose={() => setShowQrScanner(false)} language={language} />
 
       {/* Delete confirm dialog */}
