@@ -6,7 +6,7 @@ import { ChildProfile } from '../types';
  * so the native AppDelegate can read it from UserDefaults.standard
  * and forward it to the widget's App Group.
  */
-export const updateWidgetData = async (children: ChildProfile[], language?: string) => {
+export const updateWidgetData = async (children: ChildProfile[], language?: string, currency?: string) => {
   try {
     const child = children[0];
     if (!child) return;
@@ -44,6 +44,7 @@ export const updateWidgetData = async (children: ChildProfile[], language?: stri
       goalName: primaryGoal?.name ?? null,
       goalTarget: primaryGoal?.target ?? 0,
       language: lang,
+      currency: currency || '€',
       lastMissionApprovedDate: lastApprovedEntry
         ? parseHistoryDate(lastApprovedEntry.date).toISOString()
         : null,

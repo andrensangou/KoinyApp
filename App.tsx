@@ -247,7 +247,7 @@ const App: React.FC = () => {
       // Sync widget data on initial load
       if (cloudData.children?.length > 0) {
         const lang = savedLanguage || cloudData.language || 'fr';
-        updateWidgetData(cloudData.children, lang);
+        updateWidgetData(cloudData.children, lang, cloudData.currency);
       }
 
       // Enregistrer le token push en mode parent
@@ -672,7 +672,7 @@ const App: React.FC = () => {
       try {
         if (!loading && view !== 'AUTH' && view !== 'LANDING' && !criticalError && ownerId !== 'demo') {
           const changes = await saveData(data, ownerId, immediateSave);
-          updateWidgetData(data.children, data.language);
+          updateWidgetData(data.children, data.language, data.currency);
 
           // Si des IDs ont changé (ex: création enfant ou goal), on met à jour le state local
           // pour éviter de recréer les objets en boucle
@@ -981,7 +981,7 @@ const App: React.FC = () => {
   const setLanguage = async (lang: Language) => {
     // Sync widget with new language BEFORE updating state
     if (data.children?.length > 0) {
-      await updateWidgetData(data.children, lang);
+      await updateWidgetData(data.children, lang, data.currency);
     }
     // THEN update state
     setData(prev => ({

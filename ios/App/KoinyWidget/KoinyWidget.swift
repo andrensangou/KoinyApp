@@ -18,6 +18,7 @@ struct KoinyWidgetData: Codable {
     var goalName: String? = nil
     var goalTarget: Double = 0
     var language: String = "fr"
+    var currency: String = "€"
     var lastMissionApprovedDate: String? = nil
     var pendingMissionsCount: Int = 0
     var todayEarned: Double = 0
@@ -51,7 +52,7 @@ struct KoinyWidgetData: Codable {
             return ("🔔", big, small, false)
         }
         if todayEarned > 0 {
-            let big = String(format: "+%.2f€", todayEarned)
+            let big = String(format: "+%.2f", todayEarned) + currency
             let small: String
             switch language {
             case "nl": small = "verdiend vandaag 🎉"
@@ -93,7 +94,7 @@ struct KoinyWidgetData: Codable {
         }
     }
     var remainingLabel: String {
-        let value = String(format: "%.2f€", remaining)
+        let value = String(format: "%.2f", remaining) + currency
         switch language {
         case "nl": return "\(value) resterend"
         case "en": return "\(value) remaining"
@@ -209,7 +210,7 @@ struct KoinySmallView: View {
                 .foregroundStyle(.white.opacity(0.75))
                 .lineLimit(1)
 
-            Text(String(format: "%.2f€", data.balance))
+            Text(String(format: "%.2f", data.balance) + data.currency)
                 .font(.system(size: 32, weight: .black, design: .rounded))
                 .foregroundStyle(.white)
                 .minimumScaleFactor(0.6)
@@ -285,7 +286,7 @@ struct KoinyMediumView: View {
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(.white.opacity(0.75))
                     .lineLimit(1)
-                Text(String(format: "%.2f€", data.balance))
+                Text(String(format: "%.2f", data.balance) + data.currency)
                     .font(.system(size: 36, weight: .black, design: .rounded))
                     .foregroundStyle(.white)
                     .minimumScaleFactor(0.6)
