@@ -618,38 +618,57 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                     .eq('child_id', savedChildId);
 
                 const dbGoalIds = new Set((existingDbGoals || []).map((g: any) => g.id));
+                // Anti-doublon par CONTENU (titre:montant) → comme pour les enfants.
+                // Évite la rafale de doublons quand l'id local n'est pas (encore) en DB.
+                const dbGoalBySignature = new Map<string, string>();
+                (existingDbGoals || []).forEach((g: any) => {
+                    dbGoalBySignature.set(`${g.title}:${g.target_amount}`, g.id);
+                });
 
                 const activeGoals = child.goals.filter((g: any) => g.target > 0);
-                const goalsToInsert = activeGoals.filter((g: any) => !dbGoalIds.has(g.id));
-                const goalsToUpdate = activeGoals.filter((g: any) => dbGoalIds.has(g.id));
+                const rowsToInsert: any[] = [];
 
-                // Insert les goals qui n'existent pas encore en DB
-                if (goalsToInsert.length > 0) {
-                    const rows = goalsToInsert.map((g: any) => ({
-                        id: isUUID(g.id) ? g.id : crypto.randomUUID(),
-                        child_id: savedChildId,
-                        title: g.name || 'Objectif',
+                for (const g of activeGoals) {
+                    const title = g.name || 'Objectif';
+                    const signature = `${title}:${g.target}`;
+                    const updatePayload = {
+                        title,
                         target_amount: g.target,
                         current_amount: g.current || 0,
-                        image_url: g.icon || null,
                         status: g.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE',
                         is_achieved: g.status === 'COMPLETED'
-                    }));
-                    const { error } = await supabase.from('goals').insert(rows);
-                    if (error) console.error('❌ Goals insert error:', error.message);
-                }
+                    };
 
-                // Update les goals qui existent déjà en DB
-                for (const g of goalsToUpdate) {
-                    await supabase.from('goals')
-                        .update({
-                            title: g.name,
+                    if (dbGoalIds.has(g.id)) {
+                        // Existe déjà par id → update
+                        await supabase.from('goals').update(updatePayload).eq('id', g.id);
+                    } else if (dbGoalBySignature.has(signature)) {
+                        // Existe par contenu mais id différent → réutiliser (pas de doublon)
+                        const existingId = dbGoalBySignature.get(signature)!;
+                        idMapping[g.id] = existingId; // converger l'id local
+                        await supabase.from('goals').update(updatePayload).eq('id', existingId);
+                    } else {
+                        // Vraiment nouveau → insert
+                        const newId = isUUID(g.id) ? g.id : crypto.randomUUID();
+                        if (newId !== g.id) idMapping[g.id] = newId;
+                        rowsToInsert.push({
+                            id: newId,
+                            child_id: savedChildId,
+                            title,
                             target_amount: g.target,
                             current_amount: g.current || 0,
+                            image_url: g.icon || null,
                             status: g.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE',
                             is_achieved: g.status === 'COMPLETED'
-                        })
-                        .eq('id', g.id);
+                        });
+                        // Marquer pour éviter un double insert dans la même passe
+                        dbGoalBySignature.set(signature, newId);
+                    }
+                }
+
+                if (rowsToInsert.length > 0) {
+                    const { error } = await supabase.from('goals').insert(rowsToInsert);
+                    if (error) console.error('❌ Goals insert error:', error.message);
                 }
             }
 
