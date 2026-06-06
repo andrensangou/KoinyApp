@@ -14,6 +14,7 @@
 
 import { getSupabase } from './supabase';
 import { logger } from './logger';
+import { monitoring } from './monitoring';
 
 export type QrPollStatus = 'pending' | 'claimed' | 'consumed' | 'expired' | 'not_found';
 
@@ -34,6 +35,7 @@ export async function createQrSession(): Promise<QrSession> {
     logger.error('[qrAuth] create échoué', error);
     throw new Error('qr_create_failed');
   }
+  monitoring.track('BUSINESS', 'QR_LOGIN_STARTED'); // tablette: QR généré et affiché
   return { code: data.code, expiresAt: data.expiresAt };
 }
 
@@ -60,6 +62,7 @@ export async function completeQrLogin(email: string, token: string): Promise<voi
     logger.error('[qrAuth] verifyOtp échoué', error);
     throw new Error('qr_verify_failed');
   }
+  monitoring.track('BUSINESS', 'QR_LOGIN_SUCCESS'); // tablette: session ouverte sur le compte parent
 }
 
 /**
@@ -137,6 +140,7 @@ export async function approveQrSession(code: string): Promise<void> {
     logger.error('[qrAuth] approve échoué', reason);
     throw new Error(reason);
   }
+  monitoring.track('BUSINESS', 'QR_DEVICE_APPROVED'); // parent: a scanné et approuvé un appareil
 }
 
 /**

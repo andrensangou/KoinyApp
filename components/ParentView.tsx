@@ -11,6 +11,7 @@ import { saveParentPinLocally, loadParentPinLocally, deleteParentPinLocally } fr
 import { verifyPin } from '../services/security';
 import HelpModal from './HelpModal';
 import QrScannerModal from './QrScannerModal';
+import QrConnectTip, { isQrTipDismissed } from './QrConnectTip';
 import ConfirmDialog from './ConfirmDialog';
 import { SubscriptionModal } from './SubscriptionModal';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
@@ -259,6 +260,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('THIS_MONTH');
   const [showHelp, setShowHelp] = useState(false);
   const [showQrScanner, setShowQrScanner] = useState(false);
+  const [showQrTip, setShowQrTip] = useState(() => !isQrTipDismissed());
   const [goalsFilter, setGoalsFilter] = useState<GoalsFilter>('ALL');
 
   // Edit Mission Modal state
@@ -3519,6 +3521,13 @@ const ParentView: React.FC<ParentViewProps> = ({
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} language={language} />
       <QrScannerModal isOpen={showQrScanner} onClose={() => setShowQrScanner(false)} language={language} />
+      <QrConnectTip
+        isOpen={showQrTip && mainView === 'dashboard' && (data.children?.length ?? 0) > 0}
+        childName={activeChild?.name || ''}
+        language={language}
+        onHowTo={() => setShowHelp(true)}
+        onDismiss={() => setShowQrTip(false)}
+      />
 
       {/* Subscription Modal */}
       <SubscriptionModal

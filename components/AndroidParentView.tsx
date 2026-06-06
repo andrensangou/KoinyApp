@@ -7,6 +7,7 @@ import { getSupabase } from '../services/supabase';
 import HelpModal from './HelpModal';
 import { SubscriptionModal } from './SubscriptionModal';
 import QrScannerModal from './QrScannerModal';
+import QrConnectTip, { isQrTipDismissed } from './QrConnectTip';
 
 // ── Design tokens (mirrors koiny-data.jsx)
 const KT = {
@@ -1406,7 +1407,7 @@ function PinSetupSheet({ isOpen, onClose, onSave, onRemove, hasExisting, languag
 }
 
 // ══ PROFILE SCREEN ════════════════════════════════════════════
-function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremium, onSetLanguage, onSetMaxBalance, onAddChild, onEditChild, onDeleteChild, onSetPin, onToggleNotifications, showToast, autoOpenPinSheet, onPinSetupShown }: {
+function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremium, onSetLanguage, onSetMaxBalance, onAddChild, onEditChild, onDeleteChild, onSetPin, onToggleNotifications, showToast, autoOpenPinSheet, onPinSetupShown, autoOpenHelp, onHelpShown }: {
   data: GlobalState; language: Language; onSignOut: () => Promise<void>;
   onDeleteAccount?: () => Promise<void>;
   onOpenPremium?: () => void;
@@ -1420,6 +1421,8 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
   showToast: (msg: string, type?: 'success' | 'danger' | 'info') => void;
   autoOpenPinSheet?: boolean;
   onPinSetupShown?: () => void;
+  autoOpenHelp?: boolean;
+  onHelpShown?: () => void;
 }) {
   const [showAddChild, setShowAddChild] = useState(false);
   const [editingChild, setEditingChild] = useState<ChildProfile | null>(null);
@@ -1432,6 +1435,13 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
     }
   }, [autoOpenPinSheet]);
   const [showHelp, setShowHelp] = useState(false);
+
+  useEffect(() => {
+    if (autoOpenHelp) {
+      setShowHelp(true);
+      onHelpShown?.();
+    }
+  }, [autoOpenHelp]);
   const [showQrScanner, setShowQrScanner] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showWalletLimit, setShowWalletLimit] = useState(false);
@@ -1933,6 +1943,8 @@ export default function AndroidParentView({
   const [tab, setTab] = useState<TabId>('dashboard');
   const [childId, setChildId] = useState<string>(data.children[0]?.id ?? '');
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showQrTip, setShowQrTip] = useState(() => !isQrTipDismissed());
+  const [pendingOpenHelp, setPendingOpenHelp] = useState(false);
   const [showAddChildEmpty, setShowAddChildEmpty] = useState(false);
   const [showAddMission, setShowAddMission] = useState(false);
   const [editingMission, setEditingMission] = useState<Mission | null>(null);
@@ -2195,9 +2207,19 @@ export default function AndroidParentView({
             }}
             onToggleNotifications={onToggleNotifications}
             onOpenPremium={() => setShowSubscriptionModal(true)} onSetMaxBalance={onSetMaxBalance} showToast={showToast}
-            autoOpenPinSheet={triggerPinSetup} onPinSetupShown={() => setTriggerPinSetup(false)} />
+            autoOpenPinSheet={triggerPinSetup} onPinSetupShown={() => setTriggerPinSetup(false)}
+            autoOpenHelp={pendingOpenHelp} onHelpShown={() => setPendingOpenHelp(false)} />
         )}
       </div>
+
+      {/* Astuce connexion QR (post-création enfant) */}
+      <QrConnectTip
+        isOpen={showQrTip && tab === 'dashboard' && data.children.length > 0}
+        childName={data.children.find(c => c.id === childId)?.name || data.children[0]?.name || ''}
+        language={language}
+        onHowTo={() => { setShowQrTip(false); setTab('profile'); setPendingOpenHelp(true); }}
+        onDismiss={() => setShowQrTip(false)}
+      />
 
       {/* Bottom nav */}
       <BottomNav active={tab} onChange={setTab} pendingCount={totalPending} language={language} />

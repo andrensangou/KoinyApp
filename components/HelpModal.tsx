@@ -107,6 +107,18 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
             'Si une récompense dépasse ce plafond, le paiement est bloqué.',
           ]
         },
+        {
+          id: 8,
+          icon: 'fa-qrcode',
+          color: 'from-violet-400 to-fuchsia-600',
+          title: 'Connecter l\'appareil de l\'enfant',
+          text: 'Installez Koiny sur la tablette ou le téléphone de l\'enfant, sans ressaisir vos identifiants :',
+          items: [
+            'Sur l\'appareil de l\'enfant, installez Koiny et tapez "Connexion par QR code" sur l\'écran de connexion.',
+            'Sur votre téléphone : Profil > Connecter un appareil, puis scannez le QR affiché.',
+            'L\'appareil de l\'enfant s\'ouvre directement sur votre compte famille.',
+          ]
+        },
       ],
       close: 'C\'est parti !'
     },
@@ -188,6 +200,18 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
             'If a reward exceeds this limit, payment is blocked.',
           ]
         },
+        {
+          id: 8,
+          icon: 'fa-qrcode',
+          color: 'from-violet-400 to-fuchsia-600',
+          title: "Connect your child's device",
+          text: "Install Koiny on your child's tablet or phone without re-entering your credentials:",
+          items: [
+            'On the child\'s device, install Koiny and tap "Sign in with QR code" on the login screen.',
+            'On your phone: Profile > Connect a device, then scan the QR shown.',
+            'The child\'s device opens straight into your family account.',
+          ]
+        },
       ],
       close: "Let's go!"
     },
@@ -267,6 +291,18 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
             'Stel het maximale saldo in voor het kind (0–1.000€).',
             '0 = onbeperkt. Handig om verantwoordelijkheid bij te brengen.',
             'Als een beloning dit plafond overschrijdt, wordt de betaling geblokkeerd.',
+          ]
+        },
+        {
+          id: 8,
+          icon: 'fa-qrcode',
+          color: 'from-violet-400 to-fuchsia-600',
+          title: 'Apparaat van het kind verbinden',
+          text: 'Installeer Koiny op de tablet of telefoon van het kind, zonder je gegevens opnieuw in te voeren:',
+          items: [
+            'Installeer Koiny op het toestel van het kind en tik op "Inloggen met QR-code" op het inlogscherm.',
+            'Op jouw telefoon: Profiel > Apparaat verbinden, scan daarna de getoonde QR-code.',
+            'Het toestel van het kind opent meteen in jouw gezinsaccount.',
           ]
         },
       ],
@@ -365,6 +401,18 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
             'Valeur possible de 0 à 10 000€ selon votre situation.',
             'Si une récompense dépasse ce plafond, le paiement est bloqué.'
           ]
+        },
+        {
+          id: 8,
+          icon: 'fa-qrcode',
+          color: 'from-violet-400 to-fuchsia-600',
+          title: 'Connecter l\'appareil de l\'enfant',
+          text: 'Installez Koiny sur la tablette ou le téléphone de l\'enfant, sans ressaisir vos identifiants :',
+          items: [
+            'Sur l\'appareil de l\'enfant, installez Koiny et tapez "Connexion par QR code" sur l\'écran de connexion.',
+            'Sur votre téléphone : Profil > Connecter un appareil, puis scannez le QR affiché.',
+            'L\'appareil de l\'enfant s\'ouvre directement sur votre compte famille.'
+          ]
         }
       ],
       close: 'C\'est parti !'
@@ -459,6 +507,18 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
             'Set any amount from 0 to 10,000 in your currency.',
             'If a reward exceeds this limit, payment is blocked.'
           ]
+        },
+        {
+          id: 8,
+          icon: 'fa-qrcode',
+          color: 'from-violet-400 to-fuchsia-600',
+          title: "Connect your child's device",
+          text: "Install Koiny on your child's tablet or phone without re-entering your credentials:",
+          items: [
+            'On the child\'s device, install Koiny and tap "Sign in with QR code" on the login screen.',
+            'On your phone: Profile > Connect a device, then scan the QR shown.',
+            'The child\'s device opens straight into your family account.'
+          ]
         }
       ],
       close: "Let's go!"
@@ -552,6 +612,18 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, language }) => {
             'Het plafond is aanpasbaar via Profiel > Instellingen > Portemonnee-limiet.',
             'Stel een bedrag in van €0 tot €10.000.',
             'Als een beloning dit plafond overschrijdt, wordt de betaling geblokkeerd.'
+          ]
+        },
+        {
+          id: 8,
+          icon: 'fa-qrcode',
+          color: 'from-violet-400 to-fuchsia-600',
+          title: 'Apparaat van het kind verbinden',
+          text: 'Installeer Koiny op de tablet of telefoon van het kind, zonder je gegevens opnieuw in te voeren:',
+          items: [
+            'Installeer Koiny op het toestel van het kind en tik op "Inloggen met QR-code" op het inlogscherm.',
+            'Op jouw telefoon: Profiel > Apparaat verbinden, scan daarna de getoonde QR-code.',
+            'Het toestel van het kind opent meteen in jouw gezinsaccount.'
           ]
         }
       ],

@@ -659,6 +659,12 @@ const App: React.FC = () => {
   const isDirectSupabaseOperation = React.useRef(false);
   const isSavingRef = React.useRef(false);
   const isSyncingFromOnline = React.useRef(false);
+  const isForegroundReloadingRef = React.useRef(false);
+
+  // Ref toujours à jour vers les données courantes (évite les closures périmées
+  // dans les listeners qui doivent comparer les timestamps)
+  const dataRef = React.useRef(data);
+  React.useEffect(() => { dataRef.current = data; }, [data]);
 
   useEffect(() => {
     const runSave = async () => {
@@ -718,6 +724,61 @@ const App: React.FC = () => {
     window.addEventListener('force-cloud-sync', handleForceSync);
     return () => window.removeEventListener('force-cloud-sync', handleForceSync);
   }, []);
+
+  // 🔄 Foreground reload — re-télécharge les données cloud quand l'app revient au
+  // premier plan (retour à l'app, ou tap sur une push). Permet à un 2ème appareil
+  // (QR / co-parent) de voir les changements de l'autre. loadData compare déjà les
+  // timestamps : on n'applique que si le cloud est STRICTEMENT plus récent que ce
+  // qu'on a en mémoire — jamais d'écrasement d'une modif locale non sauvegardée.
+  useEffect(() => {
+    const reloadFromCloud = async () => {
+      // Ne rien faire si on n'est pas dans un état synchronisable
+      if (loading || view === 'AUTH' || view === 'LANDING') return;
+      if (!ownerId || ownerId === 'demo' || ownerId === 'local-owner') return;
+      // Pas de rechargement concurrent, ni pendant une écriture/init en cours
+      if (isForegroundReloadingRef.current) return;
+      if (isSavingRef.current || isDirectSupabaseOperation.current || isInitializing.current) return;
+
+      isForegroundReloadingRef.current = true;
+      try {
+        const result = await loadData(ownerId);
+        const incoming = result.data;
+        const currentTs = dataRef.current?.updatedAt ? new Date(dataRef.current.updatedAt).getTime() : 0;
+        const incomingTs = incoming?.updatedAt ? new Date(incoming.updatedAt).getTime() : 0;
+
+        // Appliquer seulement si le cloud est plus récent ET qu'aucune écriture
+        // locale n'a démarré pendant le téléchargement (anti-écrasement)
+        if (incoming && incomingTs > currentTs && !isSavingRef.current && !isDirectSupabaseOperation.current) {
+          console.log('🔄 [APP] Foreground reload: cloud plus récent, mise à jour');
+          isReloadingFromRealtime.current = true; // bloque le save-auto déclenché par ce setData
+          setData(prev => ({ ...incoming, language: prev.language, isPremium: prev.isPremium }));
+          setTimeout(() => { isReloadingFromRealtime.current = false; }, 200);
+        } else {
+          console.log('🔄 [APP] Foreground reload: rien de nouveau');
+        }
+      } catch (e) {
+        console.warn('⚠️ [APP] Foreground reload échoué:', e);
+      } finally {
+        isForegroundReloadingRef.current = false;
+      }
+    };
+
+    const onVis = () => { if (document.visibilityState === 'visible') reloadFromCloud(); };
+    document.addEventListener('visibilitychange', onVis);
+
+    // Sur natif, appStateChange est plus fiable que visibilitychange au resume
+    let nativeHandle: any;
+    if (Capacitor.isNativePlatform()) {
+      nativeHandle = CapApp.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) reloadFromCloud();
+      });
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      if (nativeHandle) nativeHandle.then((h: any) => h.remove());
+    };
+  }, [ownerId, loading, view]);
 
   const triggerOverflow = useCallback(() => {
     setIsOverflowing(true);
