@@ -150,7 +150,7 @@ const migrateData = (data: any): GlobalState => {
     isPremium: isPremium,
     children: children.map((c: any) => ({
       ...c,
-      balance: typeof c.balance === 'number' ? c.balance : 0,
+      balance: typeof c.balance === 'number' ? Math.max(0, c.balance) : 0,
       goals: (() => {
         const goals = Array.isArray(c.goals) ? c.goals : [];
         // Dédupliquer par nom+montant (signature), préférer les UUIDs
@@ -215,8 +215,8 @@ const mergeChildProfile = (local: any, cloud: any): any => {
   const mergedHistory = Array.from(historyMap.values())
     .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Calculer le solde à partir de l'historique
-  const calculatedBalance = mergedHistory.reduce((sum: number, entry: any) => sum + entry.amount, 0);
+  // Calculer le solde à partir de l'historique — plancher à 0 (tirelire enfant)
+  const calculatedBalance = Math.max(0, mergedHistory.reduce((sum: number, entry: any) => sum + entry.amount, 0));
 
   // Merger les missions et objectifs
   const missionsMap = new Map();
