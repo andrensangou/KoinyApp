@@ -10,6 +10,7 @@ import { getSupabase } from '../services/supabase';
 import { saveParentPinLocally, loadParentPinLocally, deleteParentPinLocally } from '../services/pinStorage';
 import { verifyPin } from '../services/security';
 import HelpModal from './HelpModal';
+import QrScannerModal from './QrScannerModal';
 import ConfirmDialog from './ConfirmDialog';
 import { SubscriptionModal } from './SubscriptionModal';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
@@ -257,6 +258,7 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [historyView, setHistoryView] = useState<'LIST' | 'CHART'>('LIST');
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('THIS_MONTH');
   const [showHelp, setShowHelp] = useState(false);
+  const [showQrScanner, setShowQrScanner] = useState(false);
   const [goalsFilter, setGoalsFilter] = useState<GoalsFilter>('ALL');
 
   // Edit Mission Modal state
@@ -2739,6 +2741,14 @@ const ParentView: React.FC<ParentViewProps> = ({
                           <i className="fa-solid fa-chevron-right text-[11px] text-slate-300 shrink-0"></i>
                         </button>
                         {/* Help */}
+                        {/* Connect a device (QR) */}
+                        <button type="button" onClick={() => setShowQrScanner(true)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors" style={{ borderBottom: '1px solid #f8fafc' }}>
+                          <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
+                            <i className="fa-solid fa-qrcode text-[13px]" style={{ color: '#4f46e5' }}></i>
+                          </div>
+                          <div className="flex-1 text-[14px] font-semibold text-[#1e293b] dark:text-white">{language === 'fr' ? 'Connecter un appareil' : language === 'nl' ? 'Apparaat verbinden' : 'Connect a device'}</div>
+                          <i className="fa-solid fa-chevron-right text-[11px] text-slate-300 shrink-0"></i>
+                        </button>
                         <button type="button" onClick={() => setShowHelp(true)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors" style={{ borderBottom: '1px solid #f8fafc' }}>
                           <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
                             <i className="fa-solid fa-book-open text-[13px]" style={{ color: '#4f46e5' }}></i>
@@ -3507,6 +3517,7 @@ const ParentView: React.FC<ParentViewProps> = ({
       }
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} language={language} />
+      <QrScannerModal isOpen={showQrScanner} onClose={() => setShowQrScanner(false)} language={language} />
 
       {/* Subscription Modal */}
       <SubscriptionModal

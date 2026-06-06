@@ -244,6 +244,40 @@ onClearHistory: (childId: string) => void;
 - ✅ **versionCode Android 4** (`android/app/build.gradle`): bumped 3 → 4. AAB release buildé et prêt à uploader en Play Console.
 - ✅ **Favicon landing page** (`public/landing-preview/index.html`): `<link rel="icon" type="image/png" href="favicon.png" />` ajouté dans `<head>`. Fichier `favicon.png` était déjà présent sur Hostinger.
 
+### Actions du 06/06/2026 — Connexion par QR code (feature/qr-login)
+
+**Contexte**: Permettre à un parent de connecter un 2ème appareil (ex: tablette de l'enfant) sans saisir ses identifiants, en scannant un QR code depuis son téléphone déjà connecté (façon WhatsApp Web). Cross-platform iOS ↔ Android. **Branche dédiée `feature/qr-login`** (partie de `feature/android-redesign`, code de prod non touché).
+
+**Architecture (flux):**
+1. Tablette non connectée → écran de connexion → bouton "Connexion par QR code" → génère un `code` secret, affiche le QR (`koiny-qr:<code>`)
+2. Téléphone parent (connecté) → Profil → "Connecter un appareil" → scanne le QR → approuve
+3. Edge function génère un OTP magic-link pour le compte du parent, le stocke dans la session
+4. Tablette poll → récupère l'OTP → `verifyOtp()` → vraie session Supabase sur le compte du parent
+
+**Fichiers créés:**
+- `supabase/migrations/20260606_qr_login_sessions.sql`: table `qr_login_sessions` (code, status `pending|claimed|consumed`, auth_email, auth_token, approved_by, expires_at 5min). RLS verrouillée (`USING false`, service role uniquement). Cron cleanup horaire (pg_cron). **Appliquée en prod le 06/06/2026** via SQL Editor (job cron #2).
+- `supabase/functions/qr-auth/index.ts`: edge function Deno, 3 actions — `create` (tablette anon), `approve` (parent authentifié, vérifie le JWT, rejette la clé anon), `poll` (tablette anon, renvoie l'OTP une fois `claimed`, marque `consumed` = usage unique). **Déployée le 06/06/2026.** Secrets: `SERVICE_ROLE_KEY` (existant), `SUPABASE_URL`/`SUPABASE_ANON_KEY` (auto-injectés).
+- `services/qrAuth.ts`: client. `createQrSession()`, `pollQrSession()`, `completeQrLogin()` (verifyOtp type `'email'`), `startQrLoginFlow()` (flux tablette avec polling 2s + annulation), `approveQrSession()` (parent), `parseQrPayload()` (préfixe `koiny-qr:`).
+- `components/QrLoginModal.tsx`: côté TABLETTE. Génère le QR (`qrcode`), poll, états loading/waiting/success/expired/error, bouton régénérer.
+- `components/QrScannerModal.tsx`: côté PARENT. Caméra via `getUserMedia` + décodage `jsQR` (100% web, cross-platform), confirmation avant approbation, états scanning/detected/approving/success/error/no_camera.
+
+**Fichiers modifiés:**
+- `components/AuthView.tsx`: bouton "Connexion par QR code" (mode LOGIN) + rendu `QrLoginModal`.
+- `components/ParentView.tsx` (iOS) + `components/AndroidParentView.tsx`: row "Connecter un appareil" dans les réglages profil + rendu `QrScannerModal`.
+- `ios/App/App/Info.plist`: `NSCameraUsageDescription` ajouté (requis pour la caméra).
+- `android/app/src/main/AndroidManifest.xml` (gitignore, local): permission `CAMERA` + `uses-feature camera` (required=false).
+- `package.json`: + `qrcode`, `@types/qrcode`, `jsqr`. Install avec `--legacy-peer-deps` (conflit préexistant capacitor-google-auth/capacitor 8).
+
+**Sécurité:**
+- Table verrouillée, aucun accès client direct — tout passe par l'edge function (le jeton OTP transite brièvement, jamais exposé via RLS).
+- `approve` exige un vrai token utilisateur (la clé anon est rejetée → testé: `not_authenticated`).
+- OTP usage unique (GoTrue) + session 5 min + `consumed` après lecture.
+- QR préfixé `koiny-qr:` pour ne pas approuver un QR quelconque.
+
+**Tests backend (curl) OK le 06/06:** create→code, poll→pending, approve avec clé anon→rejeté, poll code inexistant→not_found.
+
+**Reste à faire:** test du flux complet sur 2 appareils physiques (caméra ne marche pas sur émulateur), build, puis merge dans la branche de prod si OK. Tip contextuel post-création d'enfant à ajouter (mentionner la connexion QR) — pas dans l'onboarding principal.
+
 ### Actions du 30/05/2026 — Fix création enfant Android + fix texte Google Play
 
 **Contexte**: Bug bloquant signalé par testeur Android — impossible de créer un enfant. Fix du texte "App Store" affiché sur Android dans SubscriptionModal.

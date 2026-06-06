@@ -7,6 +7,7 @@ import { getSupabase, signInWithGoogle, signInWithApple } from '../services/supa
 import { SUPABASE_URL } from '../config';
 import { monitoring } from '../services/monitoring';
 import HelpModal from './HelpModal';
+import QrLoginModal from './QrLoginModal';
 import { isAndroid } from '../hooks/usePlatform';
 
 
@@ -29,6 +30,7 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
   const [error, setError] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showQrLogin, setShowQrLogin] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -355,6 +357,18 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
                     {t.auth.googleLogin}
                   </button>
 
+                  {/* Connexion par QR code (depuis un autre appareil déjà connecté) */}
+                  <button
+                    type="button"
+                    onClick={() => setShowQrLogin(true)}
+                    disabled={loading}
+                    aria-label={language === 'fr' ? 'Connexion par QR code' : language === 'nl' ? 'Inloggen met QR-code' : 'Sign in with QR code'}
+                    className="w-full bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 font-bold py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all flex items-center justify-center gap-3 shadow-sm"
+                  >
+                    <i className="fa-solid fa-qrcode text-lg text-indigo-600" />
+                    {language === 'fr' ? 'Connexion par QR code' : language === 'nl' ? 'Inloggen met QR-code' : 'Sign in with QR code'}
+                  </button>
+
                   <div className="flex items-center gap-3 my-1">
                     <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
                     <span className="text-xs font-bold text-slate-500 uppercase">{t.auth.or}</span>
@@ -451,6 +465,12 @@ const AuthView: React.FC<AuthViewProps> = ({ language, onSetLanguage, onLoginSuc
       </div>
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} language={language} />
+      <QrLoginModal
+        isOpen={showQrLogin}
+        onClose={() => setShowQrLogin(false)}
+        onSuccess={() => { setShowQrLogin(false); onLoginSuccess(); }}
+        language={language}
+      />
     </div>
   );
 };

@@ -30,7 +30,10 @@
     "@sentry/react": "10.40.0",
     "@supabase/supabase-js": "^2.95.3",
     "@tanstack/react-virtual": "^3.13.19",
+    "@types/qrcode": "^1.5.6",
     "canvas-confetti": "^1.9.3",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.12.7"

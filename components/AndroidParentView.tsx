@@ -6,6 +6,7 @@ import { loadParentPinLocally, deleteParentPinLocally } from '../services/pinSto
 import { getSupabase } from '../services/supabase';
 import HelpModal from './HelpModal';
 import { SubscriptionModal } from './SubscriptionModal';
+import QrScannerModal from './QrScannerModal';
 
 // ── Design tokens (mirrors koiny-data.jsx)
 const KT = {
@@ -1429,6 +1430,7 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
     }
   }, [autoOpenPinSheet]);
   const [showHelp, setShowHelp] = useState(false);
+  const [showQrScanner, setShowQrScanner] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showWalletLimit, setShowWalletLimit] = useState(false);
   const [walletLimitInput, setWalletLimitInput] = useState('');
@@ -1477,6 +1479,12 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
       label: language === 'fr' ? 'Limite du portefeuille' : language === 'nl' ? 'Portemonnee-limiet' : 'Wallet limit',
       detail: data.maxBalance === 0 ? (language === 'fr' ? 'Illimitée' : language === 'nl' ? 'Onbeperkt' : 'Unlimited') : `${data.maxBalance || 100}${data.currency || '€'}`,
       onClick: () => { setWalletLimitInput(String(data.maxBalance || 100)); setShowWalletLimit(true); },
+    },
+    {
+      icon: 'fa-qrcode', color: KT.primary,
+      label: language === 'fr' ? 'Connecter un appareil' : language === 'nl' ? 'Apparaat verbinden' : 'Connect a device',
+      detail: '',
+      onClick: () => setShowQrScanner(true),
     },
     {
       icon: 'fa-book-open', color: KT.warning,
@@ -1657,6 +1665,7 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
       )}
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} language={language} />
+      <QrScannerModal isOpen={showQrScanner} onClose={() => setShowQrScanner(false)} language={language} />
 
       {/* Delete confirm dialog */}
       {showDeleteConfirm && (

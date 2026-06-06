@@ -79,7 +79,9 @@
 	</array>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Koiny utilise Face ID pour vérifier votre identité et réinitialiser votre code PIN de manière sécurisée.</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
+	<key>NSCameraUsageDescription</key>
+		<string>Koiny utilise la caméra pour scanner un QR code et connecter un autre appareil à votre compte.</string>
+		<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
