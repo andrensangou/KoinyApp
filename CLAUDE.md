@@ -266,6 +266,32 @@ onClearHistory: (childId: string) => void;
 
 **À tester**: tap notif → navigation (2 appareils), désinscription email, widget en devise non-€. Build app requis pour les changements non-serveur.
 
+### Actions du 06/06/2026 (session 3) — Foreground reload + découvrabilité QR (feature/notifications-rgpd)
+
+**Contexte**: Le test du QR login sur 2 appareils a révélé que les données ne se synchronisaient pas (modif sur appareil A invisible sur appareil B). Diagnostic + fix de sync, puis amélioration de la découvrabilité de la connexion QR. Branche `feature/notifications-rgpd` (qui contient déjà tout le QR + les notifs — tout regroupé pour un seul build).
+
+**Diagnostic sync:**
+- `services/realtime.ts` existe mais **n'est importé nulle part** → aucune sync temps-réel. (Son filtre `family_id` est de toute façon NULL sur presque toutes les lignes — `user_id` est le vrai lien.)
+- `loadData()` (lecture cloud) n'était appelé qu'à 2 endroits : `initialize()` (cold start) et `handleLoginSuccess` (login). **Aucun rechargement au retour au premier plan** → un 2ème appareil ne voyait jamais les changements de l'autre tant qu'il n'était pas killé/relancé.
+
+**Fix — Foreground reload (`App.tsx`):**
+- ✅ Nouvel `useEffect` qui rappelle `loadData(ownerId)` sur `visibilitychange` (visible) ET `appStateChange` natif Capacitor (`isActive`). Cross-platform iOS/Android.
+- Garde-fous : ne s'applique que si `ownerId` réel (pas demo/local-owner), pas pendant `loading`/AUTH/LANDING, pas de rechargement concurrent (`isForegroundReloadingRef`), pas pendant une écriture (`isSavingRef`/`isDirectSupabaseOperation`/`isInitializing`).
+- N'applique le cloud que s'il est **strictement plus récent** que la mémoire (`dataRef` à jour pour comparer `updatedAt` sans closure périmée). `isReloadingFromRealtime.current = true` pendant le `setData` pour bloquer le save-auto déclenché. **Jamais d'écrasement d'une modif locale non sauvegardée.**
+- Réutilise la comparaison `updatedAt` déjà testée en prod dans `loadData` → faible risque. (Le realtime "live" reste un chantier futur — risque de boucle d'écrasement, migration `family_id`→`user_id`, config Realtime + RLS Supabase.)
+- **Combo avec les push** : la push ramène l'app au premier plan → déclenche le reload. Couvre ~99% des cas réels (le seul non couvert : 2 écrans ouverts et fixés simultanément).
+
+**Découvrabilité QR (combo 1+3):**
+- ✅ **`components/QrConnectTip.tsx` (créé)**: astuce contextuelle sur le dashboard parent dès qu'il y a ≥1 enfant (donc juste après la 1ère création). Carte fixe en bas, dismiss permanent (`localStorage 'koiny_qr_tip_dismissed'`). Texte FR/NL/EN avec le prénom de l'enfant. Bouton "Comment faire" → ouvre le guide ; "Plus tard"/× → ferme.
+- ✅ **Câblage iOS** (`components/ParentView.tsx`): state `showQrTip`, rendu conditionnel `mainView === 'dashboard' && children > 0`, "Comment faire" → `setShowHelp(true)`.
+- ✅ **Câblage Android** (`components/AndroidParentView.tsx`): le `showHelp` étant interne à `ProfileScreen`, ajout du pattern `autoOpenHelp`/`onHelpShown` (comme `autoOpenPinSheet`). Tip "Comment faire" → `setTab('profile')` + `setPendingOpenHelp(true)` → ProfileScreen ouvre le guide.
+- ✅ **Guide (`components/HelpModal.tsx`)**: nouvelle étape 8 "Connecter l'appareil de l'enfant" (icône `fa-qrcode`) ajoutée dans les **6 variantes** (FR/NL/EN × objets `t` iOS et `tAndroid`), avec les 3 étapes concrètes (installer + "Connexion par QR code" côté enfant, Profil > Connecter un appareil côté parent).
+
+**Tracking QR (`services/qrAuth.ts`):**
+- ✅ 3 events `BUSINESS` (persistés dans `analytics_events`) : `QR_LOGIN_STARTED` (tablette affiche le QR, dans `createQrSession`), `QR_DEVICE_APPROVED` (parent scanne+approuve, dans `approveQrSession`), `QR_LOGIN_SUCCESS` (session ouverte, dans `completeQrLogin`). Permet de suivre le funnel complet.
+
+**Build**: `npm run build` + `npx cap sync ios/android` lancés le 06/06/2026 (commit `7185ef2`). Tous ces changements sont du code app (pas serveur) → nécessitent ce build pour prendre effet.
+
 ### Actions du 06/06/2026 — Connexion par QR code (feature/qr-login)
 
 **Contexte**: Permettre à un parent de connecter un 2ème appareil (ex: tablette de l'enfant) sans saisir ses identifiants, en scannant un QR code depuis son téléphone déjà connecté (façon WhatsApp Web). Cross-platform iOS ↔ Android. **Branche dédiée `feature/qr-login`** (partie de `feature/android-redesign`, code de prod non touché).
