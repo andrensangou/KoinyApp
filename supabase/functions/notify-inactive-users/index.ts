@@ -13,6 +13,21 @@ const APP_URL = 'https://koiny.app';
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+// Lien de désinscription signé (RGPD) — HMAC-SHA256(uid), clé = SERVICE_ROLE_KEY
+// Vérifié par l'edge function `unsubscribe`.
+async function buildUnsubscribeUrl(uid: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(SERVICE_ROLE_KEY),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(uid));
+  const hex = [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
+  return `${SUPABASE_URL}/functions/v1/unsubscribe?uid=${uid}&sig=${hex}`;
+}
+
 // Days of inactivity → email config
 // no_children: J+2, only for parents who never created a child
 const SEQUENCES = [
@@ -248,7 +263,11 @@ Deno.serve(async (req) => {
       const lang = profile.language || 'en';
       const { subject, html } = getEmailContent(seq.type, lang, '');
 
-      await sendEmail(email, subject, html);
+      // RGPD : injecter le lien de désinscription signé propre à cet utilisateur
+      const unsubUrl = await buildUnsubscribeUrl(profile.id);
+      const finalHtml = html.replaceAll(`${APP_URL}/unsubscribe`, unsubUrl);
+
+      await sendEmail(email, subject, finalHtml);
 
       await supabase.from('email_logs').insert({
         user_id: profile.id,
