@@ -149,6 +149,7 @@ export async function sendPushNewMission(opts: {
 /** Enfant → Parent : mission marquée terminée */
 export async function sendPushMissionComplete(opts: {
   userId: string;
+  childId: string;
   childName: string;
   missionTitle: string;
   language: 'fr' | 'nl' | 'en';
@@ -168,7 +169,7 @@ export async function sendPushMissionComplete(opts: {
     targetMode: 'parent',
     title: titles[opts.language],
     body: bodies[opts.language],
-    data: { type: 'MISSION_COMPLETE' },
+    data: { type: 'MISSION_COMPLETE', childId: opts.childId },
   });
 }
 
@@ -233,6 +234,7 @@ export async function sendPushMissionRejected(opts: {
 /** Enfant → Parent : demande de nouvelle mission */
 export async function sendPushMissionRequested(opts: {
   userId: string;
+  childId: string;
   childName: string;
   language: 'fr' | 'nl' | 'en';
 }): Promise<void> {
@@ -251,13 +253,14 @@ export async function sendPushMissionRequested(opts: {
     targetMode: 'parent',
     title: titles[opts.language],
     body: bodies[opts.language],
-    data: { type: 'MISSION_REQUESTED' },
+    data: { type: 'MISSION_REQUESTED', childId: opts.childId },
   });
 }
 
 /** Enfant → Parent : demande de cadeau/objectif */
 export async function sendPushGiftRequested(opts: {
   userId: string;
+  childId: string;
   childName: string;
   language: 'fr' | 'nl' | 'en';
 }): Promise<void> {
@@ -276,7 +279,7 @@ export async function sendPushGiftRequested(opts: {
     targetMode: 'parent',
     title: titles[opts.language],
     body: bodies[opts.language],
-    data: { type: 'GIFT_REQUESTED' },
+    data: { type: 'GIFT_REQUESTED', childId: opts.childId },
   });
 }
 

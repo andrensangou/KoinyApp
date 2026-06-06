@@ -258,16 +258,14 @@ class NotificationService {
                 await LocalNotifications.cancel({ notifications: [{ id: 9999 }] });
             } catch (_) { }
 
-            // Schedule for next Sunday at 10:00
+            // Rappel "rolling" : 7 jours après la dernière ouverture, à 10h.
+            // Cette méthode est rappelée à chaque ouverture d'app → un parent
+            // actif repousse sans cesse le rappel (jamais spammé), un parent
+            // inactif est relancé 7 jours après sa dernière visite.
             const now = new Date();
-            const nextSunday = new Date(now);
-            nextSunday.setDate(now.getDate() + (7 - now.getDay()) % 7 || 7);
-            nextSunday.setHours(10, 0, 0, 0);
-
-            // If it's already past 10:00 on Sunday, schedule for next week
-            if (nextSunday <= now) {
-                nextSunday.setDate(nextSunday.getDate() + 7);
-            }
+            const reminderDate = new Date(now);
+            reminderDate.setDate(now.getDate() + 7);
+            reminderDate.setHours(10, 0, 0, 0);
 
             await LocalNotifications.schedule({
                 notifications: [{
@@ -275,7 +273,7 @@ class NotificationService {
                     title: title,
                     body: body,
                     schedule: {
-                        at: nextSunday,
+                        at: reminderDate,
                         repeats: true,
                         every: 'week',
                         allowWhileIdle: true
@@ -285,7 +283,7 @@ class NotificationService {
                     iconColor: '#667eea'
                 }]
             });
-            console.log('[Notifications] ✅ Weekly reminder scheduled for', nextSunday.toISOString());
+            console.log('[Notifications] ✅ Rolling reminder scheduled for', reminderDate.toISOString());
         } catch (error) {
             console.error('[Notifications] Error scheduling weekly reminder:', error);
         }

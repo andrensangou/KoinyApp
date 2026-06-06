@@ -28,6 +28,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { PushNotifications } from '@capacitor/push-notifications';
 import { Network } from '@capacitor/network';
 import { registerPushToken, sendPushNewMission, sendPushMissionComplete, sendPushMissionApproved, sendPushMissionRejected, sendPushMissionRequested, sendPushGiftRequested, unregisterPushToken } from './services/pushService';
 
@@ -514,6 +515,27 @@ const App: React.FC = () => {
           type: extra.type,
           childId: extra.childId
         });
+      });
+
+      // Tap sur une push FCM (cross-device) → même routage que les notifs locales
+      PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        const pdata = action.notification.data || {};
+        const type = pdata.type;
+        if (!type) return;
+
+        // Notifs destinées à l'enfant → vue enfant
+        if (type === 'NEW_MISSION' || type === 'MISSION_APPROVED' || type === 'MISSION_REJECTED') {
+          if (pdata.childId) {
+            setActiveChildId(pdata.childId);
+            setView('CHILD');
+          }
+          return;
+        }
+
+        // Notifs destinées au parent (mission terminée / demandée, cadeau) → vue parent
+        setView('PARENT');
+        setActiveChildId(null);
+        setNotificationAction({ type, childId: pdata.childId });
       });
     }
 
@@ -1034,7 +1056,7 @@ const App: React.FC = () => {
       const child = data.children.find(c => c.id === activeChildId);
       const mission = child?.missions.find(m => m.id === id);
       if (child && mission) {
-        sendPushMissionComplete({ userId: ownerId, childName: child.name, missionTitle: mission.title, language: data.language });
+        sendPushMissionComplete({ userId: ownerId, childId: child.id, childName: child.name, missionTitle: mission.title, language: data.language });
       }
     }
   };
@@ -1465,14 +1487,14 @@ const App: React.FC = () => {
     updateChild(activeChildId!, (child) => ({ ...child, giftRequested: true }));
     if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo' && activeChildId) {
       const child = data.children.find(c => c.id === activeChildId);
-      if (child) sendPushGiftRequested({ userId: ownerId, childName: child.name, language: data.language });
+      if (child) sendPushGiftRequested({ userId: ownerId, childId: child.id, childName: child.name, language: data.language });
     }
   };
   const handleRequestMission = () => {
     updateChild(activeChildId!, (child) => ({ ...child, missionRequested: true }));
     if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo' && activeChildId) {
       const child = data.children.find(c => c.id === activeChildId);
-      if (child) sendPushMissionRequested({ userId: ownerId, childName: child.name, language: data.language });
+      if (child) sendPushMissionRequested({ userId: ownerId, childId: child.id, childName: child.name, language: data.language });
     }
   };
   const handleSelectChild = (childId: string) => {
@@ -1565,6 +1587,8 @@ const App: React.FC = () => {
           onSetMaxBalance={handleUpdateMaxBalance}
           onSetLanguage={setLanguage}
           isOfflineMode={isOfflineMode}
+          notificationAction={notificationAction}
+          onClearNotificationAction={() => setNotificationAction(null)}
         />
       )}
       {view === 'PARENT' && !isAndroid && (

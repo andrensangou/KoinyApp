@@ -112,6 +112,8 @@ interface AndroidParentViewProps {
   onSetLanguage?: (lang: Language) => void;
   onSetMaxBalance?: (limit: number) => void;
   isOfflineMode?: boolean;
+  notificationAction?: { type: string; childId?: string } | null;
+  onClearNotificationAction?: () => void;
 }
 
 type TabId = 'dashboard' | 'history' | 'requests' | 'profile';
@@ -1776,6 +1778,7 @@ export default function AndroidParentView({
   data, language, onApprove, onReject, onAddMission, onEditMission, onDeleteMission, onManualTransaction,
   onAddChild, onEditChild, onDeleteChild, onClearHistory, onSetPin, onToggleNotifications,
   onExit, onSignOut, onDeleteAccount, onSetPremium, onSetLanguage, onSetMaxBalance, isOfflineMode,
+  notificationAction, onClearNotificationAction,
 }: AndroidParentViewProps) {
   // ── PIN gate ──
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -1940,6 +1943,17 @@ export default function AndroidParentView({
 
   const t = translations[language];
   const currency = data.currency || '€';
+
+  // ── Tap sur notif (push/locale) destinée au parent → onglet Demandes
+  useEffect(() => {
+    if (!notificationAction) return;
+    const type = notificationAction.type;
+    if (type === 'MISSION' || type === 'MISSION_COMPLETE' || type === 'MISSION_REQUESTED' || type === 'GIFT_REQUESTED') {
+      if (notificationAction.childId) setChildId(notificationAction.childId);
+      setTab('requests');
+    }
+    onClearNotificationAction?.();
+  }, [notificationAction]);
 
   // ── Callbacks (hooks — must be before any conditional return)
   const showToast = useCallback((msg: string, type: 'success' | 'danger' | 'info' = 'success') => {

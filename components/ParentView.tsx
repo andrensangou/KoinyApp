@@ -778,7 +778,8 @@ const ParentView: React.FC<ParentViewProps> = ({
       }, 200);
       onClearNotificationAction?.();
     }
-    else if (notificationAction.type === 'MISSION' || notificationAction.type === 'MISSION_COMPLETE') {
+    else if (notificationAction.type === 'MISSION' || notificationAction.type === 'MISSION_COMPLETE'
+             || notificationAction.type === 'MISSION_REQUESTED' || notificationAction.type === 'GIFT_REQUESTED') {
       console.log('🔔 [PARENT VIEW] Opening requests tab');
       setTimeout(() => {
         setSelectedChildId(child.id);

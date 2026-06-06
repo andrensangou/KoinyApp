@@ -86,13 +86,15 @@ async function getFCMAccessToken(): Promise<string> {
 
 // ── Send one FCM message ──────────────────────────────────────────────────────
 
+// Renvoie { ok } si livré, { ok:false, dead:true } si le token est invalide
+// (app désinstallée / token périmé) → à supprimer de device_tokens.
 async function sendFCM(opts: {
   token: string;
   title: string;
   body: string;
   data?: Record<string, string>;
-}): Promise<void> {
-  const accessToken = await getFCMAccessToken();
+  accessToken: string;
+}): Promise<{ ok: boolean; dead: boolean }> {
   const url = `https://fcm.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/messages:send`;
 
   const message = {
@@ -107,6 +109,12 @@ async function sendFCM(opts: {
           icon: 'ic_stat_koiny',
         },
       },
+      // iOS/APNs : badge + son (sinon les push iOS arrivent sans personnalisation)
+      apns: {
+        payload: {
+          aps: { sound: 'default', badge: 1 },
+        },
+      },
       data: opts.data ?? {},
     },
   };
@@ -114,17 +122,21 @@ async function sendFCM(opts: {
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      'Authorization': `Bearer ${opts.accessToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(message),
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    console.error('[send-push] FCM error:', err);
-    throw new Error(`FCM error: ${err}`);
-  }
+  if (res.ok) return { ok: true, dead: false };
+
+  const errText = await res.text();
+  console.error('[send-push] FCM error:', errText);
+  // Token mort : 404 UNREGISTERED ou 400 INVALID_ARGUMENT sur le token
+  const dead = res.status === 404 ||
+    errText.includes('UNREGISTERED') ||
+    errText.includes('registration-token-not-registered');
+  return { ok: false, dead };
 }
 
 // ── Main handler ─────────────────────────────────────────────────────────────
@@ -177,20 +189,37 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Token OAuth FCM récupéré une seule fois pour tous les envois
+    const accessToken = await getFCMAccessToken();
+
     // Send to all matching devices
     const results = await Promise.allSettled(
       tokens.map(row =>
-        sendFCM({ token: row.token, title, body, data }),
+        sendFCM({ token: row.token, title, body, data, accessToken })
+          .then(r => ({ ...r, token: row.token })),
       ),
     );
 
-    const sent = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
+    // Collecter les tokens morts (app désinstallée) pour les supprimer
+    const deadTokens: string[] = [];
+    let sent = 0;
+    for (const r of results) {
+      if (r.status === 'fulfilled') {
+        if (r.value.ok) sent++;
+        else if (r.value.dead) deadTokens.push(r.value.token);
+      }
+    }
+    const failed = results.length - sent;
+
+    if (deadTokens.length > 0) {
+      await supabase.from('device_tokens').delete().in('token', deadTokens);
+      console.log(`[send-push] cleaned ${deadTokens.length} dead token(s)`);
+    }
 
     console.log(`[send-push] sent=${sent} failed=${failed}`);
 
     return new Response(
-      JSON.stringify({ sent, failed }),
+      JSON.stringify({ sent, failed, cleaned: deadTokens.length }),
       { headers: { 'Content-Type': 'application/json' } },
     );
   } catch (e) {
