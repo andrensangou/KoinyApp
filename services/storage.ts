@@ -367,11 +367,16 @@ export const saveData = async (data: GlobalState, ownerId?: string, immediate?: 
           const localTimestamp = new Date(dataToSave.updatedAt || 0).getTime();
           const cloudTimestamp = new Date(cloudData.updatedAt || 0).getTime();
 
-          // Détecter conflit (marge de tolérance : 5 secondes)
-          if (cloudTimestamp > localTimestamp + 5000) {
-            console.warn('⚠️ [STORAGE] Conflit détecté, merge automatique');
+          // Conflit : le cloud a été modifié par un AUTRE appareil depuis notre
+          // dernier état. On merge AVANT de sauvegarder pour ne jamais réécrire le
+          // cloud avec des valeurs périmées (sinon une édition faite sur l'appareil A
+          // était écrasée quand l'appareil B sauvegardait son ancien état → "revert").
+          // Le merge résout chaque champ par récence, donc la valeur la plus récente
+          // gagne. (Avant : seuil de 5s trop permissif → la fenêtre de revert restait.)
+          if (cloudTimestamp > localTimestamp) {
+            console.warn('⚠️ [STORAGE] Cloud plus récent (autre appareil), merge avant save');
             const merged = mergeGlobalStates(dataToSave, cloudData);
-            dataToSave = { ...merged, updatedAt: merged.updatedAt || new Date().toISOString() };
+            dataToSave = { ...merged, updatedAt: new Date().toISOString() };
           }
         }
       })();

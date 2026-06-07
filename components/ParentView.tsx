@@ -857,7 +857,7 @@ const ParentView: React.FC<ParentViewProps> = ({
     if (isNaN(targetVal) || targetVal <= 0) return;
     const updatedGoals = dashGoalId
       ? (activeChild.goals || []).map(g => g.id === dashGoalId ? { ...g, name: dashGoalName.trim(), target: targetVal, icon: dashGoalIcon } : g)
-      : [...(activeChild.goals || []), { id: Date.now().toString(), name: dashGoalName.trim(), target: targetVal, icon: dashGoalIcon }];
+      : [...(activeChild.goals || []), { id: crypto.randomUUID(), name: dashGoalName.trim(), target: targetVal, icon: dashGoalIcon }];
     onEditChild(activeChild.id, { goals: updatedGoals });
     setDashGoalSheetOpen(false);
   };
@@ -911,7 +911,7 @@ const ParentView: React.FC<ParentViewProps> = ({
       return;
     }
     const newGoal: Goal = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name: '',
       target: 0,
       icon: getIcon('gift')
