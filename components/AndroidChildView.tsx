@@ -612,53 +612,62 @@ function HomeScreen({ C, data, language, currency, isDark, onComplete, onRequest
           ) : undefined} />
           {activeGoals.length > 0 ? (
             <>
-              {/* Horizontal scroll goals */}
+              {/* Carousel snap : une carte plein écran par swipe (pas d'aperçu de la suivante) */}
               <div
                 ref={goalsRef}
                 className="no-scrollbar"
-                style={{ display: 'flex', gap: 12, overflowX: 'auto' }}
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  setGoalPage(Math.round(el.scrollLeft / el.clientWidth));
+                }}
+                style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory' }}
               >
                 {activeGoals.map((goal, idx) => {
                   const pct = Math.min(100, (data.balance / goal.target) * 100);
                   const isReady = data.balance >= goal.target;
                   return (
                     <div key={goal.id} style={{
-                      minWidth: activeGoals.length === 1 ? '100%' : 240,
+                      minWidth: '100%', width: '100%',
+                      scrollSnapAlign: 'center',
                       background: C.surfaceContainerLow,
                       borderRadius: 18, padding: 16,
                       flexShrink: 0,
+                      display: 'flex', flexDirection: 'column',
+                      height: 112,
                     }}>
                       {/* Icon + name */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                         <div style={{
-                          width: 44, height: 44, borderRadius: 14,
+                          width: 40, height: 40, borderRadius: 12,
                           background: C.primaryContainer,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           flexShrink: 0,
                         }}>
-                          <i className={`fa-solid ${cIcon(goal.icon, 'fa-bullseye')}`} style={{ fontSize: 18, color: C.primary }} />
+                          <i className={`fa-solid ${cIcon(goal.icon, 'fa-bullseye')}`} style={{ fontSize: 16, color: C.primary }} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: pp, fontSize: 14, fontWeight: 600, color: C.onSurface, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontFamily: pp, fontSize: 13, fontWeight: 600, color: C.onSurface, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {goal.name}
                           </div>
-                          <div style={{ fontFamily: pp, fontSize: 12, color: C.onSurfaceVariant }}>
+                          <div style={{ fontFamily: pp, fontSize: 11, color: C.onSurfaceVariant }}>
                             {data.balance.toFixed(2)}{currency} / {goal.target.toFixed(2)}{currency}
                           </div>
                         </div>
                       </div>
-                      {/* Progress bar */}
+                      {/* Spacer pousse la barre tout en bas — cartes de hauteur identique */}
+                      <div style={{ flex: 1 }} />
+                      {/* Progress bar (verte si objectif atteint) */}
                       <div style={{ height: 7, borderRadius: 4, background: C.surfaceVariant, overflow: 'hidden' }}>
                         <div style={{
                           height: '100%', borderRadius: 4,
-                          background: progressColor(pct),
+                          background: isReady ? '#10B981' : progressColor(pct),
                           width: `${pct}%`,
                           transition: 'width 0.5s ease',
                         }} />
                       </div>
                       {isReady && (
                         <div style={{
-                          marginTop: 8, fontFamily: pp, fontSize: 11, fontWeight: 700,
+                          marginTop: 4, fontFamily: pp, fontSize: 10, fontWeight: 700,
                           color: '#10B981', letterSpacing: '0.02em',
                         }}>
                           {t.goalReady}
@@ -975,14 +984,10 @@ function HistoryScreen({ C, data, language, currency }: HistoryScreenProps) {
     return { icon: 'fa-minus-circle', color: C.onSurfaceVariant };
   };
 
-  const sorted = [...data.history].sort((a, b) => {
-    const toDate = (s: string) => {
-      const p = s.split('/');
-      if (p.length === 3) return new Date(`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`);
-      return new Date(s);
-    };
-    return toDate(b.date).getTime() - toDate(a.date).getTime();
-  });
+  // Pas de re-tri : on garde l'ordre du cloud (created_at décroissant = dernière
+  // validation en haut), identique à iOS. Le champ `date` n'ayant que le jour
+  // (JJ/MM/AAAA), re-trier dessus casserait l'ordre des transactions d'un même jour.
+  const sorted = [...data.history];
 
   return (
     <div style={{ paddingTop: 16, paddingBottom: 24 }}>

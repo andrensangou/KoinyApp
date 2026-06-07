@@ -2273,13 +2273,14 @@ const ParentView: React.FC<ParentViewProps> = ({
                       </div>
                     </div>
                     <button onClick={() => {
-                      startEditChild(activeChild);
-                      setTimeout(() => {
-                        setTriggerAddGoal(true);
-                        setTimeout(() => {
-                          formGoalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }, 150);
-                      }, 200);
+                      // Ouvre directement le sheet objectif (comme le tap sur notif),
+                      // au lieu de passer par l'écran d'édition de l'enfant.
+                      if (activeChild.giftRequested) onEditChild(activeChild.id, { giftRequested: false });
+                      setDashGoalId(null);
+                      setDashGoalName('');
+                      setDashGoalTarget('');
+                      setDashGoalIcon('gift');
+                      setDashGoalSheetOpen(true);
                     }} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm">{t.parent.messages.configure}</button>
                   </div>
                 )}
@@ -2293,7 +2294,13 @@ const ParentView: React.FC<ParentViewProps> = ({
                         <p className="text-sm text-slate-500 dark:text-slate-400">{t.parent.messages.missionRequested}</p>
                       </div>
                     </div>
-                    <button onClick={() => { setMainView('dashboard'); setTimeout(() => missionFormRef.current?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-sm">{t.parent.messages.createMission}</button>
+                    <button onClick={() => {
+                      // Ouvre directement le sheet de création de mission.
+                      if (activeChild.missionRequested) onEditChild(activeChild.id, { missionRequested: false });
+                      setSheetTitle('');
+                      setSheetAmount('');
+                      setShowAddMissionSheet(true);
+                    }} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-sm">{t.parent.messages.createMission}</button>
                   </div>
                 )}
 

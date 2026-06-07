@@ -464,7 +464,7 @@ const App: React.FC = () => {
             balance: newBalance,
             lastBirthdayRewardYear: currentYear,
             history: [
-              { id: crypto.randomUUID(), date: now.toISOString(), title: t.child.birthdayBonus, amount: credited },
+              { id: crypto.randomUUID(), date: now.toISOString(), createdAt: now.toISOString(), title: t.child.birthdayBonus, amount: credited },
               ...child.history,
             ],
           };
@@ -774,9 +774,19 @@ const App: React.FC = () => {
       });
     }
 
+    // Polling premier plan — couvre le cas "2 appareils ouverts en même temps" :
+    // ni l'un ni l'autre ne passe en arrière-plan, donc visibilitychange/appStateChange
+    // ne se déclenchent jamais. On recharge le cloud toutes les 5s tant que l'app est
+    // visible. reloadFromCloud a déjà tous les garde-fous (anti-écrasement, n'applique
+    // que si cloud strictement plus récent) → aucun risque d'écraser une modif locale.
+    const pollId = setInterval(() => {
+      if (document.visibilityState === 'visible') reloadFromCloud();
+    }, 5000);
+
     return () => {
       document.removeEventListener('visibilitychange', onVis);
       if (nativeHandle) nativeHandle.then((h: any) => h.remove());
+      clearInterval(pollId);
     };
   }, [ownerId, loading, view]);
 
@@ -856,6 +866,7 @@ const App: React.FC = () => {
             history: [{
               id: transactionId,
               date: dateFormatted,
+              createdAt: new Date().toISOString(),
               title: mission.title + titleSuffix,
               amount: effectiveReward,
               note: note
@@ -969,6 +980,7 @@ const App: React.FC = () => {
       history: [{
         id: transactionId,
         date: dateFormatted,
+        createdAt: new Date().toISOString(),
         title: finalReason,
         amount: effectiveAmount
       }, ...child.history]
@@ -1422,6 +1434,7 @@ const App: React.FC = () => {
         history: [{
           id: transactionId,
           date: dateFormatted,
+          createdAt: new Date().toISOString(),
           title: `Achat : ${goal.name}`,
           amount: -goal.target
         }, ...c.history]

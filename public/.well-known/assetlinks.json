@@ -1,0 +1,11 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.koiny.parent",
+      "sha256_cert_fingerprints":
+        ["50:AD:1D:C2:53:11:63:8B:80:FA:1A:3E:02:A5:ED:C6:75:64:79:4A:7C:D3:7D:6A:3A:1A:C1:A7:3D:03:D7:78"]
+    }
+  }
+]

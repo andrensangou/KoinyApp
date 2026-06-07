@@ -454,7 +454,8 @@ export const loadFromSupabase = async (userId: string): Promise<any> => {
                         date: dateFormatted,
                         title: t.description,
                         amount: t.type === 'withdrawal' ? -Math.abs(t.amount) : t.amount,
-                        note: null
+                        note: t.note ?? null,
+                        createdAt: t.created_at ?? null
                     };
                 })
             }))
@@ -686,6 +687,7 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                         type,
                         amount: h.amount,
                         description: h.title || 'Transaction',
+                        note: h.note || null,
                         created_by: currentUser.id,
                         created_at: (() => {
                             const parts = (h.date || '').split('/');

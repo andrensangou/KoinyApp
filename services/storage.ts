@@ -195,39 +195,66 @@ const purgeOldHistory = (data: GlobalState, maxEntriesPerChild: number = 300): G
 /**
  * Merge intelligent de deux profils enfant
  */
-const mergeChildProfile = (local: any, cloud: any): any => {
+// `preferCloudScalars` = true quand l'état GLOBAL cloud est plus récent (updatedAt).
+// Sert à résoudre les champs scalaires sans historique propre (flags de demande),
+// qui sinon seraient toujours écrasés par la valeur locale via le `...local`.
+const mergeChildProfile = (local: any, cloud: any, preferCloudScalars: boolean = false): any => {
+  // Temps d'une entrée : on privilégie le timestamp ISO complet (heure incluse),
+  // sinon on retombe sur la date jour (DD/MM/YYYY). Permet un tri chronologique
+  // fiable ET identique entre appareils (même clé de tri partout).
+  const entryTime = (e: any): number => {
+    if (e?.createdAt) {
+      const t = new Date(e.createdAt).getTime();
+      if (!isNaN(t)) return t;
+    }
+    const p = String(e?.date || '').split('/');
+    if (p.length === 3) {
+      const t = new Date(`${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`).getTime();
+      if (!isNaN(t)) return t;
+    }
+    return 0;
+  };
+
   // Merger l'historique (union sans doublons)
   const historyMap = new Map();
   [...local.history, ...cloud.history].forEach((entry: any) => {
     const existing = historyMap.get(entry.id);
     if (!existing) {
       historyMap.set(entry.id, entry);
-    } else {
-      // Garder le plus récent
-      const existingDate = new Date(existing.date).getTime();
-      const newDate = new Date(entry.date).getTime();
-      if (newDate > existingDate) {
-        historyMap.set(entry.id, entry);
-      }
+    } else if (entryTime(entry) > entryTime(existing)) {
+      // Garder l'entrée avec le timestamp le plus complet/récent
+      historyMap.set(entry.id, entry);
     }
   });
 
+  // Tri par temps décroissant. Départage déterministe par id (même ordre sur les
+  // deux appareils) pour les entrées du même jour sans heure.
   const mergedHistory = Array.from(historyMap.values())
-    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    .sort((a: any, b: any) => entryTime(b) - entryTime(a) || String(b.id).localeCompare(String(a.id)));
 
   // Calculer le solde à partir de l'historique — plancher à 0 (tirelire enfant)
   const calculatedBalance = Math.max(0, mergedHistory.reduce((sum: number, entry: any) => sum + entry.amount, 0));
 
-  // Merger les missions et objectifs
+  // Merger les missions. Pour un même ID présent des deux côtés (= édition :
+  // nom/montant modifiés), on garde la version de l'appareil qui a sauvegardé en
+  // dernier. On itère le côté préféré EN DERNIER pour qu'il gagne le `set`.
+  // (Les missions uniques à un seul côté sont toujours conservées → union.)
   const missionsMap = new Map();
-  [...local.missions, ...cloud.missions].forEach((mission: any) => {
+  const missionOrder = preferCloudScalars
+    ? [...local.missions, ...cloud.missions]   // cloud plus récent → cloud gagne
+    : [...cloud.missions, ...local.missions];  // local plus récent → local gagne
+  missionOrder.forEach((mission: any) => {
     missionsMap.set(mission.id, mission);
   });
 
   const goalsMap = new Map();
-  // Dédupliquer les goals par ID ET par nom+montant (anti-doublon cross-ID)
+  // Dédupliquer les goals par ID ET par nom+montant (anti-doublon cross-ID).
+  // Même logique de récence : le côté préféré itéré en dernier gagne sur même ID.
   const goalSignatureMap = new Map<string, boolean>();
-  [...cloud.goals, ...local.goals].forEach((goal: any) => {
+  const goalOrder = preferCloudScalars
+    ? [...local.goals, ...cloud.goals]   // cloud plus récent → cloud gagne
+    : [...cloud.goals, ...local.goals];  // local plus récent → local gagne
+  goalOrder.forEach((goal: any) => {
     const signature = `${goal.name || goal.title || ''}:${goal.target || 0}`;
     if (!goalsMap.has(goal.id) && !goalSignatureMap.has(signature)) {
       goalsMap.set(goal.id, goal);
@@ -239,19 +266,25 @@ const mergeChildProfile = (local: any, cloud: any): any => {
     // Si signature déjà vue mais ID différent → doublon, on skip
   });
 
-  // Prendre les propriétés du plus récent
-  const localLastUpdate = Math.max(...local.history.map((h: any) => new Date(h.date).getTime()), 0);
-  const cloudLastUpdate = Math.max(...cloud.history.map((h: any) => new Date(h.date).getTime()), 0);
-  const useLocal = localLastUpdate >= cloudLastUpdate;
-
   return {
     ...local,
-    name: useLocal ? local.name : cloud.name,
-    avatar: useLocal ? local.avatar : cloud.avatar,
+    // Champs éditables de l'enfant : résolus selon l'état GLOBAL le plus récent
+    // (updatedAt, mis à jour à chaque sauvegarde). Sinon le `...local` / un tie sur
+    // les dates d'historique faisait toujours gagner le local → les modifs (nom,
+    // couleur, avatar, anniversaire) faites sur un appareil étaient perdues sur l'autre.
+    name: preferCloudScalars ? cloud.name : local.name,
+    avatar: preferCloudScalars ? cloud.avatar : local.avatar,
+    colorClass: preferCloudScalars ? cloud.colorClass : local.colorClass,
+    birthday: preferCloudScalars ? cloud.birthday : local.birthday,
     balance: calculatedBalance,
     goals: Array.from(goalsMap.values()),
     missions: Array.from(missionsMap.values()),
-    history: mergedHistory
+    history: mergedHistory,
+    // Flags de demande (enfant → parent) : pas d'historique propre, donc résolus
+    // selon l'état global le plus récent. Sinon `...local` les écraserait toujours
+    // → la demande faite sur un appareil n'arrivait jamais sur l'autre.
+    giftRequested: preferCloudScalars ? cloud.giftRequested : local.giftRequested,
+    missionRequested: preferCloudScalars ? cloud.missionRequested : local.missionRequested,
   };
 };
 
@@ -260,6 +293,12 @@ const mergeChildProfile = (local: any, cloud: any): any => {
  */
 const mergeGlobalStates = (local: GlobalState, cloud: GlobalState): GlobalState => {
   console.log('⚠️ [STORAGE] Merge de conflits en cours...');
+
+  // Propriétés globales : prendre le plus récent (calculé d'abord pour le passer
+  // au merge de chaque enfant — résolution des flags de demande).
+  const localTimestamp = new Date(local.updatedAt || 0).getTime();
+  const cloudTimestamp = new Date(cloud.updatedAt || 0).getTime();
+  const useLocal = localTimestamp >= cloudTimestamp;
 
   // Collecter tous les IDs d'enfants
   const allChildrenIds = new Set([
@@ -275,13 +314,8 @@ const mergeGlobalStates = (local: GlobalState, cloud: GlobalState): GlobalState 
     if (!localChild) return cloudChild!;
     if (!cloudChild) return localChild;
 
-    return mergeChildProfile(localChild, cloudChild);
+    return mergeChildProfile(localChild, cloudChild, !useLocal);
   });
-
-  // Propriétés globales : prendre le plus récent
-  const localTimestamp = new Date(local.updatedAt || 0).getTime();
-  const cloudTimestamp = new Date(cloud.updatedAt || 0).getTime();
-  const useLocal = localTimestamp >= cloudTimestamp;
 
   return {
     ...local,

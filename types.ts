@@ -30,6 +30,7 @@ export interface HistoryEntry {
   title: string;
   amount: number;
   note?: string;
+  createdAt?: string; // timestamp ISO complet (heure incluse) — tri chronologique fiable
 }
 
 export interface Goal {
