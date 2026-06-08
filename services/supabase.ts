@@ -7,19 +7,41 @@ import { ICON_MAP } from '../constants/icons';
 import { Preferences } from '@capacitor/preferences';
 
 /**
- * Stockage natif persistant pour Supabase Auth (survit aux fermetures d'app)
- * Utilise @capacitor/preferences au lieu du localStorage du WebView
+ * Stockage hybride pour Supabase Auth.
+ *
+ * ⚠️ Bug critique résolu : avec un storage 100% @capacitor/preferences, la lecture
+ * de session au COLD START (`_recoverAndRefresh` → getItem) hang par intermittence
+ * sur Android (le pont JS↔natif Capacitor se bloque sous la contention du démarrage)
+ * → `getSession()` ne résout jamais → `isInitializing` reste true → aucun save/sync.
+ * Observé sur Huawei ET Samsung (timeout 27s, `⏱️ [LOAD] début getSession` sans fin).
+ *
+ * Fix : `localStorage` en PRIORITÉ pour la lecture — synchrone, dans la WebView, sans
+ * pont natif → jamais de hang. `Preferences` reste en backup durable (survit à une
+ * éviction localStorage iOS sous pression stockage) + write-through sur set/remove.
  */
 const CapacitorStorageAdapter = {
     async getItem(key: string): Promise<string | null> {
-        const { value } = await Preferences.get({ key });
-        return value;
+        // 1. localStorage d'abord (instantané, pas de pont natif → pas de hang)
+        try {
+            const local = localStorage.getItem(key);
+            if (local !== null) return local;
+        } catch { /* WebView sans localStorage : on passe au fallback */ }
+        // 2. Fallback Preferences (durable) + on réamorce localStorage pour les prochains reads
+        try {
+            const { value } = await Preferences.get({ key });
+            if (value !== null) { try { localStorage.setItem(key, value); } catch {} }
+            return value;
+        } catch {
+            return null;
+        }
     },
     async setItem(key: string, value: string): Promise<void> {
-        await Preferences.set({ key, value });
+        try { localStorage.setItem(key, value); } catch {}
+        try { await Preferences.set({ key, value }); } catch {}
     },
     async removeItem(key: string): Promise<void> {
-        await Preferences.remove({ key });
+        try { localStorage.removeItem(key); } catch {}
+        try { await Preferences.remove({ key }); } catch {}
     },
 };
 
