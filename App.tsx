@@ -13,7 +13,7 @@ import AlertBanner from './components/AlertBanner';
 import { GlobalState, INITIAL_DATA, HistoryEntry, ChildProfile, Language, Goal, BADGE_THRESHOLDS, ParentBadge, MAX_BALANCE } from './types';
 import { loadData, saveData, persistentStorage } from './services/storage';
 import { updateWidgetData } from './services/widgetBridge';
-import { getSupabase, updatePassword, deleteAccount, ensureUserProfile } from './services/supabase';
+import { getSupabase, updatePassword, deleteAccount, ensureUserProfile, recordDeletion } from './services/supabase';
 import { alertService, AppAlert } from './services/alertService';
 import { notifications } from './services/notifications';
 import { translations } from './i18n';
@@ -33,6 +33,13 @@ import { Network } from '@capacitor/network';
 import { registerPushToken, sendPushNewMission, sendPushMissionComplete, sendPushMissionApproved, sendPushMissionRejected, sendPushMissionRequested, sendPushGiftRequested, unregisterPushToken } from './services/pushService';
 
 type ViewState = 'LANDING' | 'AUTH' | 'LOGIN' | 'CHILD' | 'PARENT';
+
+// Garde un await réseau de ne jamais hang indéfiniment : sur réseau flaky (Huawei),
+// un `await supabase...delete()` qui ne se résout jamais laisserait le guard
+// `isDirectSupabaseOperation` coincé sur true → tous les saves bloqués. Le tombstone
+// garde l'item caché de toute façon, donc on peut abandonner le delete réseau après N ms.
+const raceTimeout = <T,>(p: PromiseLike<T>, ms = 8000): Promise<T | { timedOut: true }> =>
+  Promise.race([Promise.resolve(p), new Promise<{ timedOut: true }>((resolve) => setTimeout(() => resolve({ timedOut: true }), ms))]);
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('LANDING');
@@ -660,6 +667,15 @@ const App: React.FC = () => {
   const isSavingRef = React.useRef(false);
   const isSyncingFromOnline = React.useRef(false);
   const isForegroundReloadingRef = React.useRef(false);
+  // Retry de sauvegarde : si un save est bloqué par un guard transitoire, on le
+  // re-tente au lieu de l'abandonner (sinon la modif — ex: mission créée pendant
+  // un reload — est perdue, puis effacée au rechargement WebView). BORNÉ : si un
+  // guard reste coincé (réseau hang), on n'enchaîne pas une boucle infinie.
+  const saveRetryRef = React.useRef<any>(null);
+  const saveRetryCountRef = React.useRef(0);
+  // Marque les données qui viennent d'être appliquées depuis le cloud (foreground
+  // reload) : on ne les re-pousse PAS (sinon ping-pong reload→save→reload).
+  const skipNextSaveRef = React.useRef(false);
 
   // Ref toujours à jour vers les données courantes (évite les closures périmées
   // dans les listeners qui doivent comparer les timestamps)
@@ -668,12 +684,41 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const runSave = async () => {
-      // Bloquer la sauvegarde si on vient de recharger depuis Realtime, opération directe, en cours d'init ou déjà en cours
-      if (isSavingRef.current || isReloadingFromRealtime.current || isDirectSupabaseOperation.current || isInitializing.current) {
-        console.log('🛑 [APP] Save blocked');
+      // Données venant d'être appliquées depuis le cloud (foreground reload) :
+      // ne pas les re-pousser → évite le ping-pong reload→save→reload.
+      if (skipNextSaveRef.current) {
+        skipNextSaveRef.current = false;
         return;
       }
 
+      // Guard transitoire (reload en cours, opération directe, init, save déjà en
+      // cours) : NE PAS abandonner le save (sinon la modif est perdue puis effacée
+      // au rechargement WebView). On le re-tente — mais BORNÉ avec backoff : si un
+      // guard reste coincé (réseau hang), on arrête après ~8 essais pour ne pas
+      // boucler à l'infini (le prochain changement de `data` ou la convergence
+      // loadData→cloud rattrapera la sauvegarde).
+      if (isSavingRef.current || isReloadingFromRealtime.current || isDirectSupabaseOperation.current || isInitializing.current) {
+        const blockedBy = [
+          isSavingRef.current && 'saving',
+          isReloadingFromRealtime.current && 'reloading',
+          isDirectSupabaseOperation.current && 'directOp',
+          isInitializing.current && 'initializing',
+        ].filter(Boolean).join('+');
+        if (saveRetryCountRef.current >= 8) {
+          console.log(`🛑 [APP] Save blocked (${blockedBy}) — retry abandonné après 8 essais`);
+          saveRetryCountRef.current = 0;
+          return;
+        }
+        const delay = Math.min(600 * 2 ** saveRetryCountRef.current, 5000); // backoff 600ms→5s
+        saveRetryCountRef.current += 1;
+        console.log(`🛑 [APP] Save blocked (${blockedBy}) — retry ${saveRetryCountRef.current}/8 dans ${delay}ms`);
+        if (saveRetryRef.current) clearTimeout(saveRetryRef.current);
+        saveRetryRef.current = setTimeout(() => { runSave(); }, delay);
+        return;
+      }
+
+      if (saveRetryRef.current) { clearTimeout(saveRetryRef.current); saveRetryRef.current = null; }
+      saveRetryCountRef.current = 0;
       isSavingRef.current = true;
       try {
         if (!loading && view !== 'AUTH' && view !== 'LANDING' && !criticalError && ownerId !== 'demo') {
@@ -713,6 +758,7 @@ const App: React.FC = () => {
       }
     };
     runSave();
+    return () => { if (saveRetryRef.current) { clearTimeout(saveRetryRef.current); saveRetryRef.current = null; } };
   }, [data, loading, view, ownerId, criticalError, immediateSave]);
 
   // Listener for forced cloud sync events
@@ -751,6 +797,7 @@ const App: React.FC = () => {
         if (incoming && incomingTs > currentTs && !isSavingRef.current && !isDirectSupabaseOperation.current) {
           console.log('🔄 [APP] Foreground reload: cloud plus récent, mise à jour');
           isReloadingFromRealtime.current = true; // bloque le save-auto déclenché par ce setData
+          skipNextSaveRef.current = true; // ces données viennent du cloud → ne pas les re-pousser
           setData(prev => ({ ...incoming, language: prev.language, isPremium: prev.isPremium }));
           setTimeout(() => { isReloadingFromRealtime.current = false; }, 200);
         } else {
@@ -1216,19 +1263,30 @@ const App: React.FC = () => {
     // Bloquer le save automatique
     isDirectSupabaseOperation.current = true;
 
-    try {
-      if (missionId.includes('-')) {
-        const { error } = await supabase.from('missions').delete().eq('id', missionId);
-        if (error) throw new Error(`Suppression mission echouée : ${error.message}`);
-      }
+    // ⭐ Optimistic : retirer localement D'ABORD. Avant, le delete réseau passait
+    // en premier ; s'il throwait (contrainte/RLS sur `missions`), le retrait local
+    // était sauté → la mission ne disparaissait jamais (corbeille "inactive").
+    updateChild(childId, (child) => ({
+      ...child,
+      missions: child.missions.filter(m => m.id !== missionId)
+    }));
 
-      // 2. Update local state
-      updateChild(childId, (child) => ({
-        ...child,
-        missions: child.missions.filter(m => m.id !== missionId)
-      }));
+    // Tombstone : empêche la résurrection (garde la mission cachée même si le
+    // delete cloud échoue ou si l'autre appareil l'a encore en cache).
+    if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
+      recordDeletion(ownerId, 'mission', missionId);
+    }
+
+    try {
+      // Delete cloud best-effort — n'empêche jamais le retrait local. Timeout pour
+      // ne pas laisser le guard coincé si le réseau hang (tombstone garde caché).
+      if (missionId.includes('-')) {
+        const res: any = await raceTimeout(supabase.from('missions').delete().eq('id', missionId));
+        if (res?.timedOut) console.warn('⚠️ Suppression mission cloud timeout (tombstone garde caché)');
+        else if (res?.error) console.warn('⚠️ Suppression mission cloud échouée (tombstone garde caché):', res.error.message);
+      }
     } catch (err: any) {
-      console.error('❌ Erreur suppression mission:', err?.message);
+      console.warn('⚠️ Erreur suppression mission cloud (tombstone garde caché):', err?.message);
     } finally {
       isDirectSupabaseOperation.current = false;
       setData(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
@@ -1271,20 +1329,25 @@ const App: React.FC = () => {
     // Bloquer le save automatique
     isDirectSupabaseOperation.current = true;
 
-    try {
-      if (goalId.includes('-')) {
-        const { error, count } = await supabase.from('goals').delete({ count: 'exact' }).eq('id', goalId);
-        if (error) throw new Error(`Suppression objectif echouée : ${error.message}`);
-        if (count === 0) throw new Error('Objectif introuvable ou session expirée');
-      }
+    // ⭐ Optimistic : retirer localement D'ABORD (l'UI ne doit jamais attendre le
+    // réseau). Le tombstone garde l'objectif caché même si le delete cloud échoue.
+    updateChild(childId, (child) => ({
+      ...child,
+      goals: child.goals.filter(g => g.id !== goalId)
+    }));
+    if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
+      recordDeletion(ownerId, 'goal', goalId);
+    }
 
-      // 2. Update local state
-      updateChild(childId, (child) => ({
-        ...child,
-        goals: child.goals.filter(g => g.id !== goalId)
-      }));
+    try {
+      // Delete cloud best-effort (timeout anti-hang, tombstone garde caché).
+      if (goalId.includes('-')) {
+        const res: any = await raceTimeout(supabase.from('goals').delete().eq('id', goalId));
+        if (res?.timedOut) console.warn('⚠️ Suppression objectif cloud timeout (tombstone garde caché)');
+        else if (res?.error) console.warn('⚠️ Suppression objectif cloud échouée (tombstone garde caché):', res.error.message);
+      }
     } catch (err: any) {
-      console.error('❌ Erreur suppression objectif:', err?.message);
+      console.warn('⚠️ Erreur suppression objectif cloud (tombstone garde caché):', err?.message);
     } finally {
       isDirectSupabaseOperation.current = false;
       setData(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
@@ -1303,13 +1366,15 @@ const App: React.FC = () => {
     isDirectSupabaseOperation.current = true;
 
     try {
-      // 1. Supprimer dans Supabase
-      const { error } = await supabase
-        .from('children')
-        .delete()
-        .eq('id', id);
+      // 1. Supprimer dans Supabase (timeout anti-hang pour ne pas coincer le guard)
+      const res: any = await raceTimeout(supabase.from('children').delete().eq('id', id));
+      if (res?.timedOut) throw new Error('Suppression enfant timeout réseau');
+      if (res?.error) throw new Error(`Suppression enfant echouée : ${res.error.message}`);
 
-      if (error) throw new Error(`Suppression enfant echouée : ${error.message}`);
+      // Tombstone : empêche la résurrection de l'enfant sur l'autre appareil
+      if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
+        recordDeletion(ownerId, 'child', id);
+      }
 
       // 2. Mettre à jour state ET localStorage ensemble
       setData(prev => {

@@ -23,14 +23,33 @@ const CapacitorStorageAdapter = {
     },
 };
 
+// Lock pass-through : supabase-js sérialise le refresh de token via navigator.locks
+// (Web Locks API). Sur certaines WebView Android (Huawei), ce lock se DEADLOCKE →
+// le refresh de token hang indéfiniment → TOUTES les requêtes hang (timeout 27s
+// observé au cold start). En natif il n'y a qu'UNE WebView (pas de concurrence
+// multi-onglets), donc on remplace le lock par un simple pass-through. Sur web on
+// garde navigatorLock (multi-onglets légitime).
+const passthroughLock = async <R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> => fn();
+
+// Fetch avec timeout dur (AbortController) : sur la WebView Huawei, un `fetch` vers
+// Supabase peut hang indéfiniment (réseau/TLS/keep-alive) → toutes les requêtes
+// bloquent 8s+ puis timeout (observé : load qui hang 27s). En abortant à 10s, une
+// requête bloquée échoue proprement → withRetry peut retenter au lieu de hang.
+const fetchWithTimeout: typeof fetch = (input, init) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 10000);
+    return fetch(input as any, { ...(init || {}), signal: controller.signal }).finally(() => clearTimeout(id));
+};
+
 // Initialize the Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: !Capacitor.isNativePlatform(),
-        ...(Capacitor.isNativePlatform() && { storage: CapacitorStorageAdapter }),
-    }
+        ...(Capacitor.isNativePlatform() && { storage: CapacitorStorageAdapter, lock: passthroughLock }),
+    },
+    global: { fetch: fetchWithTimeout },
 });
 
 // Flag pour éviter les sauvegardes concurrentes
@@ -60,6 +79,69 @@ export const getSupabase = () => {
         console.warn('⚠️ [SUPABASE] Client non configuré ou clés invalides');
     }
     return supabase;
+};
+
+// ── Tombstones (propagation des suppressions entre appareils) ──────────────────
+export type DeletedItemType = 'goal' | 'mission' | 'child' | 'transaction';
+
+const emptyDeletedCache = (): Record<DeletedItemType, Set<string>> =>
+    ({ goal: new Set(), mission: new Set(), child: new Set(), transaction: new Set() });
+
+// Cache module des IDs supprimés, par type. Rafraîchi par fetchDeletedIds (au
+// chargement) et mis à jour immédiatement par recordDeletion (suppression locale)
+// → applyTombstones (storage.ts) l'utilise de façon synchrone, sans fetch réseau.
+const deletedIdsCache: Record<DeletedItemType, Set<string>> = emptyDeletedCache();
+
+export const getDeletedIdsCache = (): Record<DeletedItemType, Set<string>> => deletedIdsCache;
+
+/** Enregistre une suppression (tombstone) + met à jour le cache immédiatement. */
+export const recordDeletion = async (
+    userId: string,
+    itemType: DeletedItemType,
+    itemId: string,
+): Promise<void> => {
+    if (!userId || !itemId) return;
+    deletedIdsCache[itemType].add(itemId); // effet immédiat, même offline
+    try {
+        await supabase
+            .from('deleted_items')
+            .upsert(
+                { user_id: userId, item_type: itemType, item_id: itemId },
+                { onConflict: 'user_id,item_type,item_id' },
+            );
+    } catch (e) {
+        console.warn('⚠️ [TOMBSTONE] recordDeletion échouée (offline?):', e);
+    }
+};
+
+/** Récupère tous les tombstones du user et reconstruit le cache (en préservant
+ *  les suppressions locales très récentes pas encore relues du cloud). */
+export const fetchDeletedIds = async (
+    userId: string,
+): Promise<Record<DeletedItemType, Set<string>>> => {
+    if (!userId) return deletedIdsCache;
+    try {
+        const { data, error } = await supabase
+            .from('deleted_items')
+            .select('item_type, item_id')
+            .eq('user_id', userId);
+        if (error) throw error;
+
+        const next = emptyDeletedCache();
+        (data || []).forEach((row: any) => {
+            const t = row.item_type as DeletedItemType;
+            if (next[t]) next[t].add(String(row.item_id));
+        });
+        // Fusionner les suppressions locales (non encore propagées) puis remplacer.
+        (Object.keys(next) as DeletedItemType[]).forEach((type) => {
+            deletedIdsCache[type].forEach((id) => next[type].add(id));
+            deletedIdsCache[type] = next[type];
+        });
+        return deletedIdsCache;
+    } catch (e) {
+        console.warn('⚠️ [TOMBSTONE] fetchDeletedIds échouée (offline?):', e);
+        return deletedIdsCache;
+    }
 };
 
 /**
@@ -370,18 +452,28 @@ export const loadFromSupabase = async (userId: string): Promise<any> => {
             // Use the passed userId directly to avoid a slow getUser() network call
             // (especially critical right after iOS WebProcess unfreeze post-OAuth)
             const currentUserId = userId;
+            const tStart = performance.now();
+            // Diagnostic : où le hang se produit-il ? (auth/refresh avant requête,
+            // requête profiles, ou requête children join). console.log direct pour
+            // garantir la visibilité dans logcat même sans flag debug.
+            console.log('⏱️ [LOAD] début — getSession…');
+            const { data: sess } = await supabase.auth.getSession();
+            console.log(`⏱️ [LOAD] getSession fait en ${(performance.now() - tStart).toFixed(0)}ms — token exp: ${sess?.session?.expires_at}`);
 
             // 1. Load Profile
+            const tP = performance.now();
             const { data: profile, error: pError } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', currentUserId)
                 .maybeSingle();
+            console.log(`⏱️ [LOAD] profiles fait en ${(performance.now() - tP).toFixed(0)}ms${pError ? ' ERR=' + pError.message : ''}`);
 
             if (pError) throw pError;
             if (!profile) return null;
 
             // 2. Load Children directly by user_id
+            const tC = performance.now();
             const { data: children, error: cError } = await supabase
                 .from('children')
                 .select(`
@@ -391,17 +483,24 @@ export const loadFromSupabase = async (userId: string): Promise<any> => {
                     transactions(*)
                 `)
                 .eq('user_id', currentUserId);
+            console.log(`⏱️ [LOAD] children fait en ${(performance.now() - tC).toFixed(0)}ms${cError ? ' ERR=' + cError.message : ''}`);
 
             if (cError) throw cError;
             return { profile, children };
         };
 
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('TIMEOUT_LOAD_DATA')), 8000)
-        );
-
-        // Usage de l'outil retry réseau: 3 tentatives avec backoff exponentiel
-        const result = await withRetry(() => Promise.race([fetchData(), timeoutPromise])) as any;
+        // Usage de l'outil retry réseau: 3 tentatives avec backoff exponentiel.
+        // ⚠️ Le timeout est créé À CHAQUE tentative (pas partagé) : avant, un seul
+        // timeout de 8s couvrait les 3 retries → si la 1ère tentative était lente
+        // (refresh token au cold start), les retries n'avaient plus de temps → échec
+        // systématique (`Error loading V2`). Chaque tentative a maintenant ses 8s.
+        const result = await withRetry(() => {
+            let to: any;
+            const timeoutPromise = new Promise((_, reject) =>
+                to = setTimeout(() => reject(new Error('TIMEOUT_LOAD_DATA')), 8000)
+            );
+            return Promise.race([fetchData(), timeoutPromise]).finally(() => clearTimeout(to));
+        }) as any;
         if (!result) return null;
 
         const { profile, children } = result;
@@ -460,8 +559,21 @@ export const loadFromSupabase = async (userId: string): Promise<any> => {
                 })
             }))
         };
-    } catch (err) {
-        console.error('❌ Error loading from Supabase V2:', err);
+    } catch (err: any) {
+        // Le `console.error('...', err)` brut sérialise un objet Error en `{}` dans la
+        // console iOS (props non énumérables). On extrait explicitement les champs utiles
+        // pour diagnostiquer (timeout 8s ? 401 auth ? PostgrestError ? abort réseau ?).
+        const elapsed = (performance.now() - start).toFixed(0);
+        const detail = {
+            message: err?.message || String(err),
+            code: err?.code,
+            details: err?.details,
+            hint: err?.hint,
+            status: err?.status,
+            name: err?.name,
+            elapsedMs: elapsed,
+        };
+        console.error('❌ Error loading from Supabase V2:', JSON.stringify(detail));
         return null;
     }
 };
@@ -619,19 +731,16 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                     .eq('child_id', savedChildId);
 
                 const dbGoalIds = new Set((existingDbGoals || []).map((g: any) => g.id));
-                // Anti-doublon par CONTENU (titre:montant) → comme pour les enfants.
-                // Évite la rafale de doublons quand l'id local n'est pas (encore) en DB.
-                const dbGoalBySignature = new Map<string, string>();
-                (existingDbGoals || []).forEach((g: any) => {
-                    dbGoalBySignature.set(`${g.title}:${g.target_amount}`, g.id);
-                });
 
                 const activeGoals = child.goals.filter((g: any) => g.target > 0);
                 const rowsToInsert: any[] = [];
 
+                // Matching par ID uniquement (les goals ont des UUID stables désormais).
+                // PLUS de réutilisation par signature nom+montant : elle faisait qu'un
+                // nouveau goal de même contenu qu'un goal existant était fusionné avec
+                // lui (idMapping) → il n'était jamais inséré → invisible sur l'autre appareil.
                 for (const g of activeGoals) {
                     const title = g.name || 'Objectif';
-                    const signature = `${title}:${g.target}`;
                     const updatePayload = {
                         title,
                         target_amount: g.target,
@@ -643,13 +752,8 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                     if (dbGoalIds.has(g.id)) {
                         // Existe déjà par id → update
                         await supabase.from('goals').update(updatePayload).eq('id', g.id);
-                    } else if (dbGoalBySignature.has(signature)) {
-                        // Existe par contenu mais id différent → réutiliser (pas de doublon)
-                        const existingId = dbGoalBySignature.get(signature)!;
-                        idMapping[g.id] = existingId; // converger l'id local
-                        await supabase.from('goals').update(updatePayload).eq('id', existingId);
                     } else {
-                        // Vraiment nouveau → insert
+                        // Nouveau → insert (id stable si déjà un UUID, sinon on en génère un)
                         const newId = isUUID(g.id) ? g.id : crypto.randomUUID();
                         if (newId !== g.id) idMapping[g.id] = newId;
                         rowsToInsert.push({
@@ -662,8 +766,6 @@ export const saveToSupabase = async (userId: string, state: any): Promise<{ succ
                             status: g.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE',
                             is_achieved: g.status === 'COMPLETED'
                         });
-                        // Marquer pour éviter un double insert dans la même passe
-                        dbGoalBySignature.set(signature, newId);
                     }
                 }
 

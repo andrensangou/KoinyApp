@@ -1,6 +1,6 @@
 import { Preferences } from '@capacitor/preferences';
 import { GlobalState, INITIAL_DATA } from '../types';
-import { getSupabase, loadFromSupabase, saveToSupabase } from './supabase';
+import { getSupabase, loadFromSupabase, saveToSupabase, fetchDeletedIds, getDeletedIdsCache } from './supabase';
 
 const STORAGE_KEY = 'koiny_local_v1';
 const BACKUP_KEY = 'koiny_local_v1_backup';
@@ -37,6 +37,24 @@ export const persistentStorage = {
 /**
  * VERSION HYBRIDE - Supporte Preferences et Supabase Cloud Sync
  */
+// Retire les items supprimés (tombstones) du state pour que le merge (union par ID)
+// ne les ressuscite pas. Utilise le cache synchrone rempli par fetchDeletedIds.
+const applyTombstones = (state: GlobalState): GlobalState => {
+  const del = getDeletedIdsCache();
+  if (del.child.size === 0 && del.goal.size === 0 && del.mission.size === 0 && del.transaction.size === 0) {
+    return state;
+  }
+  const children = (state.children || [])
+    .filter((c: any) => !del.child.has(c.id))
+    .map((c: any) => ({
+      ...c,
+      goals: (c.goals || []).filter((g: any) => !del.goal.has(g.id)),
+      missions: (c.missions || []).filter((m: any) => !del.mission.has(m.id)),
+      history: (c.history || []).filter((h: any) => !del.transaction.has(h.id)),
+    }));
+  return { ...state, children };
+};
+
 export const loadData = async (knownUserId?: string): Promise<{ data: GlobalState, ownerId?: string }> => {
   const supabase = getSupabase();
 
@@ -79,6 +97,9 @@ export const loadData = async (knownUserId?: string): Promise<{ data: GlobalStat
 
       const cloudData = await loadFromSupabase(user.id);
 
+      // Charger les tombstones (suppressions) pour filtrer les items ressuscités
+      await fetchDeletedIds(user.id);
+
       if (cloudData) {
         const localHasChildren = (localData?.children?.length || 0) > 0;
         const cloudHasChildren = (cloudData?.children?.length || 0) > 0;
@@ -90,7 +111,9 @@ export const loadData = async (knownUserId?: string): Promise<{ data: GlobalStat
         // entités par ID des deux côtés, donc rien n'est perdu.
         if (localData && localHasChildren && cloudHasChildren) {
           console.log('🔀 [STORAGE] Merge local + cloud (multi-appareils)');
-          const merged = mergeGlobalStates(migrateData(localData), migrateData(cloudData));
+          // applyTombstones : retire les items supprimés ailleurs pour qu'ils ne
+          // soient pas ressuscités par l'union du merge ni repoussés vers le cloud.
+          const merged = applyTombstones(mergeGlobalStates(migrateData(localData), migrateData(cloudData)));
           await persistentStorage.set(STORAGE_KEY, JSON.stringify(merged));
           // Converger : repousser le résultat fusionné vers le cloud
           saveToSupabase(user.id, merged).catch(e =>
@@ -103,17 +126,19 @@ export const loadData = async (knownUserId?: string): Promise<{ data: GlobalStat
         // (évite d'écraser des données offline par un cloud vide)
         if (localData && localHasChildren && !cloudHasChildren) {
           console.log('⚡ [STORAGE] Cache local prioritaire (cloud vide)');
-          saveToSupabase(user.id, localData).catch(e =>
+          const localClean = applyTombstones(migrateData(localData));
+          saveToSupabase(user.id, localClean).catch(e =>
             console.warn('⚠️ [STORAGE] Sync offline→cloud échouée:', e)
           );
-          return { data: migrateData(localData), ownerId: user.id };
+          return { data: localClean, ownerId: user.id };
         }
 
         // Sinon (local vide ou inexistant) → charger le cloud
         console.log('✅ [STORAGE] Chargement cloud');
-        await persistentStorage.set(STORAGE_KEY, JSON.stringify(cloudData));
+        const cloudClean = applyTombstones(migrateData(cloudData));
+        await persistentStorage.set(STORAGE_KEY, JSON.stringify(cloudClean));
         return {
-          data: migrateData(cloudData),
+          data: cloudClean,
           ownerId: user.id
         };
       }
@@ -247,23 +272,17 @@ const mergeChildProfile = (local: any, cloud: any, preferCloudScalars: boolean =
     missionsMap.set(mission.id, mission);
   });
 
+  // Merger les goals par ID (union, comme les missions). Le côté préféré itéré en
+  // dernier gagne sur un même ID (édition). PLUS de dédup par signature nom+montant :
+  // depuis que les goals ont des UUID stables, l'id suffit — la dédup par contenu
+  // fusionnait à tort des goals distincts et BLOQUAIT l'apparition d'un nouveau goal
+  // dont le nom+montant matchait un goal existant sur l'autre appareil.
   const goalsMap = new Map();
-  // Dédupliquer les goals par ID ET par nom+montant (anti-doublon cross-ID).
-  // Même logique de récence : le côté préféré itéré en dernier gagne sur même ID.
-  const goalSignatureMap = new Map<string, boolean>();
   const goalOrder = preferCloudScalars
     ? [...local.goals, ...cloud.goals]   // cloud plus récent → cloud gagne
     : [...cloud.goals, ...local.goals];  // local plus récent → local gagne
   goalOrder.forEach((goal: any) => {
-    const signature = `${goal.name || goal.title || ''}:${goal.target || 0}`;
-    if (!goalsMap.has(goal.id) && !goalSignatureMap.has(signature)) {
-      goalsMap.set(goal.id, goal);
-      goalSignatureMap.set(signature, true);
-    } else if (goalsMap.has(goal.id)) {
-      // Mettre à jour si même ID (garder le plus récent)
-      goalsMap.set(goal.id, goal);
-    }
-    // Si signature déjà vue mais ID différent → doublon, on skip
+    goalsMap.set(goal.id, goal);
   });
 
   return {
@@ -324,7 +343,11 @@ const mergeGlobalStates = (local: GlobalState, cloud: GlobalState): GlobalState 
     parentPin: useLocal ? local.parentPin : cloud.parentPin,
     soundEnabled: useLocal ? local.soundEnabled : cloud.soundEnabled,
     notificationsEnabled: useLocal ? local.notificationsEnabled : cloud.notificationsEnabled,
-    updatedAt: new Date().toISOString()
+    // ⚠️ NE PAS minter un timestamp neuf ici : merger deux états identiques doit
+    // redonner le MÊME updatedAt, sinon le foreground reload (App.tsx) voit toujours
+    // « cloud plus récent » → boucle de reload infinie + save-auto bloqué en permanence.
+    // On conserve le plus récent des deux. Le chemin saveData ré-override avec now().
+    updatedAt: (useLocal ? local.updatedAt : cloud.updatedAt) || new Date().toISOString()
   };
 };
 
@@ -400,6 +423,9 @@ export const saveData = async (data: GlobalState, ownerId?: string, immediate?: 
   // 4. Synchronisation cloud (AWAITED pour récupérer les idMappings)
   if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
     try {
+      // Ne jamais repousser un item supprimé : on filtre via le cache tombstones
+      // (synchrone, rempli par loadData/recordDeletion) avant l'upsert cloud.
+      dataToSave = { ...applyTombstones(dataToSave), updatedAt: dataToSave.updatedAt };
       console.log('☁️ [STORAGE] Synchronisation cloud en cours...');
       const syncPromise = saveToSupabase(ownerId, dataToSave);
       const syncTimeout = new Promise<{ success: boolean, idMapping: Record<string, string> }>((resolve) =>
