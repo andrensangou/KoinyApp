@@ -115,10 +115,22 @@ export const loadData = async (knownUserId?: string): Promise<{ data: GlobalStat
           // soient pas ressuscités par l'union du merge ni repoussés vers le cloud.
           const merged = applyTombstones(mergeGlobalStates(migrateData(localData), migrateData(cloudData)));
           await persistentStorage.set(STORAGE_KEY, JSON.stringify(merged));
-          // Converger : repousser le résultat fusionné vers le cloud
-          saveToSupabase(user.id, merged).catch(e =>
-            console.warn('⚠️ [STORAGE] Sync merge→cloud échouée:', e)
-          );
+          // Converger vers le cloud — UNIQUEMENT si le local est STRICTEMENT plus
+          // récent que le cloud. Sinon (cloud à jour ou en avance), on ne repousse
+          // rien : `profiles.updated_at` est forcé à now() par un trigger DB à chaque
+          // UPDATE, donc un push redondant bumperait le timestamp → l'autre appareil
+          // verrait « cloud plus récent » → reload → push → PING-PONG infini toutes
+          // les 5s (polling). Ce churn rendait aussi la récence des flags de demande
+          // (giftRequested/missionRequested) non fiable. Les vrais changements locaux
+          // passent de toute façon par saveData (qui bump légitimement updatedAt).
+          const localTs = new Date(localData.updatedAt || 0).getTime();
+          const cloudTs = new Date(cloudData.updatedAt || 0).getTime();
+          if (localTs > cloudTs) {
+            console.log('⤴️ [STORAGE] Local plus récent → converge vers cloud');
+            saveToSupabase(user.id, merged).catch(e =>
+              console.warn('⚠️ [STORAGE] Sync merge→cloud échouée:', e)
+            );
+          }
           return { data: merged, ownerId: user.id };
         }
 
@@ -240,17 +252,21 @@ const mergeChildProfile = (local: any, cloud: any, preferCloudScalars: boolean =
     return 0;
   };
 
-  // Merger l'historique (union sans doublons)
+  // Merger l'historique (union sans doublons).
+  // Exception : si le cloud a vidé l'historique (clearHistory) ET est plus récent,
+  // on respecte [] — sinon l'union locale ressusciterait toutes les transactions.
   const historyMap = new Map();
-  [...local.history, ...cloud.history].forEach((entry: any) => {
-    const existing = historyMap.get(entry.id);
-    if (!existing) {
-      historyMap.set(entry.id, entry);
-    } else if (entryTime(entry) > entryTime(existing)) {
-      // Garder l'entrée avec le timestamp le plus complet/récent
-      historyMap.set(entry.id, entry);
-    }
-  });
+  const cloudCleared = preferCloudScalars && cloud.history.length === 0;
+  if (!cloudCleared) {
+    [...local.history, ...cloud.history].forEach((entry: any) => {
+      const existing = historyMap.get(entry.id);
+      if (!existing) {
+        historyMap.set(entry.id, entry);
+      } else if (entryTime(entry) > entryTime(existing)) {
+        historyMap.set(entry.id, entry);
+      }
+    });
+  }
 
   // Tri par temps décroissant. Départage déterministe par id (même ordre sur les
   // deux appareils) pour les entrées du même jour sans heure.

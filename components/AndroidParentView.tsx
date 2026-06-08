@@ -8,6 +8,7 @@ import HelpModal from './HelpModal';
 import { SubscriptionModal } from './SubscriptionModal';
 import QrScannerModal from './QrScannerModal';
 import QrConnectTip, { isQrTipDismissed } from './QrConnectTip';
+import { notifications } from '../services/notifications';
 
 // ── Design tokens (mirrors koiny-data.jsx)
 const KT = {
@@ -2025,6 +2026,13 @@ export default function AndroidParentView({
     }
   }, [data.children, childId]);
 
+  // Demande de permission notifications au montage (comme iOS ParentView)
+  useEffect(() => {
+    notifications.checkPermission().then(granted => {
+      if (!granted) notifications.requestPermission();
+    });
+  }, []);
+
   if (!isAuthenticated) {
     const dots = [0, 1, 2, 3];
     const isError = pinState === 'error';
@@ -2092,7 +2100,9 @@ export default function AndroidParentView({
   }
 
   const activeChild = data.children.find(c => c.id === childId) ?? data.children[0];
-  const totalPending = data.children.reduce((a, c) => a + c.missions.filter(m => m.status === 'PENDING').length, 0);
+  const totalPending = data.children.reduce((a, c) =>
+    a + c.missions.filter(m => m.status === 'PENDING').length
+      + (c.giftRequested ? 1 : 0) + (c.missionRequested ? 1 : 0), 0);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: KT.bg, position: 'relative' }}>

@@ -1393,7 +1393,17 @@ const App: React.FC = () => {
       isDirectSupabaseOperation.current = false;
     }
   };
-  const handleClearHistory = (id: string) => updateChild(id, (c) => ({ ...c, history: [] }));
+  const handleClearHistory = async (id: string) => {
+    // 1. Optimistic : vider localement immédiatement
+    updateChild(id, (c) => ({ ...c, history: [] }));
+
+    // 2. Supprimer les transactions dans Supabase (best-effort, timeout anti-hang)
+    if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
+      const supabase = getSupabase();
+      raceTimeout(supabase.from('transactions').delete().eq('child_id', id), 8000)
+        .catch(e => console.warn('⚠️ Erreur suppression historique cloud:', e));
+    }
+  };
   const showAppError = (msg: string) => {
     setAppError(msg);
     setTimeout(() => setAppError(null), 5000);
