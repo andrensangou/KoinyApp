@@ -8,6 +8,7 @@ import HelpModal from './HelpModal';
 import { SubscriptionModal } from './SubscriptionModal';
 import QrScannerModal from './QrScannerModal';
 import QrConnectTip, { isQrTipDismissed } from './QrConnectTip';
+import { carryTitle } from '../services/historyTitle';
 import { notifications } from '../services/notifications';
 
 // ── Design tokens (mirrors koiny-data.jsx)
@@ -887,10 +888,9 @@ function AddGoalSheet({ isOpen, onClose, onAdd, prefill, editMode, currency, lan
 }
 
 // ══ HISTORY SCREEN ════════════════════════════════════════════
-function HistoryScreen({ child, currency, language, onClearHistory, isPremium }: { child: ChildProfile; currency: string; language: Language; onClearHistory: (childId: string) => void; isPremium?: boolean }) {
+function HistoryScreen({ child, currency, language, isPremium }: { child: ChildProfile; currency: string; language: Language; isPremium?: boolean }) {
   const FREE_HISTORY_LIMIT = 5;
   const [filter, setFilter] = useState<'THIS_MONTH' | 'ALL'>('THIS_MONTH');
-  const [confirmClear, setConfirmClear] = useState(false);
   const now = new Date();
   const monthStr = `/${String(now.getMonth() + 1).padStart(2, '0')}/`;
   const allShown = filter === 'THIS_MONTH' ? child.history.filter(i => i.date.includes(monthStr)) : child.history;
@@ -908,36 +908,7 @@ function HistoryScreen({ child, currency, language, onClearHistory, isPremium }:
             {lb}
           </button>
         ))}
-        {child.history.length > 0 && (
-          <button onClick={() => setConfirmClear(true)}
-            style={{ marginLeft: 'auto', width: 34, height: 34, borderRadius: '50%', background: KT.dangerLight, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            aria-label={language === 'fr' ? 'Effacer l\'historique' : language === 'nl' ? 'Geschiedenis wissen' : 'Clear history'}>
-            <i className="fa-solid fa-trash-can" style={{ color: KT.danger, fontSize: 13 }} />
-          </button>
-        )}
       </div>
-      {confirmClear && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}>
-          <div style={{ background: '#fff', borderRadius: 20, padding: 24, margin: '0 24px', boxShadow: '0 8px 40px rgba(0,0,0,0.2)', maxWidth: 340 }}>
-            <p style={{ fontFamily: KT.poppins, fontSize: 15, fontWeight: 700, color: KT.text, margin: '0 0 8px' }}>
-              {language === 'fr' ? 'Effacer l\'historique ?' : language === 'nl' ? 'Geschiedenis wissen?' : 'Clear history?'}
-            </p>
-            <p style={{ fontFamily: KT.poppins, fontSize: 12, color: KT.textSm, margin: '0 0 20px' }}>
-              {language === 'fr' ? `Toutes les transactions de ${child.name} seront supprimées définitivement.` : language === 'nl' ? `Alle transacties van ${child.name} worden permanent verwijderd.` : `All transactions for ${child.name} will be permanently deleted.`}
-            </p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setConfirmClear(false)}
-                style={{ flex: 1, padding: '11px 0', borderRadius: 12, background: KT.bg, border: 'none', fontFamily: KT.poppins, fontSize: 13, fontWeight: 600, color: KT.textSm, cursor: 'pointer' }}>
-                {language === 'fr' ? 'Annuler' : language === 'nl' ? 'Annuleren' : 'Cancel'}
-              </button>
-              <button onClick={() => { onClearHistory(child.id); setConfirmClear(false); }}
-                style={{ flex: 1, padding: '11px 0', borderRadius: 12, background: KT.danger, border: 'none', fontFamily: KT.poppins, fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer' }}>
-                {language === 'fr' ? 'Effacer' : language === 'nl' ? 'Wissen' : 'Clear'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Summary row */}
       <div style={{ display: 'flex', gap: 10, padding: '0 16px 14px', overflowX: 'auto', scrollbarWidth: 'none' }}>
         {[
@@ -972,7 +943,7 @@ function HistoryScreen({ child, currency, language, onClearHistory, isPremium }:
                 <i className={`fa-solid ${ic}`} style={{ color: col, fontSize: 14 }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontFamily: KT.poppins, fontSize: 13, fontWeight: 500, color: KT.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
+                <p style={{ fontFamily: KT.poppins, fontSize: 13, fontWeight: 500, color: KT.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{carryTitle(item.title, language)}</p>
                 <p style={{ fontFamily: KT.poppins, fontSize: 10, color: KT.textXs, margin: 0 }}>{item.date}</p>
               </div>
               <span style={{ fontFamily: KT.poppins, fontSize: 14, fontWeight: 800, color: pos ? KT.success : KT.danger, flexShrink: 0 }}>
@@ -1102,7 +1073,7 @@ function RequestsScreen({ data, onReview, currency, language, selectedChildId, o
                 <i className={`fa-solid ${kGetIcon(item.icon)}`} style={{ fontSize: 18, color: KT.warning }} />
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontFamily: KT.poppins, fontSize: 13, fontWeight: 600, color: KT.text, margin: '0 0 2px' }}>{item.title}</p>
+                <p style={{ fontFamily: KT.poppins, fontSize: 13, fontWeight: 600, color: KT.text, margin: '0 0 2px' }}>{carryTitle(item.title, language)}</p>
                 <span style={{ fontFamily: KT.poppins, fontSize: 13, fontWeight: 800, color: KT.primary }}>+{item.reward.toFixed(2)}{currency}</span>
               </div>
             </div>
@@ -2184,7 +2155,7 @@ export default function AndroidParentView({
           />
         )}
         {tab === 'history' && activeChild && (
-          <HistoryScreen child={activeChild} currency={currency} language={language} onClearHistory={onClearHistory} isPremium={data.isPremium} />
+          <HistoryScreen child={activeChild} currency={currency} language={language} isPremium={data.isPremium} />
         )}
         {tab === 'requests' && (
           <RequestsScreen

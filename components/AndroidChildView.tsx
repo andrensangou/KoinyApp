@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChildProfile, Goal, Mission, HistoryEntry, Language } from '../types';
+import { sounds } from '../services/sounds';
+import { carryTitle } from '../services/historyTitle';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 // ── M3 Color tokens ──────────────────────────────────────────────────────────
 const M3 = {
@@ -171,7 +174,7 @@ type TKeys = {
   validating: string; noMissions: string; noMissionsDesc: string; askMission: string;
   totalGains: string; totalOut: string; transactions: string; collection: string;
   settings: string; hello: string; logout: string; darkMode: string; sounds: string;
-  language: string; goalReady: string; requestSent: string; totalEarned: string;
+  language: string; goalReady: string; claim: string; requestSent: string; totalEarned: string;
   currentBalance: string; tabHome: string; tabMissions: string; tabHistory: string;
   tabBadges: string; tabProfile: string; level: string; age: (n: number) => string;
   missionDone: (n: string, cur: string) => string;
@@ -188,7 +191,7 @@ const T: Record<Language, TKeys> = {
     transactions: 'TRANSACTIONS', collection: 'COLLECTION', settings: 'PARAMÈTRES',
     hello: 'BONJOUR 👋', logout: 'Déconnexion', darkMode: 'Mode sombre',
     sounds: 'Sons', language: 'Langue',
-    goalReady: '🎉 Demande à tes parents !',
+    goalReady: '🎉 Demande à tes parents !', claim: 'Réclamer',
     requestSent: 'Demande envoyée à tes parents ! 📬',
     totalEarned: 'TOTAL GAGNÉ', currentBalance: 'SOLDE ACTUEL',
     tabHome: 'Accueil', tabMissions: 'Missions', tabHistory: 'Historique',
@@ -207,7 +210,7 @@ const T: Record<Language, TKeys> = {
     transactions: 'TRANSACTIES', collection: 'COLLECTIE', settings: 'INSTELLINGEN',
     hello: 'HALLO 👋', logout: 'Uitloggen', darkMode: 'Donkere modus',
     sounds: 'Geluiden', language: 'Taal',
-    goalReady: '🎉 Vraag het aan je ouders!',
+    goalReady: '🎉 Vraag het aan je ouders!', claim: 'Ophalen',
     requestSent: 'Verzoek verstuurd aan je ouders! 📬',
     totalEarned: 'TOTAAL VERDIEND', currentBalance: 'HUIDIG SALDO',
     tabHome: 'Thuis', tabMissions: 'Missies', tabHistory: 'Geschiedenis',
@@ -226,7 +229,7 @@ const T: Record<Language, TKeys> = {
     transactions: 'TRANSACTIONS', collection: 'COLLECTION', settings: 'SETTINGS',
     hello: 'HELLO 👋', logout: 'Log out', darkMode: 'Dark mode',
     sounds: 'Sounds', language: 'Language',
-    goalReady: '🎉 Ask your parents!',
+    goalReady: '🎉 Ask your parents!', claim: 'Claim',
     requestSent: 'Request sent to your parents! 📬',
     totalEarned: 'TOTAL EARNED', currentBalance: 'CURRENT BALANCE',
     tabHome: 'Home', tabMissions: 'Missions', tabHistory: 'History',
@@ -519,9 +522,10 @@ interface HomeScreenProps {
   isDark: boolean;
   onComplete: (id: string) => void;
   onRequestGift?: () => void;
+  onPurchase?: (goal: Goal) => void;
 }
 
-function HomeScreen({ C, data, language, currency, isDark, onComplete, onRequestGift }: HomeScreenProps) {
+function HomeScreen({ C, data, language, currency, isDark, onComplete, onRequestGift, onPurchase }: HomeScreenProps) {
   const t = T[language] || T.fr;
   const [goalPage, setGoalPage] = useState(0);
   const goalsRef = useRef<HTMLDivElement>(null);
@@ -633,7 +637,7 @@ function HomeScreen({ C, data, language, currency, isDark, onComplete, onRequest
                       borderRadius: 18, padding: 16,
                       flexShrink: 0,
                       display: 'flex', flexDirection: 'column',
-                      height: 112,
+                      minHeight: 112,
                     }}>
                       {/* Icon + name */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -666,12 +670,19 @@ function HomeScreen({ C, data, language, currency, isDark, onComplete, onRequest
                         }} />
                       </div>
                       {isReady && (
-                        <div style={{
-                          marginTop: 4, fontFamily: pp, fontSize: 10, fontWeight: 700,
-                          color: '#10B981', letterSpacing: '0.02em',
-                        }}>
-                          {t.goalReady}
-                        </div>
+                        <button
+                          onClick={() => onPurchase?.(goal)}
+                          style={{
+                            marginTop: 8, width: '100%', border: 'none', cursor: 'pointer',
+                            background: '#10B981', color: '#fff', borderRadius: 12,
+                            padding: '9px 12px', fontFamily: pp, fontSize: 13, fontWeight: 600,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                          }}
+                          aria-label={t.claim}
+                        >
+                          <i className="fa-solid fa-gift" style={{ color: '#FDE047' }} />
+                          {t.claim}
+                        </button>
                       )}
                     </div>
                   );
@@ -973,9 +984,12 @@ interface HistoryScreenProps {
 
 function HistoryScreen({ C, data, language, currency }: HistoryScreenProps) {
   const t = T[language] || T.fr;
+  const [filter, setFilter] = useState<'THIS_MONTH' | 'ALL'>('THIS_MONTH');
+  const monthStr = `/${String(new Date().getMonth() + 1).padStart(2, '0')}/`;
+  const shown = filter === 'THIS_MONTH' ? data.history.filter(h => h.date.includes(monthStr)) : data.history;
 
-  const totalGains = data.history.filter(h => h.amount > 0 && !cPurchase(h.title)).reduce((a, h) => a + h.amount, 0);
-  const totalOut   = data.history.filter(h => h.amount < 0 || cPurchase(h.title)).reduce((a, h) => a + Math.abs(h.amount), 0);
+  const totalGains = shown.filter(h => h.amount > 0 && !cPurchase(h.title)).reduce((a, h) => a + h.amount, 0);
+  const totalOut   = shown.filter(h => h.amount < 0 || cPurchase(h.title)).reduce((a, h) => a + Math.abs(h.amount), 0);
 
   const histIcon = (entry: HistoryEntry) => {
     if (cPenalty(entry.title))  return { icon: 'fa-gavel',        color: '#B3261E' };
@@ -987,10 +1001,19 @@ function HistoryScreen({ C, data, language, currency }: HistoryScreenProps) {
   // Pas de re-tri : on garde l'ordre du cloud (created_at décroissant = dernière
   // validation en haut), identique à iOS. Le champ `date` n'ayant que le jour
   // (JJ/MM/AAAA), re-trier dessus casserait l'ordre des transactions d'un même jour.
-  const sorted = [...data.history];
+  const sorted = [...shown];
 
   return (
     <div style={{ paddingTop: 16, paddingBottom: 24 }}>
+      {/* Filtre CE MOIS / TOUT */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        {([['THIS_MONTH', language === 'fr' ? 'CE MOIS' : language === 'nl' ? 'DEZE MAAND' : 'THIS MONTH'], ['ALL', language === 'fr' ? 'TOUT' : language === 'nl' ? 'ALLES' : 'ALL']] as const).map(([k, lb]) => (
+          <button key={k} onClick={() => setFilter(k)}
+            style={{ padding: '7px 18px', borderRadius: 20, fontFamily: pp, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: filter === k ? C.primary : C.surfaceContainerLow, color: filter === k ? C.onPrimary : C.onSurfaceVariant, border: 'none' }}>
+            {lb}
+          </button>
+        ))}
+      </div>
       {/* Summary grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
         <div style={{
@@ -1049,7 +1072,7 @@ function HistoryScreen({ C, data, language, currency }: HistoryScreenProps) {
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: pp, fontSize: 13, fontWeight: 600, color: C.onSurface, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {entry.title}
+                  {carryTitle(entry.title, language)}
                 </div>
                 <div style={{ fontFamily: pp, fontSize: 11, color: C.onSurfaceVariant }}>
                   {entry.date}
@@ -1420,6 +1443,26 @@ export default function AndroidChildView({
     return () => mq.removeEventListener('change', handler);
   }, []);
 
+  // Son sur variation du solde : gain (+ objectif atteint) ou pénalité (comme iOS)
+  const prevBalance = useRef(data.balance);
+  useEffect(() => {
+    const diff = Number((data.balance - prevBalance.current).toFixed(2));
+    if (Math.abs(diff) > 0.001) {
+      const last = data.history?.[0];
+      if (diff > 0) {
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+        const reachedGoal = (data.goals || []).some(g =>
+          g.status === 'ACTIVE' && prevBalance.current < g.target && data.balance >= g.target);
+        if (reachedGoal) sounds.goal(soundEnabled !== false);
+        else sounds.gain(soundEnabled !== false);
+      } else if (last && last.amount < 0 && cPenalty(last.title)) {
+        Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {});
+        sounds.penalty(soundEnabled !== false);
+      }
+    }
+    prevBalance.current = data.balance;
+  }, [data.balance, data.history, data.goals, soundEnabled]);
+
   const showSnack = useCallback((msg: string, action?: { label: string; fn: () => void }) => {
     clearTimeout(snackTimer.current);
     setSnack(null);
@@ -1428,17 +1471,25 @@ export default function AndroidChildView({
   }, []);
 
   const handleComplete = useCallback((missionId: string) => {
+    Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {});
+    sounds.mission(soundEnabled !== false);
     onCompleteMission(missionId);
     const m = data.missions.find(ms => ms.id === missionId);
     if (m) {
       showSnack((T[language] || T.fr).missionDone(m.reward.toFixed(2), currency));
     }
-  }, [data.missions, onCompleteMission, language, currency, showSnack]);
+  }, [data.missions, onCompleteMission, language, currency, showSnack, soundEnabled]);
 
   const handleRequestMission = useCallback(() => {
     onRequestMission?.();
     showSnack((T[language] || T.fr).requestSent);
   }, [onRequestMission, language, showSnack]);
+
+  const handlePurchase = useCallback((goal: Goal) => {
+    Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
+    sounds.purchase(soundEnabled !== false);
+    onPurchaseGoal?.(goal);
+  }, [onPurchaseGoal, soundEnabled]);
 
   const handleRequestGift = useCallback(() => {
     onRequestGift?.();
@@ -1490,6 +1541,7 @@ export default function AndroidChildView({
             isDark={isDark}
             onComplete={handleComplete}
             onRequestGift={handleRequestGift}
+            onPurchase={handlePurchase}
           />
         )}
         {tab === 'missions' && (

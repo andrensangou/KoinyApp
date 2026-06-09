@@ -49,7 +49,7 @@ export default function VirtualHistoryList({ history, language, isPenalty, getTr
     return (
         <div
             ref={parentRef}
-            className={`w-full overflow-y-auto no-scrollbar scroll-smooth ${isIOS ? 'h-[65vh] min-h-[350px] px-0' : 'h-[60vh] min-h-[400px] px-2'}`}
+            className={`w-full overflow-y-auto no-scrollbar scroll-smooth ${isIOS ? 'max-h-[65vh] px-0' : 'max-h-[60vh] px-2'}`}
         >
             <div
                 className="w-full relative"

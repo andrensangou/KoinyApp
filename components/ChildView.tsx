@@ -8,6 +8,8 @@ import { getIcon } from '../constants/icons';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { isAndroid } from '../hooks/usePlatform';
 import { useDarkMode } from '../hooks/useDarkMode';
+import { sounds } from '../services/sounds';
+import { carryTitle } from '../services/historyTitle';
 
 interface ChildViewProps {
   data: ChildProfile;
@@ -68,7 +70,7 @@ const getTranslatedTitle = (title: string, language: Language) => {
   if (title.includes('Ranger') || title.includes('opruimen') || title.includes('Clean')) return translations[language].parent.templates.room;
   if (title.includes('table')) return translations[language].parent.templates.table;
 
-  return title;
+  return carryTitle(title, language); // traduit "Solde reporté" sinon renvoie le titre
 };
 
 const getEntryIcon = (title: string) => {
@@ -76,15 +78,6 @@ const getEntryIcon = (title: string) => {
   if (isPurchase(title)) return `${getIcon('cart')} text-red-500`;
   if (isGift(title)) return `${getIcon('gift')} text-purple-500`;
   return `${getIcon('star')} text-emerald-500`;
-};
-
-const playSound = (enabled: boolean, url: string, volume: number = 0.5) => {
-  if (!enabled) return;
-  try {
-    const audio = new Audio(url);
-    audio.volume = volume;
-    audio.play().catch(() => { });
-  } catch (e) { }
 };
 
 const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€', onCompleteMission, onLogout, onTutorialComplete, onSetPrimaryGoal, soundEnabled, onRequestGift, onRequestMission, onPurchaseGoal }) => {
@@ -97,6 +90,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
     () => localStorage.getItem(`koiny_ack_penalty_${data.id}`)
   );
   const [activeGoalIndex, setActiveGoalIndex] = useState(0);
+  const [histFilter, setHistFilter] = useState<'THIS_MONTH' | 'ALL'>('THIS_MONTH');
   const goalsScrollRef = useRef<HTMLDivElement>(null);
 
   const t = translations[language];
@@ -112,15 +106,22 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
     return null;
   }, [data.history, acknowledgedPenaltyId]);
 
+  // Historique filtré (CE MOIS / TOUT) — comme la vue parent
+  const shownHistory = useMemo(() => {
+    const h = data.history || [];
+    if (histFilter === 'ALL') return h;
+    const monthStr = `/${String(new Date().getMonth() + 1).padStart(2, '0')}/`;
+    return h.filter(e => (e.date || '').includes(monthStr));
+  }, [data.history, histFilter]);
+
   const stats = useMemo(() => {
-    if (!data.history) return { totalGains: 0, totalLosses: 0 };
-    return data.history.reduce((acc, curr) => {
+    return shownHistory.reduce((acc, curr) => {
       const isNeg = curr.amount < 0 || isPenalty(curr.title) || isPurchase(curr.title);
       if (isNeg) acc.totalLosses += Math.abs(curr.amount);
       else acc.totalGains += curr.amount;
       return acc;
     }, { totalGains: 0, totalLosses: 0 });
-  }, [data.history]);
+  }, [shownHistory]);
 
   useEffect(() => {
     if (data.balance !== prevBalance.current) {
@@ -136,10 +137,15 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
 
         if (type === 'PENALTY') {
           Haptics.impact({ style: ImpactStyle.Heavy });
-          playSound(soundEnabled, '/sounds/penalty.mp3', 0.4);
+          sounds.penalty(soundEnabled);
         } else if (type === 'GAIN') {
           Haptics.impact({ style: ImpactStyle.Light });
-          playSound(soundEnabled, '/sounds/gain.mp3', 0.4);
+          // Objectif atteint : si ce gain fait franchir la cible d'un objectif actif
+          // → fanfare de célébration au lieu du simple son de gain.
+          const reachedGoal = (data.goals || []).some(g =>
+            g.status === 'ACTIVE' && prevBalance.current < g.target && data.balance >= g.target);
+          if (reachedGoal) sounds.goal(soundEnabled);
+          else sounds.gain(soundEnabled);
         }
       }
 
@@ -151,7 +157,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
 
   const handleMissionClick = (id: string) => {
     Haptics.impact({ style: ImpactStyle.Heavy });
-    playSound(soundEnabled, '/sounds/mission.mp3');
+    sounds.mission(soundEnabled);
     if (typeof confetti === 'function') {
       confetti({ particleCount: isAndroid ? 30 : 100, spread: isAndroid ? 50 : 70, origin: { y: 0.6 } });
     }
@@ -164,7 +170,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
 
   const handlePurchase = (goal: Goal) => {
     Haptics.impact({ style: ImpactStyle.Medium });
-    playSound(soundEnabled, '/sounds/purchase.mp3');
+    sounds.purchase(soundEnabled);
     if (typeof confetti === 'function') {
       confetti({
         particleCount: isAndroid ? 40 : 150,
@@ -405,7 +411,7 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
 
                   {/* Transaction list */}
                   <div className="px-6 pb-4 overflow-y-auto flex-grow">
-                    {data.history && data.history.length > 0 ? data.history.map(entry => {
+                    {shownHistory.length > 0 ? shownHistory.map(entry => {
                       const neg = entry.amount < 0 || isPenalty(entry.title) || isPurchase(entry.title);
                       return (
                         <div key={entry.id} className="flex items-center gap-3 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
@@ -459,9 +465,18 @@ const ChildView: React.FC<ChildViewProps> = ({ data, language, currency = '€',
                       <p style={{ fontSize: 17, fontWeight: 900, color: '#f43f5e' }}>-{stats.totalLosses.toFixed(2)}{curr}</p>
                     </div>
                   </div>
+                  {/* Filtre CE MOIS / TOUT */}
+                  <div style={{ display: 'flex', gap: 8, margin: '0 20px 12px', flexShrink: 0 }}>
+                    {([['THIS_MONTH', t.parent.history.thisMonth], ['ALL', t.parent.history.all]] as const).map(([k, lb]) => (
+                      <button key={k} onClick={() => setHistFilter(k)}
+                        style={{ padding: '6px 16px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none', textTransform: 'uppercase', letterSpacing: '0.05em', background: histFilter === k ? '#6366f1' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'), color: histFilter === k ? '#fff' : (isDark ? 'rgba(148,163,184,0.7)' : '#94a3b8') }}>
+                        {lb}
+                      </button>
+                    ))}
+                  </div>
                   {/* List */}
                   <div style={{ overflowY: 'auto', flex: 1, padding: '0 20px' }} className="no-scrollbar">
-                    {data.history && data.history.length > 0 ? data.history.map(entry => {
+                    {shownHistory.length > 0 ? shownHistory.map(entry => {
                       const neg = entry.amount < 0 || isPenalty(entry.title) || isPurchase(entry.title);
                       return (
                         <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}` }}>

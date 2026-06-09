@@ -283,7 +283,7 @@ class NotificationService {
                     iconColor: '#667eea'
                 }]
             });
-            console.log('[Notifications] ✅ Rolling reminder scheduled for', reminderDate.toISOString());
+            console.log(`[Notifications] ✅ Rolling reminder scheduled for ${reminderDate.toISOString()} — "${title}" / "${body}"`);
         } catch (error) {
             console.error('[Notifications] Error scheduling weekly reminder:', error);
         }

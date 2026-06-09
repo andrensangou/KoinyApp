@@ -27,6 +27,7 @@ import { useModal } from '../hooks/useModal';
 import { isAndroid } from '../hooks/usePlatform';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { CURRENCIES } from '../types';
+import { carryTitle } from '../services/historyTitle';
 
 interface ParentViewProps {
   data: GlobalState;
@@ -144,7 +145,7 @@ const getTranslatedTitle = (title: string, language: Language) => {
   if (isPurchase(category)) return translations[language].parent.transactions.labels.purchase + reason;
   if (isGift(category)) return translations[language].parent.transactions.labels.deposit + reason;
 
-  return title;
+  return carryTitle(title, language); // traduit "Solde reporté" sinon renvoie le titre
 };
 
 const ParentView: React.FC<ParentViewProps> = ({
@@ -2370,11 +2371,6 @@ const ParentView: React.FC<ParentViewProps> = ({
                       <button onClick={() => setHistoryFilter('THIS_MONTH')} className={`flex-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'THIS_MONTH' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}>{t.parent.history.thisMonth}</button>
                       <button onClick={() => setHistoryFilter('ALL')} className={`flex-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${historyFilter === 'ALL' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-400'}`}>{t.parent.history.all}</button>
                     </div>
-                    {hasAnyHistory &&
-                      <button onClick={() => openConfirm(t.parent.history.clearTitle, t.parent.history.clearMessage, () => onClearHistory(activeChild.id), 'warning')} aria-label={t.parent.history.clearTitle} className="w-11 h-11 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl transition-colors shrink-0 border border-rose-100 dark:border-rose-900/50 shadow-sm">
-                        <i className="fa-solid fa-trash-can" aria-hidden="true"></i>
-                      </button>
-                    }
                   </div>
                 ) : (
                   /* iOS: simplified — THIS MONTH / ALL + amount + trash */
@@ -2391,11 +2387,6 @@ const ParentView: React.FC<ParentViewProps> = ({
                         </span>
                       );
                     })()}
-                    {hasAnyHistory &&
-                      <button onClick={() => openConfirm(t.parent.history.clearTitle, t.parent.history.clearMessage, () => onClearHistory(activeChild.id), 'warning')} aria-label={t.parent.history.clearTitle} className="w-10 h-10 flex items-center justify-center bg-rose-50 text-rose-500 active:bg-rose-100 rounded-xl transition-colors shrink-0">
-                        <i className="fa-solid fa-trash-can text-xs" aria-hidden="true"></i>
-                      </button>
-                    }
                   </div>
                 )}
               </div>

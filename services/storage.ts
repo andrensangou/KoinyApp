@@ -252,21 +252,18 @@ const mergeChildProfile = (local: any, cloud: any, preferCloudScalars: boolean =
     return 0;
   };
 
-  // Merger l'historique (union sans doublons).
-  // Exception : si le cloud a vidé l'historique (clearHistory) ET est plus récent,
-  // on respecte [] — sinon l'union locale ressusciterait toutes les transactions.
+  // Merger l'historique : union par ID (jamais de perte). La fonctionnalité
+  // "Effacer l'historique" a été retirée (le solde étant dérivé de l'historique,
+  // l'effacer cross-device était trop fragile) → plus de cas "cloud vidé" à gérer.
   const historyMap = new Map();
-  const cloudCleared = preferCloudScalars && cloud.history.length === 0;
-  if (!cloudCleared) {
-    [...local.history, ...cloud.history].forEach((entry: any) => {
-      const existing = historyMap.get(entry.id);
-      if (!existing) {
-        historyMap.set(entry.id, entry);
-      } else if (entryTime(entry) > entryTime(existing)) {
-        historyMap.set(entry.id, entry);
-      }
-    });
-  }
+  [...local.history, ...cloud.history].forEach((entry: any) => {
+    const existing = historyMap.get(entry.id);
+    if (!existing) {
+      historyMap.set(entry.id, entry);
+    } else if (entryTime(entry) > entryTime(existing)) {
+      historyMap.set(entry.id, entry);
+    }
+  });
 
   // Tri par temps décroissant. Départage déterministe par id (même ordre sur les
   // deux appareils) pour les entrées du même jour sans heure.
