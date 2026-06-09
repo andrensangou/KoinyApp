@@ -136,6 +136,27 @@ export const recordDeletion = async (
     }
 };
 
+/** Enregistre PLUSIEURS suppressions du même type en un seul batch (ex: effacement
+ *  d'historique = toutes les transactions d'un enfant). Cache mis à jour immédiat. */
+export const recordDeletions = async (
+    userId: string,
+    itemType: DeletedItemType,
+    itemIds: string[],
+): Promise<void> => {
+    if (!userId || !itemIds.length) return;
+    itemIds.forEach(id => deletedIdsCache[itemType].add(id)); // effet immédiat
+    try {
+        await supabase
+            .from('deleted_items')
+            .upsert(
+                itemIds.map(id => ({ user_id: userId, item_type: itemType, item_id: id })),
+                { onConflict: 'user_id,item_type,item_id' },
+            );
+    } catch (e) {
+        console.warn('⚠️ [TOMBSTONE] recordDeletions échouée (offline?):', e);
+    }
+};
+
 /** Récupère tous les tombstones du user et reconstruit le cache (en préservant
  *  les suppressions locales très récentes pas encore relues du cloud). */
 export const fetchDeletedIds = async (

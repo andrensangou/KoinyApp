@@ -13,7 +13,7 @@ import AlertBanner from './components/AlertBanner';
 import { GlobalState, INITIAL_DATA, HistoryEntry, ChildProfile, Language, Goal, BADGE_THRESHOLDS, ParentBadge, MAX_BALANCE } from './types';
 import { loadData, saveData, persistentStorage } from './services/storage';
 import { updateWidgetData } from './services/widgetBridge';
-import { getSupabase, updatePassword, deleteAccount, ensureUserProfile, recordDeletion } from './services/supabase';
+import { getSupabase, updatePassword, deleteAccount, ensureUserProfile, recordDeletion, recordDeletions } from './services/supabase';
 import { alertService, AppAlert } from './services/alertService';
 import { notifications } from './services/notifications';
 import { translations } from './i18n';
@@ -1394,13 +1394,49 @@ const App: React.FC = () => {
     }
   };
   const handleClearHistory = async (id: string) => {
-    // 1. Optimistic : vider localement immédiatement
-    updateChild(id, (c) => ({ ...c, history: [] }));
+    const lang = data.language || 'fr';
+    const carryTitle = lang === 'nl' ? 'Saldo overgedragen' : lang === 'en' ? 'Balance carried forward' : 'Solde reporté';
+    const now = new Date();
+    const dateStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+    const child = data.children.find(c => c.id === id);
+    const balance = child?.balance ?? 0;
+    // IDs des transactions actuelles → tombstones pour empêcher leur résurrection
+    // par l'union du merge sur l'AUTRE appareil (qui a encore l'ancien cache).
+    const oldIds = (child?.history || []).map(h => h.id).filter(Boolean) as string[];
+    // ⚠️ MÊME id local ET cloud pour le report : sinon les deux "Solde reporté"
+    // (montants identiques, ids différents) ne se dédupliquent pas → solde DOUBLE.
+    const carryId = crypto.randomUUID();
 
-    // 2. Supprimer les transactions dans Supabase (best-effort, timeout anti-hang)
+    // 1. Optimistic : remplacer l'historique par une seule transaction "Solde reporté"
+    //    pour préserver le solde (qui est calculé depuis l'historique).
+    updateChild(id, (c) => ({
+      ...c,
+      history: c.balance > 0 ? [{
+        id: carryId,
+        date: dateStr,
+        title: carryTitle,
+        amount: c.balance,
+        createdAt: now.toISOString(),
+      }] : []
+    }));
+
+    // 2. Tombstones + suppression cloud + réinsertion du report (même id que local).
     if (ownerId && ownerId !== 'local-owner' && ownerId !== 'demo') {
       const supabase = getSupabase();
+      recordDeletions(ownerId, 'transaction', oldIds); // anti-résurrection cross-device
       raceTimeout(supabase.from('transactions').delete().eq('child_id', id), 8000)
+        .then(() => {
+          if (balance > 0) {
+            Promise.resolve(supabase.from('transactions').insert({
+              id: carryId,
+              child_id: id,
+              type: 'deposit',
+              amount: balance,
+              description: carryTitle,
+              created_at: now.toISOString(),
+            })).catch((e: any) => console.warn('⚠️ Erreur insertion solde reporté:', e));
+          }
+        })
         .catch(e => console.warn('⚠️ Erreur suppression historique cloud:', e));
     }
   };
@@ -1722,6 +1758,7 @@ const App: React.FC = () => {
           onAddMission={(childId, title, amount) => handleAddMission(childId, title, amount)}
           onEditMission={(childId, missionId, updates) => handleEditMission(childId, missionId, updates)}
           onDeleteMission={(childId, missionId) => handleDeleteActiveMission(childId, missionId)}
+          onDeleteGoal={(childId, goalId) => handleDeleteGoal(childId, goalId)}
           onManualTransaction={(childId, amount, reason) => handleManualTransaction(childId, amount, reason)}
           onAddChild={async (childData) => { await handleAddChild(childData); }}
           onEditChild={handleEditChild}

@@ -100,6 +100,7 @@ interface AndroidParentViewProps {
   onAddMission: (childId: string, title: string, amount: number) => void;
   onEditMission: (childId: string, missionId: string, updates: { title?: string; reward?: number }) => void;
   onDeleteMission: (childId: string, missionId: string) => void;
+  onDeleteGoal: (childId: string, goalId: string) => void;
   onManualTransaction: (childId: string, amount: number, reason: string) => void;
   onAddChild: (childData: { name: string; colorClass: string; avatar: string; birthday?: string }) => Promise<void>;
   onEditChild: (childId: string, updates: Partial<ChildProfile>) => void;
@@ -1788,7 +1789,7 @@ function TopBar({ tab, children, selectedChildId, onSelectChild, language }: {
 
 // ══ MAIN COMPONENT ════════════════════════════════════════════
 export default function AndroidParentView({
-  data, language, onApprove, onReject, onAddMission, onEditMission, onDeleteMission, onManualTransaction,
+  data, language, onApprove, onReject, onAddMission, onEditMission, onDeleteMission, onDeleteGoal, onManualTransaction,
   onAddChild, onEditChild, onDeleteChild, onClearHistory, onSetPin, onToggleNotifications,
   onExit, onSignOut, onDeleteAccount, onSetPremium, onSetLanguage, onSetMaxBalance, isOfflineMode,
   notificationAction, onClearNotificationAction,
@@ -2175,9 +2176,7 @@ export default function AndroidParentView({
               showToast(language === 'fr' ? 'Objectif mis à jour' : language === 'nl' ? 'Doel bijgewerkt' : 'Goal updated');
             }}
             onDeleteGoal={goalId => {
-              const child = data.children.find(c => c.id === childId);
-              if (!child) return;
-              onEditChild(childId, { goals: child.goals.filter(g => g.id !== goalId) });
+              onDeleteGoal(childId, goalId);
               showToast(language === 'fr' ? 'Objectif supprimé' : language === 'nl' ? 'Doel verwijderd' : 'Goal deleted', 'danger');
             }}
             onGoToRequests={() => setTab('requests')}

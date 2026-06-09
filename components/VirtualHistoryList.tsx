@@ -4,6 +4,7 @@ import { HistoryEntry, Language } from '../types';
 
 const _isPenalty = (title: string) => title.toLowerCase().includes('amende') || title.toLowerCase().includes('penalty') || title.toLowerCase().includes('punition') || title.toLowerCase().includes('boete') || title.toLowerCase().includes('fine');
 const _isGift = (title: string) => title.toLowerCase().includes('cadeau') || title.toLowerCase().includes('bonus') || title.toLowerCase().includes('gift');
+const _isCarry = (title: string) => { const t = title.toLowerCase(); return t.includes('solde reporté') || t.includes('balance carried') || t.includes('saldo overgedragen'); };
 
 interface VirtualHistoryListProps {
     history: HistoryEntry[];
@@ -58,13 +59,17 @@ export default function VirtualHistoryList({ history, language, isPenalty, getTr
                     const item = history[virtualItem.index];
                     const neg = item.amount < 0;
                     const penalty = isPenalty(item.title);
-                    const gift = !neg && _isGift(item.title);
+                    const carry = !neg && _isCarry(item.title);
+                    const gift = !neg && !carry && _isGift(item.title);
 
                     if (isIOS) {
                         // iOS-style item
                         let iconBg: string, iconColor: string, iconName: string, typeLabel: string;
                         if (!neg) {
-                            if (gift) {
+                            if (carry) {
+                                iconBg = '#eef2ff'; iconColor = '#4f46e5'; iconName = 'fa-money-bill-transfer';
+                                typeLabel = language === 'fr' ? 'Solde reporté' : language === 'nl' ? 'Saldo overgedragen' : 'Balance carried forward';
+                            } else if (gift) {
                                 iconBg = '#faf5ff'; iconColor = '#9333ea'; iconName = 'fa-gift';
                                 typeLabel = language === 'fr' ? 'Cadeau' : language === 'nl' ? 'Cadeau' : 'Gift';
                             } else {
@@ -97,7 +102,7 @@ export default function VirtualHistoryList({ history, language, isPenalty, getTr
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[13px] font-bold text-[#1e293b] truncate">{typeLabel}</p>
                                         <p className="text-[11px] text-slate-400 font-medium truncate">
-                                            {getTranslatedTitle(item.title, language)}{item.note ? ` · ${item.note}` : ''} · {dateStr}
+                                            {carry ? dateStr : `${getTranslatedTitle(item.title, language)}${item.note ? ` · ${item.note}` : ''} · ${dateStr}`}
                                         </p>
                                     </div>
                                     <span className="text-[15px] font-black ml-3 shrink-0 tabular-nums" style={{ color: amountColor }}>
