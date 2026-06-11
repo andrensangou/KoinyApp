@@ -111,7 +111,12 @@ const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose, langua
     if (!code) return;
     setState('approving');
     try {
-      await approveQrSession(code);
+      // Timeout 12s : si approveQrSession hang (réseau lent / edge function / QR expiré),
+      // on bascule en 'error' au lieu de rester figé sur "Connexion…" pour toujours.
+      await Promise.race([
+        approveQrSession(code),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 12000)),
+      ]);
       setState('success');
       setTimeout(onClose, 1400);
     } catch {

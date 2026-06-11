@@ -149,6 +149,17 @@ const App: React.FC = () => {
       return;
     }
     isInitializing.current = true;
+    // Garde-fou anti-blocage : si un await ci-dessous HANG (ex: RevenueCat ne répond
+    // pas sur iOS après une perturbation de session), le `finally` ne s'exécuterait
+    // jamais → isInitializing resterait `true` → TOUS les saves bloqués → perte de
+    // données (vu le 11/06 : missions iPhone non sauvegardées tant que l'app n'était
+    // pas relancée). Ce timeout libère le guard de force après 15s quoi qu'il arrive.
+    const initGuardSafety = setTimeout(() => {
+      if (isInitializing.current) {
+        console.warn('⚠️ [INIT] Garde-fou : libération forcée de isInitializing après 15s (un await a hang)');
+        isInitializing.current = false;
+      }
+    }, 15000);
 
     try {
       // 1. Stratégie Optimiste : Afficher le cache immédiatement si disponible
@@ -282,6 +293,7 @@ const App: React.FC = () => {
         setCriticalError("Problème de connexion.");
       }
     } finally {
+      clearTimeout(initGuardSafety);
       setLoading(false);
       isInitializing.current = false;
       SplashScreen.hide();

@@ -419,15 +419,16 @@ export const deleteAccount = async () => {
         localStorage.removeItem('koiny_local_v1_backup');
         localStorage.removeItem('koiny_premium_active');
 
-        // Révoquer la session Google native (évite la reconnexion silencieuse)
-        if (Capacitor.isNativePlatform()) {
-            try {
-                const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
-                await GoogleAuth.signOut();
-            } catch (_) {
-                // Ignore si Google Auth n'était pas initialisé (connexion Apple ou email)
-            }
-        }
+        // NOTE : on n'appelle PLUS GoogleAuth.signOut() ici.
+        // Raison : le compte auth vient d'être supprimé par delete_user_data (RPC) → il n'y
+        // a plus AUCUN compte où "se reconnecter silencieusement", donc révoquer Google
+        // n'apporte rien. Et `GoogleAuth.signOut()` crashe NATIVEMENT (NullPointerException
+        // sur GoogleSignInClient null — thread séparé, NON rattrapable par try/catch JS) dès
+        // que le client Google n'est pas initialisé dans la session courante (cold start /
+        // session restaurée du cache / connexion email/Apple/QR). Vérifié : crash sur la
+        // suppression de compte (Sentry 127283874), y compris pour un user provider=google
+        // dont le client natif était null. → on retire la ligne, supabase.auth.signOut()
+        // ci-dessous nettoie la session locale, ce qui suffit.
 
         // Le compte auth est déjà supprimé par la RPC — signOut nettoie la session locale
         await supabase.auth.signOut();
