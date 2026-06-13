@@ -1418,6 +1418,10 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
     }
   }, [autoOpenHelp]);
   const [showQrScanner, setShowQrScanner] = useState(false);
+  // Voir ParentView (iOS) : remount complet du scanner via `key` à chaque ouverture
+  // → évite la caméra figée au 2ème scan (WebView réutilise mal le <video>/getUserMedia).
+  const [qrScannerKey, setQrScannerKey] = useState(0);
+  const openQrScanner = () => { setQrScannerKey(k => k + 1); setShowQrScanner(true); };
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showWalletLimit, setShowWalletLimit] = useState(false);
   const [walletLimitInput, setWalletLimitInput] = useState('');
@@ -1471,7 +1475,7 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
       icon: 'fa-qrcode', color: KT.primary,
       label: language === 'fr' ? 'Connecter un appareil' : language === 'nl' ? 'Apparaat verbinden' : 'Connect a device',
       detail: '',
-      onClick: () => setShowQrScanner(true),
+      onClick: openQrScanner,
     },
     {
       icon: 'fa-book-open', color: KT.warning,
@@ -1652,7 +1656,7 @@ function ProfileScreen({ data, language, onSignOut, onDeleteAccount, onOpenPremi
       )}
 
       <HelpModal isOpen={showHelp} scrollToQr={helpScrollToQr} onClose={() => { setShowHelp(false); setHelpScrollToQr(false); }} language={language} />
-      <QrScannerModal isOpen={showQrScanner} onClose={() => setShowQrScanner(false)} language={language} />
+      <QrScannerModal key={qrScannerKey} isOpen={showQrScanner} onClose={() => setShowQrScanner(false)} language={language} />
 
       {/* Delete confirm dialog */}
       {showDeleteConfirm && (

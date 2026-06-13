@@ -262,6 +262,12 @@ const ParentView: React.FC<ParentViewProps> = ({
   const [showHelp, setShowHelp] = useState(false);
   const [helpScrollToQr, setHelpScrollToQr] = useState(false);
   const [showQrScanner, setShowQrScanner] = useState(false);
+  // Incrémenté à chaque ouverture du scanner QR → force un remount complet de
+  // QrScannerModal (via la prop `key`). Sur iOS WKWebView, réutiliser le même
+  // élément <video>/getUserMedia entre 2 connexions fige la caméra au 2ème scan.
+  // Un instance neuve = caméra fraîche à chaque fois.
+  const [qrScannerKey, setQrScannerKey] = useState(0);
+  const openQrScanner = () => { setQrScannerKey(k => k + 1); setShowQrScanner(true); };
   const [showQrTip, setShowQrTip] = useState(() => !isQrTipDismissed());
   const [goalsFilter, setGoalsFilter] = useState<GoalsFilter>('ALL');
 
@@ -2744,7 +2750,7 @@ const ParentView: React.FC<ParentViewProps> = ({
                         </button>
                         {/* Help */}
                         {/* Connect a device (QR) */}
-                        <button type="button" onClick={() => setShowQrScanner(true)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors" style={{ borderBottom: '1px solid #f8fafc' }}>
+                        <button type="button" onClick={openQrScanner} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 dark:active:bg-slate-800 transition-colors" style={{ borderBottom: '1px solid #f8fafc' }}>
                           <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
                             <i className="fa-solid fa-qrcode text-[13px]" style={{ color: '#4f46e5' }}></i>
                           </div>
@@ -3519,7 +3525,7 @@ const ParentView: React.FC<ParentViewProps> = ({
       }
 
       <HelpModal isOpen={showHelp} scrollToQr={helpScrollToQr} onClose={() => { setShowHelp(false); setHelpScrollToQr(false); }} language={language} />
-      <QrScannerModal isOpen={showQrScanner} onClose={() => setShowQrScanner(false)} language={language} />
+      <QrScannerModal key={qrScannerKey} isOpen={showQrScanner} onClose={() => setShowQrScanner(false)} language={language} />
       <QrConnectTip
         isOpen={showQrTip && mainView === 'dashboard' && (data.children?.length ?? 0) > 0}
         childName={activeChild?.name || ''}

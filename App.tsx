@@ -652,8 +652,27 @@ const App: React.FC = () => {
         setIsPasswordRecovery(true);
         setView('AUTH');
       } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        // Bug B (cold-start logout) : au lancement à froid, INITIAL_SESSION peut
+        // arriver avec session=null alors qu'une session valide EXISTE en storage
+        // mais que la récupération supabase-js n'a pas encore résolu. Résultat vécu :
+        // écran AUTH au 1er lancement → l'user devait fermer/relancer pour être
+        // reconnecté. Fix : si INITIAL_SESSION arrive SANS session, on retente
+        // getSession() une fois (la lecture est ~instantanée avec le storage hybride)
+        // avant de conclure à une déconnexion. Aucun impact sur un vrai user
+        // déconnecté : getSession() renverra null aussi → initialize(null) comme avant.
+        let s = session;
+        if (event === 'INITIAL_SESSION' && !s) {
+          await new Promise(r => setTimeout(r, 400));
+          try {
+            const { data: retry } = await supabase.auth.getSession();
+            if (retry?.session) {
+              console.log('🔄 [AUTH] INITIAL_SESSION null mais session récupérée au retry — reconnexion auto');
+              s = retry.session;
+            }
+          } catch (_) { /* garde s=null → flux déconnecté normal */ }
+        }
         // Handles both null (no session) and valid session
-        await initialize(session);
+        await initialize(s);
       } else if (event === 'SIGNED_OUT') {
         // Clear ALL local state immediately to prevent stale data bleed
         setData(INITIAL_DATA);
