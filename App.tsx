@@ -158,6 +158,15 @@ const App: React.FC = () => {
       if (isInitializing.current) {
         console.warn('⚠️ [INIT] Garde-fou : libération forcée de isInitializing après 15s (un await a hang)');
         isInitializing.current = false;
+        // Si une session était en attente (ex: connexion Google arrivée pendant un init
+        // précédent qui a hang), la traiter maintenant — sinon elle reste bloquée en file
+        // jusqu'à un fermer/rouvrir. Le finally normal ne tournera pas (await hang).
+        const pending = pendingSessionRef.current;
+        if (pending) {
+          pendingSessionRef.current = null;
+          console.warn('⚠️ [INIT] Garde-fou : traitement de la session en attente après libération forcée');
+          setTimeout(() => initialize(pending), 0);
+        }
       }
     }, 15000);
 
@@ -225,6 +234,24 @@ const App: React.FC = () => {
 
       const email = session?.user?.email || 'Invité';
       console.log('🔄 [INIT] Chargement pour:', email);
+
+      // 🚦 Navigation PROVISOIRE basée sur la SESSION, AVANT loadData.
+      // Juste après une connexion OAuth (Google), loadData() peut HANG dans la fenêtre
+      // post-OAuth sur Android → si la navigation est gérée après loadData, l'user reste
+      // bloqué sur l'écran login (et ne voit le dashboard qu'après fermer/rouvrir, car au
+      // cold start la session se lit proprement). On route donc IMMÉDIATEMENT dès qu'une
+      // session valide existe, à partir du cache enfants. loadData affinera ensuite.
+      if (session?.user && (!cachedView || cachedView === 'LANDING')) {
+        let cachedChildrenCount = 0;
+        try {
+          const c = localStorage.getItem('koiny_local_v1');
+          if (c) cachedChildrenCount = (JSON.parse(c).children || []).length;
+        } catch { /* cache absent/corrompu → 0 */ }
+        setView(cachedChildrenCount > 0 ? 'LOGIN' : 'PARENT');
+        setLoading(false);
+        SplashScreen.hide();
+        console.log('🚦 [INIT] Navigation provisoire (session valide) avant loadData');
+      }
 
       console.log('📦 [INIT] Chargement des données cloud en arrière-plan...');
       const result = await loadData(session?.user?.id);
