@@ -162,10 +162,26 @@ const App: React.FC = () => {
     }, 15000);
 
     try {
+      // Sentinel de suppression de compte : si on vient de supprimer un compte, on PURGE
+      // tout cache résiduel et on saute la restauration optimiste — empêche un ancien PIN
+      // gate / des données périmées de bleeder sur une reconnexion immédiate (même appareil).
+      const justDeleted = localStorage.getItem('koiny_account_deleted') === '1';
+      if (justDeleted) {
+        localStorage.removeItem('koiny_account_deleted');
+        persistentStorage.remove('koiny_account_deleted').catch(() => {});
+        localStorage.removeItem('koiny_local_v1');
+        localStorage.removeItem('koiny_local_v1_backup');
+        localStorage.removeItem('koiny_last_view');
+        localStorage.removeItem('koiny_last_child_id');
+        persistentStorage.remove('koiny_local_v1').catch(() => {});
+        persistentStorage.remove('koiny_local_v1_backup').catch(() => {});
+        console.log('🧹 [INIT] Sentinel suppression : cache purgé, restauration optimiste sautée');
+      }
+
       // 1. Stratégie Optimiste : Afficher le cache immédiatement si disponible
-      const cached = localStorage.getItem('koiny_local_v1');
-      const cachedView = localStorage.getItem('koiny_last_view');
-      const cachedChildId = localStorage.getItem('koiny_last_child_id');
+      const cached = justDeleted ? null : localStorage.getItem('koiny_local_v1');
+      const cachedView = justDeleted ? null : localStorage.getItem('koiny_last_view');
+      const cachedChildId = justDeleted ? null : localStorage.getItem('koiny_last_child_id');
 
       if (cached) {
         try {
@@ -246,23 +262,32 @@ const App: React.FC = () => {
         }
       }
 
-      // Initialiser RevenueCat et vérifier le statut premium
+      // Initialiser RevenueCat avec timeout 8s — évite de bloquer initialize() si RevenueCat hang
+      // (sur Android au cold start, les 3 await RevenueCat peuvent ne jamais résoudre,
+      // empêchant le finally de tourner et laissant pendingSessionRef non traité → pas de navigation)
       try {
-        await subscriptionService.initialize(result.ownerId);
-        if (result.ownerId && result.ownerId !== 'local-owner' && result.ownerId !== 'demo') {
-          await subscriptionService.loginUser(result.ownerId);
-        }
-        const subStatus = await subscriptionService.getSubscriptionStatus();
-        if (subStatus.isSubscribed) {
+        const rcTimeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 8000));
+        const rcResult = await Promise.race([
+          (async () => {
+            await subscriptionService.initialize(result.ownerId);
+            if (result.ownerId && result.ownerId !== 'local-owner' && result.ownerId !== 'demo') {
+              await subscriptionService.loginUser(result.ownerId);
+            }
+            return subscriptionService.getSubscriptionStatus();
+          })(),
+          rcTimeout
+        ]);
+        if (rcResult && rcResult.isSubscribed) {
           localStorage.setItem('koiny_premium_active', 'true');
           localStorage.setItem('koiny_premium_verified_at', Date.now().toString());
           setData(prev => ({ ...prev, isPremium: true }));
-        } else {
-          // Explicitly reset premium — prevents stale state from previous user
+        } else if (rcResult !== null) {
+          // Réponse reçue mais pas abonné — reset explicite
           localStorage.removeItem('koiny_premium_active');
           localStorage.removeItem('koiny_premium_verified_at');
           setData(prev => ({ ...prev, isPremium: false }));
         }
+        // rcResult === null = timeout — on garde l'état premium du cache localStorage
       } catch (e) {
         console.warn('⚠️ [INIT] RevenueCat init failed (non-blocking):', e);
         // Si la dernière vérification réussie date de plus de 7 jours, révoquer le premium

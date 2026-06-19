@@ -418,6 +418,18 @@ export const deleteAccount = async () => {
         localStorage.removeItem('koiny_local_v1');
         localStorage.removeItem('koiny_local_v1_backup');
         localStorage.removeItem('koiny_premium_active');
+        localStorage.removeItem('koiny_premium_verified_at');
+        localStorage.removeItem('koiny_last_view');
+        localStorage.removeItem('koiny_last_child_id');
+
+        // Sentinel de suppression : garantit que le PROCHAIN initialize() saute la
+        // restauration optimiste du cache (sinon un cache résiduel — ex: re-save concurrent
+        // entre la suppression et une reconnexion immédiate sur le même appareil — pouvait
+        // ré-afficher l'ancien PIN gate avec data.parentPin périmé). Consommé une seule fois.
+        try {
+            localStorage.setItem('koiny_account_deleted', '1');
+            await Preferences.set({ key: 'koiny_account_deleted', value: '1' });
+        } catch { /* best-effort */ }
 
         // NOTE : on n'appelle PLUS GoogleAuth.signOut() ici.
         // Raison : le compte auth vient d'être supprimé par delete_user_data (RPC) → il n'y
