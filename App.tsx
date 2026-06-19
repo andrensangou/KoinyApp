@@ -234,6 +234,18 @@ const App: React.FC = () => {
         supabaseClient.from('profiles').update({ language: effectiveLang }).eq('id', result.ownerId).then(() => {});
       }
 
+      // Navigation immédiate — AVANT RevenueCat pour ne pas bloquer si RevenueCat hang sur Android
+      if (!cachedView || cachedView === 'LANDING') {
+        if (session) {
+          const hasChildren = (cloudData.children?.length ?? 0) > 0;
+          setView(hasChildren ? 'LOGIN' : 'PARENT');
+        } else {
+          const hasLocalChildren = result.data?.children?.length > 0;
+          if (hasLocalChildren) setView('LOGIN');
+          else setView('LANDING');
+        }
+      }
+
       // Initialiser RevenueCat et vérifier le statut premium
       try {
         await subscriptionService.initialize(result.ownerId);
@@ -274,18 +286,6 @@ const App: React.FC = () => {
         registerPushToken({ userId: result.ownerId, mode: 'parent' });
       }
 
-      // ✅ FIX DU FLASH : Ne pas écraser la vue si on a déjà restauré (CHILD ou PARENT)
-      if (!cachedView || cachedView === 'LANDING') {
-        if (session) {
-          const hasChildren = (cloudData.children?.length ?? 0) > 0;
-          // Compte frais (pas d'enfants) → aller directement à PARENT, pas besoin du sélecteur LOGIN
-          setView(hasChildren ? 'LOGIN' : 'PARENT');
-        } else {
-          const hasLocalChildren = result.data?.children?.length > 0;
-          if (hasLocalChildren) setView('LOGIN');
-          else setView('LANDING');
-        }
-      }
     } catch (err) {
       console.error("❌ [INIT] Erreur:", err);
       // Ne pas bloquer si on a déjà des données du cache
