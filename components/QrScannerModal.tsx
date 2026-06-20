@@ -44,7 +44,7 @@ const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose, langua
     rescan: language === 'fr' ? 'Scanner à nouveau' : language === 'nl' ? 'Opnieuw scannen' : 'Scan again',
     approving: language === 'fr' ? 'Connexion…' : language === 'nl' ? 'Verbinden…' : 'Connecting…',
     success: language === 'fr' ? 'Appareil connecté !' : language === 'nl' ? 'Apparaat verbonden!' : 'Device connected!',
-    error: language === 'fr' ? 'Échec de la connexion. Le code a peut-être expiré.' : language === 'nl' ? 'Verbinding mislukt. De code is mogelijk verlopen.' : 'Connection failed. The code may have expired.',
+    error: language === 'fr' ? 'Échec de la connexion. Si tu viens de connecter un appareil, patiente ~1 min avant le suivant. Sinon le code a peut-être expiré.' : language === 'nl' ? 'Verbinding mislukt. Als je net een apparaat hebt verbonden, wacht ~1 min voor het volgende. Anders is de code mogelijk verlopen.' : 'Connection failed. If you just connected a device, wait ~1 min before the next one. Otherwise the code may have expired.',
     noCamera: language === 'fr' ? 'Caméra inaccessible. Vérifiez les autorisations.' : language === 'nl' ? 'Camera niet beschikbaar. Controleer de rechten.' : 'Camera unavailable. Check permissions.',
     close: language === 'fr' ? 'Fermer' : language === 'nl' ? 'Sluiten' : 'Close',
   };
