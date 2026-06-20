@@ -161,14 +161,27 @@ export const recordDeletions = async (
  *  les suppressions locales très récentes pas encore relues du cloud). */
 export const fetchDeletedIds = async (
     userId: string,
+    accessToken?: string,
 ): Promise<Record<DeletedItemType, Set<string>>> => {
     if (!userId) return deletedIdsCache;
     try {
-        const { data, error } = await supabase
-            .from('deleted_items')
-            .select('item_type, item_id')
-            .eq('user_id', userId);
-        if (error) throw error;
+        let data: any[];
+        if (accessToken) {
+            // REST brut (même raison que loadFromSupabase : éviter le getSession hang post-OAuth)
+            const res = await fetchWithTimeout(
+                `${SUPABASE_URL}/rest/v1/deleted_items?user_id=eq.${userId}&select=item_type,item_id`,
+                { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}`, Accept: 'application/json' } }
+            );
+            if (!res.ok) throw new Error(`REST deleted_items ${res.status}`);
+            data = await res.json();
+        } else {
+            const { data: d, error } = await supabase
+                .from('deleted_items')
+                .select('item_type, item_id')
+                .eq('user_id', userId);
+            if (error) throw error;
+            data = d || [];
+        }
 
         const next = emptyDeletedCache();
         (data || []).forEach((row: any) => {

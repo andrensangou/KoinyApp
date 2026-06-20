@@ -98,7 +98,7 @@ export const loadData = async (knownUserId?: string, knownAccessToken?: string):
       const cloudData = await loadFromSupabase(user.id, knownAccessToken);
 
       // Charger les tombstones (suppressions) pour filtrer les items ressuscités
-      await fetchDeletedIds(user.id);
+      await fetchDeletedIds(user.id, knownAccessToken);
 
       if (cloudData) {
         const localHasChildren = (localData?.children?.length || 0) > 0;
