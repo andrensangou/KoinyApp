@@ -254,7 +254,7 @@ const App: React.FC = () => {
       }
 
       console.log('📦 [INIT] Chargement des données cloud en arrière-plan...');
-      const result = await loadData(session?.user?.id);
+      const result = await loadData(session?.user?.id, session?.access_token);
 
       // Profile check AFTER loadData to avoid concurrent auth lock contention
       if (session?.user) {

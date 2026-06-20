@@ -55,7 +55,7 @@ const applyTombstones = (state: GlobalState): GlobalState => {
   return { ...state, children };
 };
 
-export const loadData = async (knownUserId?: string): Promise<{ data: GlobalState, ownerId?: string }> => {
+export const loadData = async (knownUserId?: string, knownAccessToken?: string): Promise<{ data: GlobalState, ownerId?: string }> => {
   const supabase = getSupabase();
 
   let user: { id: string } | null = null;
@@ -95,7 +95,7 @@ export const loadData = async (knownUserId?: string): Promise<{ data: GlobalStat
     try {
       console.log('☁️ [STORAGE] Tentative chargement cloud pour:', user.id);
 
-      const cloudData = await loadFromSupabase(user.id);
+      const cloudData = await loadFromSupabase(user.id, knownAccessToken);
 
       // Charger les tombstones (suppressions) pour filtrer les items ressuscités
       await fetchDeletedIds(user.id);

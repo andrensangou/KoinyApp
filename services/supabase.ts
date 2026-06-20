@@ -499,12 +499,44 @@ export const ensureUserProfile = async (userId: string, email?: string) => {
 /**
  * RELATIONAL STORAGE: Load all user data from Supabase (V2 Schema)
  */
-export const loadFromSupabase = async (userId: string): Promise<any> => {
+export const loadFromSupabase = async (userId: string, accessToken?: string): Promise<any> => {
     const start = performance.now();
     try {
         log(`📥 [SUPABASE] Chargement données V2 pour: ${userId}`);
 
         const fetchData = async () => {
+            // 🚀 CHEMIN REST BRUT (quand on a déjà le token, ex: session OAuth passée à initialize).
+            // Bypass TOTAL de supabase-js : ses requêtes `.from()` appellent getSession() en interne,
+            // qui HANG ~27s sur natif juste après un setSession (flux navigateur OAuth iOS / Android).
+            // On fait les requêtes en fetch direct avec le Bearer token (comme les curl en 0.1s).
+            if (accessToken) {
+                const headers = {
+                    apikey: SUPABASE_ANON_KEY,
+                    Authorization: `Bearer ${accessToken}`,
+                    Accept: 'application/json',
+                };
+                const tPr = performance.now();
+                const pRes = await fetchWithTimeout(
+                    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=*`,
+                    { headers }
+                );
+                if (!pRes.ok) throw new Error(`REST profiles ${pRes.status}`);
+                const profilesArr = await pRes.json();
+                console.log(`⏱️ [LOAD-REST] profiles fait en ${(performance.now() - tPr).toFixed(0)}ms`);
+                const profile = Array.isArray(profilesArr) ? profilesArr[0] : null;
+                if (!profile) return null;
+
+                const tCh = performance.now();
+                const cRes = await fetchWithTimeout(
+                    `${SUPABASE_URL}/rest/v1/children?user_id=eq.${userId}&select=${encodeURIComponent('*,missions(*),goals(*),transactions(*)')}`,
+                    { headers }
+                );
+                if (!cRes.ok) throw new Error(`REST children ${cRes.status}`);
+                const children = await cRes.json();
+                console.log(`⏱️ [LOAD-REST] children fait en ${(performance.now() - tCh).toFixed(0)}ms (${children?.length ?? 0})`);
+                return { profile, children: children || [] };
+            }
+
             // Use the passed userId directly to avoid a slow getUser() network call
             // (especially critical right after iOS WebProcess unfreeze post-OAuth)
             const currentUserId = userId;
