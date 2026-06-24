@@ -590,18 +590,17 @@ export const loadFromSupabase = async (userId: string, accessToken?: string): Pr
             return { profile, children };
         };
 
-        // Usage de l'outil retry réseau: 3 tentatives avec backoff exponentiel.
-        // ⚠️ Le timeout est créé À CHAQUE tentative (pas partagé) : avant, un seul
-        // timeout de 8s couvrait les 3 retries → si la 1ère tentative était lente
-        // (refresh token au cold start), les retries n'avaient plus de temps → échec
-        // systématique (`Error loading V2`). Chaque tentative a maintenant ses 8s.
+        // Usage de l'outil retry réseau: 1 tentative avec 8s timeout (au lieu de 3 retries).
+        // Sur Huawei Android, getSession() hang ~27s → plusieurs retries = trop long.
+        // Fallback à INITIAL_DATA après 8s, permettra au user d'interagir (delete account, etc).
+        // TODO: implémenter REST-bypass avec accessToken comme sur iOS (fichier iOS avoid getSession hang).
         const result = await withRetry(() => {
             let to: any;
             const timeoutPromise = new Promise((_, reject) =>
                 to = setTimeout(() => reject(new Error('TIMEOUT_LOAD_DATA')), 8000)
             );
             return Promise.race([fetchData(), timeoutPromise]).finally(() => clearTimeout(to));
-        }) as any;
+        }, 1) as any;  // 1 retry only (8s timeout), not 3 (27s total)
         if (!result) return null;
 
         const { profile, children } = result;
