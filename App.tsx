@@ -720,7 +720,11 @@ const App: React.FC = () => {
         if (event === 'INITIAL_SESSION' && !s) {
           await new Promise(r => setTimeout(r, 400));
           try {
-            const { data: retry } = await supabase.auth.getSession();
+            const sessionPromise = supabase.auth.getSession();
+            const timeoutPromise = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Session timeout')), 3000)
+            );
+            const { data: retry } = await Promise.race([sessionPromise, timeoutPromise]);
             if (retry?.session) {
               console.log('🔄 [AUTH] INITIAL_SESSION null mais session récupérée au retry — reconnexion auto');
               s = retry.session;
@@ -1221,8 +1225,12 @@ const App: React.FC = () => {
 
     if (supabase) {
       try {
-        // getSession() est caché localement — pas d'appel réseau
-        const { data: { session } } = await supabase.auth.getSession();
+        // getSession() devrait être caché localement, mais timeout au cas où
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Session timeout')), 2000)
+        );
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
         if (session?.user) {
           const { deleteParentPinLocally } = await import('./services/pinStorage');
           await deleteParentPinLocally(session.user.id);
@@ -1559,7 +1567,12 @@ const App: React.FC = () => {
   };
   const handlePurchaseGoal = async (childId: string, goal: Goal) => {
     const supabase = getSupabase();
-    const { data: { session } } = await supabase.auth.getSession();
+    // timeout getSession to avoid hang on Android/iOS
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Session timeout')), 5000)
+    );
+    const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
     const user = session?.user;
     if (!user || !ownerId) return;
 
