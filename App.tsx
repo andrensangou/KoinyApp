@@ -8,6 +8,7 @@ import ParentView from './components/ParentView';
 import AndroidParentView from './components/AndroidParentView';
 import LandingView from './components/LandingView';
 import OnboardingView from './components/OnboardingView';
+import OnboardingModal from './components/OnboardingModal';
 import LegalModal from './components/LegalModal';
 import AlertBanner from './components/AlertBanner';
 import { GlobalState, INITIAL_DATA, HistoryEntry, ChildProfile, Language, Goal, BADGE_THRESHOLDS, ParentBadge, MAX_BALANCE } from './types';
@@ -17,6 +18,7 @@ import { getSupabase, updatePassword, deleteAccount, ensureUserProfile, recordDe
 import { alertService, AppAlert } from './services/alertService';
 import { notifications } from './services/notifications';
 import { getContextualReminder } from './services/smartReminder';
+import { trackSignUp, trackChildCreated, trackPurchase } from './services/analytics';
 import { translations } from './i18n';
 import { monitoring } from './services/monitoring';
 import { widgetService } from './services/widget';
@@ -53,6 +55,8 @@ const App: React.FC = () => {
 
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [appError, setAppError] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingChildId, setOnboardingChildId] = useState<string | null>(null);
   const [notificationAction, setNotificationAction] = useState<{ type: string; childId: string } | null>(null);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [currentAlert, setCurrentAlert] = useState<AppAlert | null>(null);
@@ -1491,7 +1495,7 @@ const App: React.FC = () => {
     setTimeout(() => setAppError(null), 5000);
   };
 
-  const handleAddChild = async (childData: any) => {
+  const handleAddChild = async (childData: any): Promise<string | undefined> => {
     const supabase = getSupabase();
 
     const { data: { session } } = await supabase.auth.getSession();
@@ -1521,7 +1525,9 @@ const App: React.FC = () => {
 
       // 2. Update local state
       setData(prev => {
-        monitoring.track('BUSINESS', 'CHILD_CREATED', 1, { isFirstChild: prev.children.length === 0 });
+        const isFirstChild = prev.children.length === 0;
+        monitoring.track('BUSINESS', 'CHILD_CREATED', 1, { isFirstChild });
+        trackChildCreated(isFirstChild);
         return {
           ...prev,
           children: [...prev.children, {
@@ -1538,10 +1544,12 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error('❌ Erreur ajout enfant:', err?.message);
       showAppError(`Impossible de créer l'enfant : ${err?.message || 'Erreur inconnue'}`);
+      return undefined;
     } finally {
       isDirectSupabaseOperation.current = false;
       setData(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
     }
+    return childId;
   };
   const handlePurchaseGoal = async (childId: string, goal: Goal) => {
     const supabase = getSupabase();
@@ -1653,6 +1661,10 @@ const App: React.FC = () => {
       setData(result.data || INITIAL_DATA);
       setOwnerId(result.ownerId);
       monitoring.track('BUSINESS', 'AUTH_SUCCESS', 1, { isFirstSession: !result.data?.children?.length });
+      trackSignUp('google');
+      if (!result.data?.children?.length && result.ownerId && result.ownerId !== 'demo') {
+        setShowOnboarding(true);
+      }
       // Track onboarding completion at login if onboarding was seen but not yet tracked
       if (localStorage.getItem('koiny_onboarding_seen') && result.ownerId && result.ownerId !== 'demo') {
         const profileUpdate: Record<string, any> = { onboarding_completed_at: new Date().toISOString() };
@@ -1741,6 +1753,20 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen ${isOverflowing ? 'overflow-active' : ''}`}>
+      {showOnboarding && (
+        <OnboardingModal
+          language={(data.language as 'fr' | 'nl' | 'en') || 'fr'}
+          onAddChild={async (childData) => {
+            const newId = await handleAddChild(childData);
+            if (newId) setOnboardingChildId(newId);
+          }}
+          onAddMission={(childId, mission) => {
+            handleAddMission(childId, mission.title, mission.amount);
+          }}
+          createdChildId={onboardingChildId}
+          onDone={() => setShowOnboarding(false)}
+        />
+      )}
       {view === 'LANDING' && (
         !localStorage.getItem('koiny_onboarding_seen')
           ? <OnboardingView
