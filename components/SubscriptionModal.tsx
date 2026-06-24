@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { useModal } from '../hooks/useModal';
 import { isAndroid } from '../hooks/usePlatform';
+import { trackPurchase } from '../services/analytics';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -88,6 +89,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     try {
       const success = await subscriptionService.purchaseSubscription(productId);
       if (success) {
+        const value = productId.includes('yearly') ? 16.99 : 1.99;
+        trackPurchase(productId, value);
         setSubscriptionStatus({ isSubscribed: true, productId });
         setSuccessMessage('✅');
         setTimeout(() => {

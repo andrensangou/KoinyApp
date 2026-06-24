@@ -15,7 +15,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
-      external: [/^screenshots\/.*/],
+      external: [/^screenshots\/.*/, /^firebase\/.*/],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
@@ -35,6 +35,6 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    exclude: ['screenshots']
+    exclude: ['screenshots', '@capacitor-firebase/analytics']
   }
 })
