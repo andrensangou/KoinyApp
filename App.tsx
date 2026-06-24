@@ -1498,7 +1498,13 @@ const App: React.FC = () => {
   const handleAddChild = async (childData: any): Promise<string | undefined> => {
     const supabase = getSupabase();
 
-    const { data: { session } } = await supabase.auth.getSession();
+    // timeout getSession to avoid hang on Android
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Session timeout')), 5000)
+    );
+    const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+
     const user = session?.user;
     if (!user) {
       showAppError('Vous n\'êtes pas connecté.');
@@ -1757,8 +1763,13 @@ const App: React.FC = () => {
         <OnboardingModal
           language={(data.language as 'fr' | 'nl' | 'en') || 'fr'}
           onAddChild={async (childData) => {
-            const newId = await handleAddChild(childData);
-            if (newId) setOnboardingChildId(newId);
+            try {
+              const newId = await handleAddChild(childData);
+              if (newId) setOnboardingChildId(newId);
+            } catch (err) {
+              console.error('❌ OnboardingModal.onAddChild error:', err);
+              showAppError(`Erreur : ${err instanceof Error ? err.message : 'Impossible de créer l\'enfant'}`);
+            }
           }}
           onAddMission={(childId, mission) => {
             handleAddMission(childId, mission.title, mission.amount);
