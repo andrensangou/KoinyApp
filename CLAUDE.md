@@ -3,6 +3,12 @@
 > Instructions pour Claude Code travaillant sur ce projet.
 > Lire aussi `context.md` pour le contexte complet du projet.
 
+## ⚠️ Crédit Claude API
+**Épuisé le 24/06/2026 (fin de journée)**. Revient le **1/07/2026**.
+- Supabase et Google Ads : **NON affectés** (crédits séparés).
+- Campagne Google Ads : **CONTINUE** (pas besoin de pause, crédit Claude ≠ Google Ads budget).
+- Dev/debug Claude : **PAUSE** jusqu'au 1/07. À reprendre pour fix bugs (sentinel suppression/reconnexion, REST-bypass Android).
+
 ## Projet
 
 Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
@@ -10,20 +16,21 @@ Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 an
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
 **Statut:** iOS **1.1.6 (build 19)** soumis Apple (20/06/2026). Android **versionCode 17** live en prod (19/06/2026). Branches actives : `feature/firebase-analytics` + `feature/onboarding-forced` (commits poussés — non buildés encore).
 
-## 📊 Actions du 24/06/2026 — Firebase Analytics + Modal Onboarding forcé
+## 📊 Actions du 24/06/2026 — Firebase Analytics + Modal Onboarding forcé + getSession Timeouts
 
-### Firebase Analytics (Android-only) — branche `feature/firebase-analytics` / `feature/onboarding-forced`
+### Firebase Analytics (Android-only) — branche `feature/onboarding-forced`
 Objectif : tracker les events post-install pour alimenter les campagnes Google Ads (Smart Bidding).
 - **Pourquoi Firebase plutôt que Supabase** : Firebase se connecte nativement à Google Ads (attribution, Smart Bidding). Supabase analytics (`analytics_events`) ne le fait pas — et la table était vide (RLS ou missing call).
 - **Plugin** : `@capacitor-firebase/analytics@8.3.0` installé avec `--legacy-peer-deps` (conflit préexistant capacitor-google-auth/capacitor 8).
 - **`services/analytics.ts` (créé)** : wrapper `logEvent` Android-only + fire-and-forget (ne bloque jamais l'UI). 3 events : `trackSignUp(method)`, `trackChildCreated(isFirstChild)`, `trackPurchase(productId, value)`.
 - **`components/SubscriptionModal.tsx`** : `trackPurchase` après achat réussi (value 16.99 yearly / 1.99 monthly).
 - **`App.tsx`** : `trackSignUp('google')` dans `handleLoginSuccess` + `trackChildCreated(isFirstChild)` dans `handleAddChild`.
-- **`vite.config.ts`** : `/^firebase\/.*/` externalisé dans rollupOptions + `@capacitor-firebase/analytics` exclu de optimizeDeps. Fix erreur build Rollup "setConsent not exported" — le web.js du plugin importe firebase/analytics non installé comme npm dep (seul le SDK Android natif via Gradle est utilisé).
+- **`vite.config.ts`** : alias `firebase/analytics` → `src/firebase-analytics-stub.ts` (no-ops) + `@capacitor-firebase/analytics` exclu de optimizeDeps. Fix erreur runtime "Failed to resolve module specifier firebase/analytics" — le stub empêche le browser de chercher un module externe, Rollup bundlise les no-ops inline. Seul le SDK Android natif via Gradle est utilisé.
+- **`src/firebase-analytics-stub.ts` (créé)** : stubs pour `getAnalytics`, `logEvent`, `setAnalyticsCollectionEnabled`, `setConsent`, `setUserId`, `setUserProperties`.
 - **`android/app/build.gradle`** : `implementation 'com.google.firebase:firebase-analytics'` sous Firebase BoM 34.0.0.
 - **iOS** : NON touché — Firebase Analytics iOS requiert un build séparé (prochaine release).
+- **DebugView Firebase** : testé sur Huawei STK-L21 — app lance, DebugView montre des `screen_view` + `user_engagement` natifs. Events custom `sign_up`, `child_created`, `purchase` arrivent en temps réel lors des actions correspondantes.
 - **À faire** : lier Firebase Console → Google Ads (Intégrations → Google Ads) pour activer le Smart Bidding sur `child_created`.
-- **DebugView** : app lancée sur Huawei STK-L21 mais pas totalement chargée — events pas encore visibles. Tester en se reconnectant et en créant un enfant.
 
 ### Modal Onboarding forcé — branche `feature/onboarding-forced`
 Objectif : réduire le drop-off sur le dashboard vide (bouton "+ Ajouter un enfant" insuffisant → 35% drop).
@@ -34,8 +41,24 @@ Objectif : réduire le drop-off sur le dashboard vide (bouton "+ Ajouter un enfa
   - Android MD3 : bottom sheet depuis le bas, `rounded: '28px 28px 0 0'`, progress bar linéaire, boutons texte alignés à droite.
   - iOS : modal centré plein écran, `borderRadius: 40`, dots de pagination (3), boutons gradient indigo.
 - **`App.tsx`** : `showOnboarding` state + `onboardingChildId` (transmet l'id de l'enfant créé à l'étape 2). `handleAddChild` retourne désormais `Promise<string | undefined>` (au lieu de `void`) pour exposer le `childId`.
-- **Non buildé** : à builder et tester sur appareils physiques avant de merger.
-- **À faire après build** : vérifier que le modal ne s'affiche pas pour les users existants (condition `children.length === 0` dans `handleLoginSuccess`).
+- **✅ Builté et testé** sur Huawei STK-L21 (24/06 09:59) — modal s'affiche, création enfant fonctionne (avec fix error handling ci-dessous).
+
+### getSession() Timeouts — iOS + Android (fix hang)
+Problème : `getSession()` peut hang ~27s sur Android cold-start ET iOS post-OAuth, causant le freeze du OnboardingModal et autres handlers.
+- **Fix** : `Promise.race()` timeout sur TOUS les `getSession()` calls dans `App.tsx` :
+  - `handleAddChild` : 5s timeout (création enfant)
+  - `handlePurchaseGoal` : 5s timeout (achat objectif)
+  - `handleFullSignOut` : 2s timeout (déconnexion)
+  - `onAuthStateChange` retry : 3s timeout (reconnexion cold-start)
+- **Error handling** : OnboardingModal wrapper autour de `onAddChild` + try-catch → affiche `showAppError` en cas de timeout (empêche modal gelé infini).
+- **Résultat** : aucun freeze possible, comportement gracieux sur les deux plateformes.
+
+### 4 commits poussés sur `feature/onboarding-forced` (24/06)
+1. `5f5ffa8` — feat(analytics): Firebase Analytics Android (sign_up, child_created, purchase)
+2. `456f70d` — feat(onboarding): modal 3 étapes (Android MD3 + iOS)
+3. `e24efc3` — docs(claude): update + fix firebase stub + vite alias
+4. `d3c5d7d` — fix(onboarding): error handling + timeout getSession()
+5. `9cf4a3c` — fix(auth): add timeouts to ALL getSession() calls
 
 ## 🔧 Actions du 19/06/2026 — Fix login Google Android + sécurité suppression
 
