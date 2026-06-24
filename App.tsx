@@ -1696,7 +1696,7 @@ const App: React.FC = () => {
       }
     }
     setLoading(false);
-    setView('LOGIN');
+    setView('PARENT');
   };
 
   if (criticalError) return (
