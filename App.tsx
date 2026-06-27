@@ -1584,14 +1584,9 @@ const App: React.FC = () => {
   };
   const handlePurchaseGoal = async (childId: string, goal: Goal) => {
     const supabase = getSupabase();
-    // timeout getSession to avoid hang on Android/iOS
-    const sessionPromise = supabase.auth.getSession();
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Session timeout')), 5000)
-    );
-    const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
-    const user = session?.user;
-    if (!user || !ownerId) return;
+    // Utilise ownerId du state (pas de getSession qui hang sur Android)
+    if (!ownerId || ownerId === 'demo' || ownerId === 'local-owner') return;
+    const user = { id: ownerId };
 
     const transactionId = crypto.randomUUID();
     const today = new Date();
@@ -1601,19 +1596,17 @@ const App: React.FC = () => {
     isDirectSupabaseOperation.current = true;
 
     try {
-      // 1. INSERT direct
-      const { error } = await supabase
-        .from('transactions')
-        .insert({
-          id: transactionId,
-          child_id: childId,
-          type: 'withdrawal',
-          amount: -goal.target,
-          description: `Achat : ${goal.name}`,
-          created_by: user.id
-        });
+      // 1. INSERT via REST brut (bypass supabase-js getSession hang Android)
+      const { error } = await restInsert('transactions', {
+        id: transactionId,
+        child_id: childId,
+        type: 'withdrawal',
+        amount: -goal.target,
+        description: `Achat : ${goal.name}`,
+        created_by: user.id
+      });
 
-      if (error) throw new Error(`Achat echoué : ${error.message}`);
+      if (error) throw new Error(`Achat echoué : ${error}`);
 
       // 2. Update Goal Status IMMEDIATELY in Supabase
       const { error: gError } = await supabase
