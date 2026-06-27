@@ -553,10 +553,56 @@ export const loadFromSupabase = async (userId: string, accessToken?: string): Pr
             // Use the passed userId directly to avoid a slow getUser() network call
             // (especially critical right after iOS WebProcess unfreeze post-OAuth)
             const currentUserId = userId;
+
+            // 🚀 ANDROID COLD-START: Lire le token depuis localStorage (synchrone, pas de hang)
+            // avant de tomber sur getSession() qui hang 27s sur Huawei/Samsung Android.
+            // Le storage hybride (CapacitorStorageAdapter) lit localStorage en priorité,
+            // mais getSession() lui triggère un refresh réseau → hang. Ici on lit le JSON
+            // brut du storage auth supabase, sans passer par le client auth.
+            const SUPABASE_AUTH_KEY = `sb-${SUPABASE_URL.split('//')[1].split('.')[0]}-auth-token`;
+            try {
+                const rawSession = localStorage.getItem(SUPABASE_AUTH_KEY);
+                if (rawSession) {
+                    const parsed = JSON.parse(rawSession);
+                    const cachedToken = parsed?.access_token;
+                    const expiresAt = parsed?.expires_at; // timestamp en secondes
+                    const isValid = cachedToken && expiresAt && (expiresAt * 1000) > Date.now() + 30000;
+                    if (isValid) {
+                        console.log('⚡ [LOAD] Token lu depuis localStorage (bypass getSession), expires:', new Date(expiresAt * 1000).toISOString());
+                        // Utiliser REST brut avec ce token — même chemin que le REST-bypass OAuth
+                        const headers = {
+                            apikey: SUPABASE_ANON_KEY,
+                            Authorization: `Bearer ${cachedToken}`,
+                            Accept: 'application/json',
+                        };
+                        const tPr = performance.now();
+                        const pRes = await fetchWithTimeout(
+                            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${currentUserId}&select=*`,
+                            { headers }
+                        );
+                        if (!pRes.ok) throw new Error(`REST profiles ${pRes.status}`);
+                        const profilesArr = await pRes.json();
+                        console.log(`⏱️ [LOAD-LS] profiles fait en ${(performance.now() - tPr).toFixed(0)}ms`);
+                        const profile = Array.isArray(profilesArr) ? profilesArr[0] : null;
+                        if (!profile) return null;
+
+                        const tCh = performance.now();
+                        const cRes = await fetchWithTimeout(
+                            `${SUPABASE_URL}/rest/v1/children?user_id=eq.${currentUserId}&select=${encodeURIComponent('*,missions(*),goals(*),transactions(*)')}`,
+                            { headers }
+                        );
+                        if (!cRes.ok) throw new Error(`REST children ${cRes.status}`);
+                        const children = await cRes.json();
+                        console.log(`⏱️ [LOAD-LS] children fait en ${(performance.now() - tCh).toFixed(0)}ms (${children?.length ?? 0})`);
+                        return { profile, children: children || [] };
+                    }
+                }
+            } catch (lsErr: any) {
+                console.warn('⚠️ [LOAD] localStorage bypass échoué, fallback getSession:', lsErr.message);
+            }
+
+            // Fallback : getSession() si localStorage vide/expiré/illisible
             const tStart = performance.now();
-            // Diagnostic : où le hang se produit-il ? (auth/refresh avant requête,
-            // requête profiles, ou requête children join). console.log direct pour
-            // garantir la visibilité dans logcat même sans flag debug.
             console.log('⏱️ [LOAD] début — getSession…');
             const { data: sess } = await supabase.auth.getSession();
             console.log(`⏱️ [LOAD] getSession fait en ${(performance.now() - tStart).toFixed(0)}ms — token exp: ${sess?.session?.expires_at}`);
