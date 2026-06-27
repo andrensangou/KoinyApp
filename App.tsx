@@ -255,6 +255,11 @@ const App: React.FC = () => {
         setLoading(false);
         SplashScreen.hide();
         console.log('🚦 [INIT] Navigation provisoire (session valide) avant loadData');
+        // Si cache vide (nouveau user ou compte supprimé) → préparer onboarding
+        // Note: setShowOnboarding sera confirmé après loadData (enfants cloud vides)
+        if (cachedChildrenCount === 0) {
+          setShowOnboarding(true);
+        }
       }
 
       console.log('📦 [INIT] Chargement des données cloud en arrière-plan...');
@@ -274,6 +279,18 @@ const App: React.FC = () => {
       });
       setOwnerId(result.ownerId);
 
+      // Ajuster l'onboarding selon les données CLOUD (source de vérité)
+      // Si le cloud confirme children=0 → garder modal ouvert
+      // Si le cloud trouve des enfants → fermer le modal (user existant, cache était juste vide)
+      if (session?.user && result.ownerId && result.ownerId !== 'demo') {
+        const hasCloudChildren = (cloudData.children?.length ?? 0) > 0;
+        if (hasCloudChildren) {
+          setShowOnboarding(false); // user existant, pas besoin d'onboarding
+        } else {
+          setShowOnboarding(true);  // vraiment nouveau user / profil recréé
+        }
+      }
+
       // Sync langue → profiles (pour les emails de re-engagement)
       const supabaseClient = getSupabase();
       const effectiveLang = savedLanguage || cloudData.language || 'fr';
@@ -286,6 +303,10 @@ const App: React.FC = () => {
         if (session) {
           const hasChildren = (cloudData.children?.length ?? 0) > 0;
           setView(hasChildren ? 'LOGIN' : 'PARENT');
+          // Nouveau user ou profil supprimé/recréé → forcer l'onboarding
+          if (!hasChildren && result.ownerId && result.ownerId !== 'demo') {
+            setShowOnboarding(true);
+          }
         } else {
           const hasLocalChildren = result.data?.children?.length > 0;
           if (hasLocalChildren) setView('LOGIN');
