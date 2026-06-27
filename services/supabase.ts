@@ -562,6 +562,54 @@ export const ensureUserProfile = async (userId: string, email?: string) => {
     try {
         log(`🔍 [SUPABASE] Vérification profil pour: ${userId}`);
 
+        // 🚀 CHEMIN REST BRUT (bypass supabase-js → getSession hang sur Android)
+        const token = getTokenFromStorage();
+        if (token) {
+            try {
+                const checkRes = await fetchWithTimeout(
+                    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=id`,
+                    {
+                        headers: {
+                            apikey: SUPABASE_ANON_KEY,
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+                const rows = checkRes.ok ? await checkRes.json().catch(() => []) : [];
+                if (Array.isArray(rows) && rows.length > 0) {
+                    log('✅ [SUPABASE] Profil existant vérifié (REST)');
+                    return true;
+                }
+
+                log('🆕 [SUPABASE] Profil inexistant. Création (REST)...');
+                const insertRes = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/profiles`, {
+                    method: 'POST',
+                    headers: {
+                        apikey: SUPABASE_ANON_KEY,
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        Prefer: 'return=minimal',
+                    },
+                    body: JSON.stringify({
+                        id: userId,
+                        email: email || null,
+                        full_name: email?.split('@')[0] || 'Parent',
+                        role: 'parent',
+                    }),
+                });
+                if (!insertRes.ok) {
+                    const body = await insertRes.text().catch(() => insertRes.statusText);
+                    console.warn(`⚠️ [SUPABASE] Création profil REST échouée ${insertRes.status}: ${body}`);
+                } else {
+                    log('✅ [SUPABASE] Profil créé avec succès (REST)');
+                }
+                return true;
+            } catch (restErr: any) {
+                console.warn('⚠️ [SUPABASE] REST profil échoué, fallback supabase-js:', restErr.message);
+            }
+        }
+
+        // Fallback: client supabase-js (web, ou pas de token en cache)
         const checkPromise = supabase
             .from('profiles')
             .select('id')

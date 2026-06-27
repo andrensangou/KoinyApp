@@ -9,6 +9,37 @@
 - Campagne Google Ads : **CONTINUE** (pas besoin de pause, crédit Claude ≠ Google Ads budget).
 - Dev/debug Claude : **PAUSE** jusqu'au 1/07. À reprendre pour fix bugs (sentinel suppression/reconnexion, REST-bypass Android).
 
+## 🔧 Actions du 27/06/2026 — REST-bypass GÉNÉRALISÉ (Android getSession hang) — branche `feature/onboarding-forced`
+
+**Contexte** : suite des tests OnboardingModal sur Huawei STK-L21 (Android 10, pas de Google Play Services). Le hang `getSession()` (~27s) de supabase-js bloquait TOUTES les opérations passant par le client. Les timeouts `Promise.race` du 24/06 évitaient le freeze mais **abandonnaient** l'opération (création enfant ratée, suppression compte ratée, profil non créé). Solution définitive : **bypasser supabase-js partout** via REST brut + token lu en localStorage (synchrone, pas de pont natif → jamais de hang).
+
+**Principe REST-bypass (pattern établi, `services/supabase.ts`)** :
+1. `getTokenFromStorage()` : lit `sb-<ref>-auth-token` depuis **localStorage** (synchrone, valide si `expires_at` > now+10s). Pas de `getSession()`.
+2. Pour identifier l'user : utiliser `ownerId` du state React (déjà connu après `initialize()`), JAMAIS `getSession()`/`getUser()`.
+3. Pour les requêtes DB : `fetch` direct vers `${SUPABASE_URL}/rest/v1/...` avec header `Authorization: Bearer <token>` + `apikey`. Fallback sur supabase-js si pas de token (web).
+
+**Helpers REST créés (`services/supabase.ts`)** :
+- `getTokenFromStorage()` : token synchrone depuis localStorage.
+- `restInsert(table, payload)` : POST `/rest/v1/<table>` (bypass `.from().insert()`).
+- `restRpc(fn, args)` : POST `/rest/v1/rpc/<fn>` (bypass `supabase.rpc()`).
+- `loadFromSupabase` : lit déjà en REST quand token dispo (`⚡ [LOAD] Token lu depuis localStorage (bypass getSession)`).
+
+**Fonctions converties en REST** :
+- **`handleAddChild`** (`App.tsx`) : `ownerId` au lieu de `getSession()` + `restInsert('children', ...)`. → **plus de freeze sur "Suivant"** dans OnboardingModal.
+- **`handlePurchaseGoal`** (`App.tsx`) : `ownerId` + `restInsert('transactions', ...)`.
+- **`deleteAccount(knownUserId?)`** (`services/supabase.ts`) : `restRpc('delete_user_data')` + purge directe du token storage + `signOut({scope:'local'})` avec timeout 2s non bloquant (au lieu de `supabase.rpc()` + `supabase.auth.signOut()` qui hangaient). `App.tsx` passe `ownerId` à `deleteAccount`. → **la suppression de compte se déclenche enfin** (avant : user restait sur l'espace parent).
+- **`ensureUserProfile(userId, email?)`** (`services/supabase.ts`) : GET puis POST `/rest/v1/profiles` en REST (token), fallback supabase-js. **Bug trouvé** : le `TIMEOUT_DATABASE` (×2 au login) empêchait la création de la ligne `profiles` → un **nouveau compte n'avait PAS de profil** (vérifié : user `d1f176bc` connecté avec enfant "Diams" mais `profiles` vide). Conséquence : pas d'emails de réengagement, analytics funnel cassé, sync langue ratée. (La FK `children.user_id` → `auth.users` donc la création enfant marchait quand même.) Profil `d1f176bc` recréé rétroactivement via service role.
+
+**Validé sur Huawei STK-L21 (27/06)** :
+- Login Google : `⚠️ [GOOGLE] Native sign-in failed, falling back to browser` (normal, pas de Play Services) → `🔗 [DEEP LINK] Ouvert avec: com.koiny.app://callback#access_token=...` → retour deep-link OK → `🧹 Sentinel suppression : cache purgé` (preuve que deleteAccount a marché) → dashboard. Loads en REST ~90-460ms (était hang 27s).
+- OnboardingModal : création enfant + mission template OK, sync cloud OK, **plus aucun freeze**.
+- Suppression de compte : OK après le fix `restRpc`.
+- ⚠️ **UX login Huawei** : l'utilisateur voit un "flash" du navigateur avec l'URL Supabase puis le dashboard (rapide car Google a mémorisé le compte → pas de sélecteur). **Normal et spécifique à ce Huawei** (pas de Play Services → fallback navigateur). Les vrais users Android avec Play Services ont le **sélecteur Google natif** sans flash. Acceptable pour la prod.
+
+**Reste à tester** : flux complet sur **iOS** (simulateur iPhone 17, build debug via Xcode) pour confirmer non-régression du REST-bypass + onboarding. iOS lisait déjà en REST (branche `fix/ios-google-data-load`), donc faible risque, mais à valider.
+
+**À faire avant prod** : build Android release (AAB versionCode 18) + iOS 1.1.7 build 20 une fois iOS validé. Pousser les commits `feature/onboarding-forced`.
+
 ## Projet
 
 Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
