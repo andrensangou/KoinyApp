@@ -461,6 +461,33 @@ export const restInsert = async (table: string, payload: object): Promise<{ erro
 };
 
 /**
+ * REST brut — appel d'une fonction RPC Supabase sans passer par le client supabase-js.
+ * Évite le hang getSession() sur Android (le client appelle getSession() en interne).
+ */
+export const restRpc = async (fn: string, args: object = {}): Promise<{ error: string | null }> => {
+    const token = getTokenFromStorage();
+    if (!token) {
+        // Fallback: utilise le client supabase-js
+        const { error } = await supabase.rpc(fn as any, args);
+        return { error: error?.message || null };
+    }
+    const res = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+        method: 'POST',
+        headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(args),
+    });
+    if (!res.ok) {
+        const body = await res.text().catch(() => res.statusText);
+        return { error: `REST rpc ${fn} ${res.status}: ${body}` };
+    }
+    return { error: null };
+};
+
+/**
  * Delete user account and cleanup
  */
 export const deleteAccount = async (knownUserId?: string) => {
@@ -475,8 +502,9 @@ export const deleteAccount = async (knownUserId?: string) => {
         }
         if (!user) throw new Error('No user logged in');
 
-        const { error } = await supabase.rpc('delete_user_data');
-        if (error) throw new Error(`Account deletion failed: ${error.message}`);
+        // REST brut (bypass supabase.rpc → getSession hang sur Android)
+        const { error } = await restRpc('delete_user_data');
+        if (error) throw new Error(`Account deletion failed: ${error}`);
 
         // Nettoyer tout le cache local (Preferences + localStorage)
         await Preferences.remove({ key: 'koiny_local_v1' });
@@ -509,8 +537,21 @@ export const deleteAccount = async (knownUserId?: string) => {
         // dont le client natif était null. → on retire la ligne, supabase.auth.signOut()
         // ci-dessous nettoie la session locale, ce qui suffit.
 
-        // Le compte auth est déjà supprimé par la RPC — signOut nettoie la session locale
-        await supabase.auth.signOut();
+        // Le compte auth est déjà supprimé par la RPC. On nettoie la session locale.
+        // ⚠️ supabase.auth.signOut() appelle getSession() en interne → hang sur Android.
+        // On purge donc directement le token du storage, puis signOut best-effort (non bloquant).
+        try {
+            const authKey = `sb-${SUPABASE_URL.split('//')[1].split('.')[0]}-auth-token`;
+            localStorage.removeItem(authKey);
+            await Preferences.remove({ key: authKey });
+        } catch { /* best-effort */ }
+        // signOut local-only avec timeout pour ne jamais bloquer l'UI sur Android
+        try {
+            await Promise.race([
+                supabase.auth.signOut({ scope: 'local' }),
+                new Promise((resolve) => setTimeout(resolve, 2000)),
+            ]);
+        } catch { /* best-effort */ }
         return { error: null };
     } catch (error: any) {
         return { error };
