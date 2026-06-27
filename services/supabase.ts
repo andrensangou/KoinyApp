@@ -416,9 +416,16 @@ export const updatePassword = async (password: string) => {
 /**
  * Delete user account and cleanup
  */
-export const deleteAccount = async () => {
+export const deleteAccount = async (knownUserId?: string) => {
     try {
-        const { data: { user } } = await supabase.auth.getUser();
+        // Utilise knownUserId si fourni (évite getUser() réseau qui hang sur Android)
+        let user: { id: string } | null = null;
+        if (knownUserId) {
+            user = { id: knownUserId };
+        } else {
+            const { data } = await supabase.auth.getUser();
+            user = data.user;
+        }
         if (!user) throw new Error('No user logged in');
 
         const { error } = await supabase.rpc('delete_user_data');
