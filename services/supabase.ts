@@ -414,6 +414,53 @@ export const updatePassword = async (password: string) => {
 };
 
 /**
+ * Récupère un access token valide depuis localStorage (bypass getSession() hang Android).
+ * Utilisé pour les opérations REST brutes (insert/update/delete) sur Android.
+ */
+export const getTokenFromStorage = (): string | null => {
+    try {
+        const key = `sb-${SUPABASE_URL.split('//')[1].split('.')[0]}-auth-token`;
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        const token = parsed?.access_token;
+        const expiresAt = parsed?.expires_at;
+        if (token && expiresAt && (expiresAt * 1000) > Date.now() + 10000) return token;
+        return null;
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * REST brut — INSERT dans une table Supabase sans passer par le client supabase-js.
+ * Évite le hang getSession() sur Android cold-start.
+ */
+export const restInsert = async (table: string, payload: object): Promise<{ error: string | null }> => {
+    const token = getTokenFromStorage();
+    if (!token) {
+        // Fallback: utilise le client supabase-js
+        const { error } = await supabase.from(table as any).insert([payload]);
+        return { error: error?.message || null };
+    }
+    const res = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+        },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+        const body = await res.text().catch(() => res.statusText);
+        return { error: `REST ${table} insert ${res.status}: ${body}` };
+    }
+    return { error: null };
+};
+
+/**
  * Delete user account and cleanup
  */
 export const deleteAccount = async (knownUserId?: string) => {

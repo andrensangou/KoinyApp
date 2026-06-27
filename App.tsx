@@ -14,7 +14,7 @@ import AlertBanner from './components/AlertBanner';
 import { GlobalState, INITIAL_DATA, HistoryEntry, ChildProfile, Language, Goal, BADGE_THRESHOLDS, ParentBadge, MAX_BALANCE } from './types';
 import { loadData, saveData, persistentStorage } from './services/storage';
 import { updateWidgetData } from './services/widgetBridge';
-import { getSupabase, updatePassword, deleteAccount, ensureUserProfile, recordDeletion, recordDeletions } from './services/supabase';
+import { getSupabase, updatePassword, deleteAccount, ensureUserProfile, recordDeletion, recordDeletions, restInsert } from './services/supabase';
 import { alertService, AppAlert } from './services/alertService';
 import { notifications } from './services/notifications';
 import { getContextualReminder } from './services/smartReminder';
@@ -1550,9 +1550,9 @@ const App: React.FC = () => {
     isDirectSupabaseOperation.current = true;
 
     try {
-      // 1. INSERT direct
-      const { error } = await supabase.from('children').insert([childPayload]);
-      if (error) throw new Error(error.message);
+      // 1. INSERT via REST brut (bypass supabase-js qui appelle getSession() → hang Android)
+      const { error } = await restInsert('children', childPayload);
+      if (error) throw new Error(error);
 
       // 2. Update local state
       setData(prev => {
