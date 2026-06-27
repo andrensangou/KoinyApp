@@ -1527,18 +1527,14 @@ const App: React.FC = () => {
   const handleAddChild = async (childData: any): Promise<string | undefined> => {
     const supabase = getSupabase();
 
-    // timeout getSession to avoid hang on Android
-    const sessionPromise = supabase.auth.getSession();
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Session timeout')), 5000)
-    );
-    const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
-
-    const user = session?.user;
-    if (!user) {
+    // Utilise ownerId du state React (déjà connu, pas besoin de getSession qui hang sur Android)
+    const userId = ownerId;
+    if (!userId || userId === 'demo' || userId === 'local-owner') {
       showAppError('Vous n\'êtes pas connecté.');
       return;
     }
+    // Objet user minimal pour la suite du code
+    const user = { id: userId };
 
     const childId = crypto.randomUUID();
     const childPayload = {
