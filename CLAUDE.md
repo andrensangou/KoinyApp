@@ -68,7 +68,9 @@
 Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
 
 **App Store:** https://apps.apple.com/us/app/koiny-pocket-money-for-kids/id6760566260
-**Statut:** **🚀 1.1.7 / vc18 SOUMIS AUX 2 STORES le 28/06/2026** (branche `feature/onboarding-forced`, commit `0534bba`). iOS **1.1.7 build 20** en review Apple (publication auto après approbation, 100% immédiat, note conservée). Android **versionCode 18** en review Google (Production, 100%, déclaration AD_ID faite car Firebase Analytics). Contient : REST-bypass généralisé (fix hang getSession Android), OnboardingModal forcé, fixes suppression compte + création profil, Firebase Analytics Android. Précédent : iOS 1.1.6 build 19 (20/06), Android vc17 live (19/06).
+**Statut:** **🚀 iOS 1.1.7 build 21 SOUMIS le 28/06/2026** (branche `fix/push-ios-tokens`) — bundle onboarding + **fix push iOS (token FCM)** + avis in-app + REST-bypass. Build 20 avait été retiré du review → remplacé par build 21. Android **versionCode 18 LIVE en prod** (publié 28/06, contient REST-bypass + onboarding ; le fix push iOS ne concerne pas Android dont le push marchait déjà). Précédent : iOS 1.1.6 build 19, Android vc17.
+
+⚠️ **Compte review Apple (`akians237@gmail.com`) — piège à connaître** : il a été supprimé puis recréé via Google pendant les tests du 28/06 → la **connexion directe email/mot de passe ne marchait plus** (provider `google` only) ET le **PIN avait changé**. Fix appliqué via admin API : (1) `PUT /auth/v1/admin/users/{id}` avec `password=KoinyReview2024` → réactive la connexion directe (testé via `token?grant_type=password` → OK) ; (2) `pin_hash` recalculé pour PIN `0000` (PBKDF2 SHA-512, 100k, salt 16B, format `salt:hash` — cf. `services/security.ts`) via service role. **Leçon : ne jamais supprimer le compte review en testant, ou penser à re-set password + PIN avant de soumettre.**
 
 ## 📊 Actions du 24/06/2026 — Firebase Analytics + Modal Onboarding forcé + getSession Timeouts
 
