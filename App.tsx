@@ -34,6 +34,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 import { Network } from '@capacitor/network';
 import { registerPushToken, sendPushNewMission, sendPushMissionComplete, sendPushMissionApproved, sendPushMissionRejected, sendPushMissionRequested, sendPushGiftRequested, unregisterPushToken } from './services/pushService';
+import { incrementAppOpen, maybeRequestReview } from './services/appReview';
 
 type ViewState = 'LANDING' | 'AUTH' | 'LOGIN' | 'CHILD' | 'PARENT';
 
@@ -580,6 +581,7 @@ const App: React.FC = () => {
     monitoring.initSentry();
     monitoring.initWebVitals();
     monitoring.track('BUSINESS', 'APP_OPEN');
+    incrementAppOpen(); // compteur d'ouvertures pour le déclencheur d'avis in-app
 
     const handleError = (error: ErrorEvent) => {
       console.error("Runtime Crash:", error);
@@ -1042,6 +1044,11 @@ const App: React.FC = () => {
     if (userId) {
       sendPushMissionApproved({ userId, childId, missionTitle: mission.title, reward: effectiveReward, currency: data.currency || '€', note, language: data.language });
     }
+
+    // 🌟 Moment positif (mission validée) → proposer un avis in-app.
+    // Délai pour laisser l'animation de succès jouer d'abord. Gardes-fous (≥3 ouvertures,
+    // 1 seule fois, natif only) gérés dans le service. Fire-and-forget.
+    setTimeout(() => { maybeRequestReview(); }, 1500);
 
     // 🔔 Notification Habit Test: vérifier les milestones d'objectifs après l'augmentation du solde
     const newBalance = Number((child.balance + effectiveReward).toFixed(2));
