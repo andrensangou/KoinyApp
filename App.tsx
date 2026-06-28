@@ -267,7 +267,7 @@ const App: React.FC = () => {
 
       // Profile check AFTER loadData to avoid concurrent auth lock contention
       if (session?.user) {
-        ensureUserProfile(session.user.id).catch(e =>
+        ensureUserProfile(session.user.id, session.user.email).catch(e =>
           console.warn('⚠️ [INIT] Profile check failed (non-blocking):', e?.message)
         );
       }
