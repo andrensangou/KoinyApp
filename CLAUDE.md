@@ -47,6 +47,19 @@
 
 **À faire avant prod** : build Android release (AAB versionCode 18) + iOS 1.1.7 build 20 une fois iOS validé. Pousser les commits `feature/onboarding-forced`.
 
+## 🔔 À INVESTIGUER — Push tokens cassés/incomplets (branche `fix/push-ios-tokens`, créée 28/06)
+
+**Diagnostic 28/06** (requêtes Supabase `device_tokens` via service role, croisé RevenueCat) :
+- **16 users sur 84 (19%)** seulement ont un token push → faible couverture de réengagement.
+- **🔴 ZÉRO token iOS** dans toute la table `device_tokens` (874 entrées, 100% `platform='android'`). Or les **3 clients payants (laetitia, martin, megan) sont tous iOS** → **aucun payant joignable par push**. Soit les users iOS refusent la permission, soit (plus probable vu le 0 absolu) **`registerPushToken()` n'écrit pas le token sur iOS** → `send-push` ne peut pas cibler iOS = push cross-device cassé sur iOS. CLAUDE.md dit le push iOS "fonctionnel" (réception 21/05) mais le token n'est apparemment jamais **persisté**.
+- **🚩 Accumulation de tokens** : 874 entrées pour 16 users ≈ **55 tokens/user**. La contrainte `UNIQUE(user_id, platform, mode, child_id)` n'empêche pas l'accumulation (ou un insert au lieu d'upsert, ou le token FCM change et chaque nouveau est ajouté sans purge des anciens). À nettoyer + corriger l'upsert.
+
+**À faire sur `fix/push-ios-tokens`** :
+1. **🔴 Priorité — iOS** : tracer `registerPushToken()` côté iOS (`services/pushService.ts` + `App.tsx`). Vérifier : permission demandée ? `registration` token APNs reçu ? insert dans `device_tokens` ? Sur appareil iOS physique (pas simulateur — push KO sur simu). Filtrer logs sur `[Push]`/`registerPushToken`.
+2. **Dédup/nettoyage** : passer l'insert en **upsert** (`onConflict` sur la clé unique) + script de purge des doublons existants. Vérifier pourquoi 55/user.
+3. **Conséquence métier** : sans ça, impossible de réengager les users dormants (cas Megan : 0 token + `marketing_consent=false` → injoignable). Le réengagement payant iOS dépend de ce fix.
+- **Contexte conformité (lié)** : relances email = nécessitent `marketing_consent=true` (la fonction `notify-inactive-users` filtre déjà dessus). Megan/laetitia/martin = `marketing_consent=false` → **pas d'email marketing possible**. Le push (si opt-in OS) est le canal de réengagement viable → d'où l'importance de ce fix iOS.
+
 ## Projet
 
 Koiny est une app mobile iOS/Android d'education financiere pour enfants 6-14 ans. Stack: TypeScript, React 18, Vite 7, Tailwind CSS, Capacitor 8, Supabase, RevenueCat.
