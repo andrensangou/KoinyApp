@@ -1,0 +1,25 @@
+[
+  {
+    "url": "http://localhost:8765/logo.png",
+    "type": "Image",
+    "contexts": [
+      "img[src]"
+    ],
+    "notes": "Koiny",
+    "description": "Koiny",
+    "aboveFold": true,
+    "nearestHeading": "Produit"
+  },
+  {
+    "url": "http://localhost:8765/screenshots/fr/dashboard-parent.png",
+    "type": "Image",
+    "contexts": [
+      "img[src]"
+    ],
+    "notes": "Koiny Dashboard",
+    "description": "Koiny Dashboard",
+    "nearestHeading": "L'argent de poche qui éduque vos enfants",
+    "sectionClasses": "hero-grid",
+    "aboveFold": true
+  }
+]

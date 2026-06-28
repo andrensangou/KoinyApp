@@ -31,7 +31,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { PushNotifications } from '@capacitor/push-notifications';
+import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 import { Network } from '@capacitor/network';
 import { registerPushToken, sendPushNewMission, sendPushMissionComplete, sendPushMissionApproved, sendPushMissionRejected, sendPushMissionRequested, sendPushGiftRequested, unregisterPushToken } from './services/pushService';
 
@@ -617,8 +617,8 @@ const App: React.FC = () => {
       });
 
       // Tap sur une push FCM (cross-device) → même routage que les notifs locales
-      PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-        const pdata = action.notification.data || {};
+      FirebaseMessaging.addListener('notificationActionPerformed', (action) => {
+        const pdata = (action.notification?.data || {}) as Record<string, string>;
         const type = pdata.type;
         if (!type) return;
 

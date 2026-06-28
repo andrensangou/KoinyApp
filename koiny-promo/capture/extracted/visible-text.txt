@@ -1,0 +1,132 @@
+[a] Fonctionnalités
+[a] Comment ça marche
+[span] Télécharger
+[span] 🇫🇷
+[button] Français
+[span] 🇬🇧
+[button] English
+[span] 🇳🇱
+[button] Nederlands
+[span] Application éducative · iOS
+[h1] L'argent de poche qui
+[span] éduque vraiment
+[p] Koiny donne à vos enfants la fierté de gagner, l'habitude d'épargner - et vous gardez le contrôle total.
+[span] Télécharger gratuitement
+[span] Comment ça marche
+[span] PIN parental
+[span] Face ID
+[span] Zéro pub
+[div] FR · EN · NL
+[div] Mission validée
+[div] +2,00 €
+[div] Objectif
+[div] 75% atteint
+[div] Solde
+[div] 12,50 €
+[span] Vous reconnaissez-vous ?
+[h2] Les galères de
+[span] l'argent de poche
+[p] Chaque parent fait face aux mêmes questions. Koiny y répond simplement.
+[h3] "Il n'a rien fait mais réclame de l'argent"
+[p] Avec Koiny, chaque euro est lié à une mission accomplie. Pas d'effort, pas de récompense.
+[h3] "Elle dépense tout sans jamais épargner"
+[p] Les objectifs d'épargne rendent le but visible. Votre enfant voit sa progression chaque jour.
+[h3] "Je ne sais pas combien je lui ai donné"
+[p] Historique complet, graphiques, solde en temps réel. Vous avez une vision claire à tout moment.
+[span] Fonctionnalités
+[h2] Tout ce qu'il faut pour
+[span] apprendre en s'amusant
+[p] Un outil pensé pour les parents exigeants qui veulent le contrôle, sans la complexité.
+[h3] Missions personnalisées
+[p] Ranger la chambre, faire les devoirs, aider… vous définissez les missions et les récompenses. Votre maison, vos règles.
+[h3] Objectifs d'épargne
+[p] Vélo, console, jouet… votre enfant fixe un objectif et voit sa progression. L'épargne devient motivante.
+[h3] Contrôle parental total
+[p] PIN chiffré + Face ID pour accéder à l'espace parent. Vos enfants ne peuvent rien modifier sans vous.
+[h3] Suivi & statistiques
+[p] Historique détaillé, graphiques d'évolution et vue d'ensemble par enfant. Tout en un coup d'œil.
+[h3] Widget iOS natif
+[p] Le solde directement sur l'écran d'accueil de l'iPhone. Pas besoin d'ouvrir l'app pour vérifier.
+[h3] 100% privé, zéro pub
+[p] Données stockées localement sur votre appareil. Aucun tracking, aucune publicité, aucune donnée vendue.
+[span] Aperçu
+[h2] Une interface
+[span] pensée pour toute la famille
+[p] Simple pour les enfants, puissant pour les parents. Les captures varient automatiquement selon la langue.
+[span] Espace Parents
+[span] Espace Enfant
+[span] Missions
+[span] Comment ça marche
+[h2] Lancé en
+[span] 3 minutes
+[span] 👨‍👩‍👧
+[h3] Créez les profils
+[p] Ajoutez vos enfants avec un avatar, une couleur et un PIN parental sécurisé. 2 minutes chrono.
+[h3] Définissez les missions
+[p] Créez vos propres défis avec des montants libres. "Ranger la chambre → 2 €", "Faire les courses → 5 €"
+[h3] Ils progressent, vous validez
+[p] Vos enfants accomplissent les missions et vous notifiez. Vous validez en un tap. L'argent s'ajoute.
+[span] Pourquoi Koiny
+[h2] Conçu pour les parents
+[span] qui ont des valeurs
+[p] Pas de compromis sur la sécurité, la vie privée ou la pédagogie.
+[h3] 100% argent virtuel
+[p] Aucune carte bancaire, aucun vrai argent engagé. Vos enfants apprennent sans aucun risque financier réel.
+[h3] Données 100% privées
+[p] Vos données restent sur votre iPhone. Aucune donnée vendue, aucun tracking publicitaire.
+[div] 🛡️
+[h3] Toujours disponible
+[p] Les données sont sauvegardées localement en priorité. Même en cas de problème réseau, l'app continue de fonctionner.
+[h3] Zéro publicité
+[p] Aucune bannière, aucune notification marketing, aucun tracking. Une expérience pure pour toute la famille.
+[h3] Pédagogie prouvée
+[p] Basé sur les principes d'effort-récompense et d'objectif différé - des méthodes reconnues pour développer la responsabilité.
+[h3] Simple à utiliser
+[p] Configuré en 3 minutes. Interface claire pour les enfants dès 6 ans, tableau de bord complet pour les parents.
+[span] Tarifs
+[h2] Simple et
+[span] transparent
+[p] Commencez gratuitement. Passez Premium quand votre famille grandit.
+[div] Koiny Standard
+[div] Gratuit
+[div] Pour toujours
+[span] 1 enfant
+[span] Max 2 missions actives
+[span] Max 1 objectif d'épargne
+[span] Historique (5 dernières)
+[span] Widget iOS & Face ID
+[span] Statistiques & graphiques
+[span] Enfants illimités
+[button] Commencer gratuitement
+[div] Recommandé
+[div] Koiny Premium
+[div] 1,99 €
+[div] par mois · ou 16,99 €/an
+[span] Enfants illimités
+[span] Missions & objectifs illimités
+[span] Historique complet
+[span] Statistiques & graphiques
+[span] 14 jours d'essai gratuit
+[button] Essayer 14 jours gratuits
+[p] * L'abonnement Premium se renouvelle automatiquement. Annulable à tout moment via Réglages > Apple ID > Abonnements. L'essai gratuit de 14 jours se convertit automatiquement en abonnement payant sauf annulation préalable.
+[h2] Lancez-vous dès aujourd'hui
+[p] Rejoignez les familles qui utilisent Koiny pour motiver leurs enfants au quotidien.
+[span] Gratuit à télécharger
+[span] Zéro publicité
+[span] Sans abonnement obligatoire
+[span] Aucune donnée vendue
+[a] 🔒 Consulter notre politique de confidentialité
+[p] Requiert iOS 15.0 ou ultérieur. iPhone.
+[p] Conçu pour les enfants de 6 à 14 ans sous supervision parentale.
+[p] L'argent de poche virtuel qui motive vos enfants. Un simulateur éducatif sûr et amusant.
+[p] ⚠️ Koiny est un simulateur. Aucune transaction financière réelle n'est effectuée.
+[h4] Liens utiles
+[a] Politique de confidentialité
+[a] Conditions d'utilisation
+[h4] Application
+[a] Fonctionnalités
+[a] Comment ça marche
+[a] Télécharger
+[p] © 2026 Koiny - Andre Nsangou.
+[span] Tous droits réservés.
+[a] Confidentialité

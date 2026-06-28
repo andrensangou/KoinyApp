@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Koiny — Login & PIN</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 15%, rgba(99,102,241,0.22) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 85% 85%, rgba(16,185,129,0.14) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .phone {
+      width: 390px; height: 844px; border-radius: 50px;
+      background: #fff;
+      position: relative;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.08),
+        0 0 0 10px #1a1f2e,
+        0 0 0 11px rgba(255,255,255,0.06),
+        0 40px 120px rgba(0,0,0,0.6),
+        0 8px 32px rgba(0,0,0,0.4);
+      overflow: hidden; flex-shrink: 0;
+    }
+    .phone::before {
+      content: ''; position: absolute; top: 12px;
+      left: 50%; transform: translateX(-50%);
+      width: 120px; height: 34px; border-radius: 20px;
+      background: #000; z-index: 999;
+    }
+    .phone::after {
+      content: ''; position: absolute; bottom: 8px;
+      left: 50%; transform: translateX(-50%);
+      width: 134px; height: 5px; border-radius: 100px;
+      background: rgba(255,255,255,0.28); z-index: 999;
+      pointer-events: none;
+    }
+    #root { width: 100%; height: 100%; }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      15%      { transform: translateX(-8px); }
+      30%      { transform: translateX(8px); }
+      45%      { transform: translateX(-6px); }
+      60%      { transform: translateX(6px); }
+      75%      { transform: translateX(-3px); }
+      90%      { transform: translateX(3px); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.88); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes glow {
+      0%,100% { opacity: 0.7; transform: scale(1); }
+      50%     { opacity: 1;   transform: scale(1.08); }
+    }
+    @keyframes blobDrift {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33%     { transform: translate(20px,-15px) scale(1.05); }
+      66%     { transform: translate(-15px,10px) scale(0.96); }
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    button { font-family: 'Poppins', sans-serif; }
+    input  { font-family: 'Poppins', sans-serif; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div id="root"></div>
+  </div>
+
+<script type="text/babel">
+
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── Palette ──────────────────────────────────────────────────────────────
+const PALETTE = {
+  indigo: { from: '#818cf8', to: '#4338ca', light: '#eef2ff', accent: '#4f46e5', soft: '#e0e7ff', text: '#3730a3' },
+  emerald: { from: '#34d399', to: '#059669', light: '#ecfdf5', accent: '#10b981', soft: '#d1fae5', text: '#065f46' },
+  rose: { from: '#fb7185', to: '#be123c', light: '#fff1f2', accent: '#f43f5e', soft: '#ffe4e6', text: '#9f1239' },
+  amber: { from: '#fbbf24', to: '#d97706', light: '#fffbeb', accent: '#f59e0b', soft: '#fef3c7', text: '#92400e' },
+  blue: { from: '#60a5fa', to: '#2563eb', light: '#eff6ff', accent: '#3b82f6', soft: '#dbeafe', text: '#1e40af' }
+};
+
+// ─── Avatar ───────────────────────────────────────────────────────────────
+function Avatar({ seed, colorClass = 'indigo', size = 48 }) {
+  const pal = PALETTE[colorClass] || PALETTE.indigo;
+  const src = `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: `linear-gradient(135deg,${pal.from},${pal.to})`, padding: 2.5, boxSizing: 'border-box', boxShadow: `0 4px 16px ${pal.accent}55`, flexShrink: 0 }}>
+      <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: pal.light, overflow: 'hidden', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+        <img src={src} alt={seed} style={{ width: '115%', marginLeft: '-7.5%', marginBottom: -2 }} onError={(e) => e.target.style.display = 'none'} />
+      </div>
+    </div>);
+
+}
+
+// ─── Status Bar ───────────────────────────────────────────────────────────
+function StatusBar({ dark = false }) {
+  const c = dark ? 'rgba(255,255,255,0.9)' : '#1e293b';
+  const op = dark ? 0.65 : 0.5;
+  return (
+    <div style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', paddingTop: 14, flexShrink: 0, position: 'relative', zIndex: 10 }}>
+      <span style={{ fontFamily: "-apple-system,system-ui", fontSize: 16, fontWeight: 600, color: c, letterSpacing: -0.3 }}>9:41</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* signal */}
+        <svg width="17" height="11" viewBox="0 0 17 11">
+          <rect x="0" y="6.5" width="2.8" height="4.5" rx="0.6" fill={c} fillOpacity={0.4} />
+          <rect x="4.2" y="4" width="2.8" height="7" rx="0.6" fill={c} fillOpacity={0.6} />
+          <rect x="8.4" y="1.5" width="2.8" height="9.5" rx="0.6" fill={c} />
+          <rect x="12.6" y="0" width="2.8" height="11" rx="0.6" fill={c} />
+        </svg>
+        {/* wifi */}
+        <svg width="15" height="11" viewBox="0 0 15 11">
+          <path d="M7.5 2.8C9.5 2.8 11.3 3.6 12.6 4.9L13.6 3.9C12 2.4 9.9 1.5 7.5 1.5C5.1 1.5 3 2.4 1.4 3.9L2.4 4.9C3.7 3.6 5.5 2.8 7.5 2.8Z" fill={c} />
+          <path d="M7.5 6C8.7 6 9.7 6.5 10.5 7.2L11.5 6.2C10.4 5.2 9 4.5 7.5 4.5C6 4.5 4.6 5.2 3.5 6.2L4.5 7.2C5.3 6.5 6.3 6 7.5 6Z" fill={c} />
+          <circle cx="7.5" cy="9.5" r="1.5" fill={c} />
+        </svg>
+        {/* battery */}
+        <svg width="25" height="12" viewBox="0 0 25 12">
+          <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke={c} strokeOpacity="0.35" fill="none" />
+          <rect x="2" y="2" width="18" height="8" rx="2" fill={c} />
+          <path d="M23 4V8C23.8 7.7 24.5 6.8 24.5 6C24.5 5.2 23.8 4.3 23 4Z" fill={c} fillOpacity="0.4" />
+        </svg>
+      </div>
+    </div>);
+
+}
+
+// ─── Mock children data ───────────────────────────────────────────────────
+const CHILDREN = [
+{ id: 'c1', name: 'Emma', avatar: 'Chloe', colorClass: 'indigo', balance: 34.50 },
+{ id: 'c2', name: 'Liam', avatar: 'Noah', colorClass: 'emerald', balance: 12.00 }];
+
+
+const DEMO_PIN = '1234';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Screen 1: LOGIN
+// ═══════════════════════════════════════════════════════════════════════════
+function LoginScreen({ onSelectChild, onParentAccess }) {
+  return (
+    <div style={{ width: '100%', height: '100%', background: '#ffffff', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      {/* Blob gradients */}
+      <div style={{ position: 'absolute', top: -80, left: -60, width: 280, height: 280, borderRadius: '50%', background: 'rgba(165,180,252,0.35)', filter: 'blur(60px)', animation: 'blobDrift 8s ease-in-out infinite', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: -40, right: -80, width: 260, height: 260, borderRadius: '50%', background: 'rgba(251,207,232,0.3)', filter: 'blur(70px)', animation: 'blobDrift 10s ease-in-out infinite 2s', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: 80, right: 20, width: 200, height: 200, borderRadius: '50%', background: 'rgba(167,243,208,0.25)', filter: 'blur(50px)', animation: 'blobDrift 12s ease-in-out infinite 4s', pointerEvents: 'none' }} />
+
+      <StatusBar dark={false} />
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '4px 24px 32px', position: 'relative', zIndex: 1, overflowY: 'auto' }} className="no-scrollbar">
+        {/* Logo + brand */}
+        <div style={{ textAlign: 'center', padding: '12px 0 24px' }}>
+          <div style={{
+            width: 88, height: 88, borderRadius: 28, overflow: 'hidden',
+            margin: '0 auto 18px',
+            boxShadow: '0 20px 60px rgba(99,102,241,0.45), 0 4px 16px rgba(0,0,0,0.15)'
+          }}>
+            <img src="assets/koiny-icon.png" alt="Koiny" style={{ width: '100%', height: '100%', objectFit: "cover" }} />
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: '#1e293b', letterSpacing: '-0.8px', lineHeight: 1.3, marginBottom: 10 }}>
+            Welcome to <span style={{ color: '#4f46e5' }}>Koiny</span>
+          </div>
+          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1 }}>
+            Who&apos;s playing today?
+          </div>
+        </div>
+
+        {/* Child cards grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+          {CHILDREN.map((child, i) => {
+            const pal = PALETTE[child.colorClass] || PALETTE.indigo;
+            return (
+              <button key={child.id} onClick={() => onSelectChild(child.id)}
+              style={{
+                background: 'white', borderRadius: 32, padding: '22px 12px 18px',
+                border: '2.5px solid transparent',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
+                cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+                transition: 'all 0.2s', position: 'relative', overflow: 'hidden',
+                animation: `fadeUp 0.5s ease ${0.1 + i * 0.08}s both`
+              }}
+              onMouseEnter={(e) => {e.currentTarget.style.borderColor = pal.accent;e.currentTarget.style.boxShadow = `0 12px 40px ${pal.accent}33, 0 2px 8px rgba(0,0,0,0.04)`;}}
+              onMouseLeave={(e) => {e.currentTarget.style.borderColor = 'transparent';e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)';}}>
+                
+                {/* shimmer stripe */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${pal.from},${pal.to})`, opacity: 0.6, borderRadius: '32px 32px 0 0' }} />
+                <Avatar seed={child.avatar} colorClass={child.colorClass} size={68} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>{child.name}</div>
+                  <div style={{ display: 'inline-block', padding: '4px 12px', borderRadius: 100, background: pal.soft, fontSize: 10, fontWeight: 800, color: pal.text, letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>{child.balance.toFixed(2)}&nbsp;€</div>
+                </div>
+                <div style={{ width: 32, height: 32, borderRadius: 10, background: pal.light, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+                  <i className="fa-solid fa-chevron-right" style={{ fontSize: 11, color: pal.accent }} />
+                </div>
+              </button>);
+
+          })}
+        </div>
+
+        {/* Parent access button */}
+        <button onClick={onParentAccess}
+        style={{
+          width: '100%', height: 56, borderRadius: 22, whiteSpace: 'nowrap',
+          background: '#0f172a',
+          border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+          boxShadow: '0 12px 40px rgba(15,23,42,0.35)',
+          transition: 'all 0.2s', marginBottom: 20,
+          animation: 'fadeUp 0.5s ease 0.3s both'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = '#1e293b'}
+        onMouseLeave={(e) => e.currentTarget.style.background = '#0f172a'}>
+          
+          <i className="fa-solid fa-lock" style={{ fontSize: 14, color: '#34d399' }} />
+          <span style={{ fontSize: 13, fontWeight: 800, color: 'white', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Parent Space</span>
+        </button>
+
+        {/* Legal */}
+        <div style={{ textAlign: 'center' }}>
+          <span style={{ fontSize: 11, color: '#cbd5e1', fontWeight: 500 }}>Terms & Privacy · </span>
+          <span style={{ fontSize: 11, color: '#818cf8', fontWeight: 700, cursor: 'pointer' }}>Legal notices</span>
+        </div>
+      </div>
+    </div>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Screen 2: PIN ENTRY
+// ═══════════════════════════════════════════════════════════════════════════
+function PINEntry({ onSuccess, onBack, onForgot }) {
+  const [pin, setPin] = useState('');
+  const [shake, setShake] = useState(false);
+  const [error, setError] = useState(false);
+  const [pinState, setPinState] = useState('idle'); // idle | validating | success | error
+  const validationRef = useRef(0);
+
+  const handleKey = useCallback((val) => {
+    if (pinState === 'validating' || pinState === 'success') return;
+    setError(false);setShake(false);setPinState('idle');
+
+    if (val === 'del') {
+      setPin((p) => p.slice(0, -1));
+      return;
+    }
+    const next = (pin + val).slice(0, 4);
+    setPin(next);
+
+    if (next.length === 4) {
+      const id = ++validationRef.current;
+      setPinState('validating');
+      setTimeout(() => {
+        if (validationRef.current !== id) return;
+        if (next === DEMO_PIN) {
+          setPinState('success');
+          setTimeout(() => onSuccess(), 600);
+        } else {
+          setPinState('error');
+          setShake(true);
+          setError(true);
+          setTimeout(() => {setPin('');setPinState('idle');setShake(false);}, 900);
+        }
+      }, 320);
+    }
+  }, [pin, pinState, onSuccess]);
+
+  const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  return (
+    <div style={{ width: '100%', height: '100%', background: '#0f172a', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      {/* Ambient glows */}
+      <div style={{ position: 'absolute', top: '-12%', left: '-15%', width: '55%', height: '55%', borderRadius: '50%', background: 'rgba(99,102,241,0.14)', filter: 'blur(80px)', animation: 'glow 4s ease-in-out infinite', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '-15%', right: '-15%', width: '55%', height: '55%', borderRadius: '50%', background: 'rgba(16,185,129,0.10)', filter: 'blur(80px)', animation: 'glow 5s ease-in-out infinite 2s', pointerEvents: 'none' }} />
+
+      <StatusBar dark={true} />
+
+      {/* Back button */}
+      <div style={{ padding: '2px 20px 0', position: 'relative', zIndex: 5 }}>
+        <button onClick={onBack} style={{
+          width: 40, height: 40, borderRadius: 14,
+          background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.12)',
+          backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', color: 'rgba(255,255,255,0.6)'
+        }}>
+          <i className="fa-solid fa-chevron-left" style={{ fontSize: 13 }} />
+        </button>
+      </div>
+
+      {/* Header */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0 28px', position: 'relative', zIndex: 5, animation: 'fadeUp 0.4s ease both' }}>
+        {/* Glass icon container */}
+        <div style={{
+          width: 80, height: 80, borderRadius: 26, marginBottom: 18,
+          background: 'linear-gradient(135deg,rgba(129,140,248,0.25),rgba(67,56,202,0.15))',
+          border: '1px solid rgba(129,140,248,0.3)',
+          backdropFilter: 'blur(16px)',
+          boxShadow: '0 20px 60px rgba(79,70,229,0.35), inset 0 1px 1px rgba(255,255,255,0.15)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.1s both'
+        }}>
+          <i className="fa-solid fa-user-lock" style={{ fontSize: 30, color: 'rgba(165,180,252,0.95)' }} />
+        </div>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: 'white', letterSpacing: '-0.5px', marginBottom: 6 }}>Parent Space</h2>
+        <p style={{ fontSize: 12, color: 'rgba(148,163,184,0.8)', fontWeight: 600 }}>Enter your 4-digit PIN</p>
+      </div>
+
+      {/* PIN dots */}
+      <div style={{
+        display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 32,
+        position: 'relative', zIndex: 5,
+        animation: shake ? 'shake 0.55s ease both' : 'none'
+      }}>
+        {[0, 1, 2, 3].map((i) => {
+          const filled = pin.length > i;
+          const isSuccess = pinState === 'success';
+          const isError = pinState === 'error' && pin.length > i;
+          return (
+            <div key={i} style={{
+              width: 18, height: 18, borderRadius: '50%',
+              transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+              background: isSuccess ? '#34d399' : isError ? '#fb7185' : filled ? '#818cf8' : 'rgba(255,255,255,0.12)',
+              border: filled ? 'none' : '1.5px solid rgba(255,255,255,0.18)',
+              transform: filled ? 'scale(1.15)' : 'scale(1)',
+              boxShadow: filled && !isError ? `0 0 12px ${isSuccess ? '#34d39966' : '#818cf866'}` : 'none'
+            }} />);
+
+        })}
+      </div>
+
+      {/* Keypad */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, position: 'relative', zIndex: 5, padding: '0 32px' }}>
+        {/* rows 1–3 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, width: '100%', maxWidth: 280 }}>
+          {keys.map((n) =>
+          <button key={n} onClick={() => handleKey(String(n))} style={{
+            height: 64, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.07)',
+            border: '0.5px solid rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(8px)',
+            fontSize: 26, fontWeight: 500, color: 'white',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.12s',
+            fontFamily: "'Poppins',sans-serif",
+            letterSpacing: '-0.5px'
+          }}
+          onMouseDown={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.14)'}
+          onMouseUp={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
+          onTouchStart={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.14)'}
+          onTouchEnd={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}>
+            {n}</button>
+          )}
+        </div>
+        {/* row 4 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, width: '100%', maxWidth: 280 }}>
+          {/* Face ID */}
+          <button onClick={() => {setPinState('success');setTimeout(onSuccess, 400);}} style={{
+            height: 64, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+            border: '0.5px solid rgba(255,255,255,0.06)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.55)',
+            transition: 'all 0.12s'
+          }}
+          onMouseDown={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+          onMouseUp={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+            
+            <i className="fa-solid fa-face-viewfinder" style={{ fontSize: 22 }} />
+          </button>
+          {/* 0 */}
+          <button onClick={() => handleKey('0')} style={{
+            height: 64, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.07)',
+            border: '0.5px solid rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(8px)',
+            fontSize: 26, fontWeight: 500, color: 'white',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.12s',
+            fontFamily: "'Poppins',sans-serif"
+          }}
+          onMouseDown={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.14)'}
+          onMouseUp={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}>
+            0</button>
+          {/* Delete */}
+          <button onClick={() => handleKey('del')} style={{
+            height: 64, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+            border: '0.5px solid rgba(255,255,255,0.06)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.6)',
+            transition: 'all 0.12s'
+          }}
+          onMouseDown={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+          onMouseUp={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+            
+            <i className="fa-solid fa-delete-left" style={{ fontSize: 20 }} />
+          </button>
+        </div>
+      </div>
+
+      {/* Error / demo hint */}
+      <div style={{ padding: '16px 32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, position: 'relative', zIndex: 5 }}>
+        {error ?
+        <div style={{ background: 'rgba(251,113,133,0.12)', border: '1px solid rgba(251,113,133,0.25)', borderRadius: 14, padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <i className="fa-solid fa-circle-xmark" style={{ fontSize: 13, color: '#fb7185' }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#fb7185' }}>Incorrect PIN. Try again.</span>
+          </div> :
+
+        <div style={{ background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.2)', borderRadius: 14, padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <i className="fa-solid fa-lightbulb" style={{ fontSize: 12, color: '#818cf8' }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(165,180,252,0.9)' }}>Demo: use <strong style={{ color: '#818cf8' }}>1234</strong> or tap Face ID</span>
+          </div>
+        }
+        <button onClick={onForgot} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: 'rgba(99,102,241,0.8)', padding: '4px 0' }}>
+          Forgot PIN?
+        </button>
+      </div>
+    </div>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Screen 3: PIN CREATE
+// ═══════════════════════════════════════════════════════════════════════════
+function PINCreate({ onSave, onBack }) {
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [error, setError] = useState('');
+  const [step, setStep] = useState('define'); // define | confirm
+
+  const handleDefine = (e) => {
+    setError('');
+    const v = e.target.value.replace(/\D/g, '').slice(0, 4);
+    setNewPin(v);
+    if (v.length === 4) setTimeout(() => setStep('confirm'), 150);
+  };
+
+  const handleConfirm = (e) => {
+    setError('');
+    const v = e.target.value.replace(/\D/g, '').slice(0, 4);
+    setConfirmPin(v);
+  };
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    if (newPin.length !== 4) {setError('PIN must be exactly 4 digits.');return;}
+    if (newPin !== confirmPin) {setError("PINs don't match. Please try again.");setConfirmPin('');return;}
+    onSave(newPin);
+  };
+
+  return (
+    <div style={{ width: '100%', height: '100%', background: '#0f172a', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      {/* Ambient glows */}
+      <div style={{ position: 'absolute', top: '-10%', right: '-20%', width: '60%', height: '60%', borderRadius: '50%', background: 'rgba(99,102,241,0.15)', filter: 'blur(90px)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '-10%', left: '-20%', width: '55%', height: '55%', borderRadius: '50%', background: 'rgba(16,185,129,0.10)', filter: 'blur(80px)', pointerEvents: 'none' }} />
+
+      <StatusBar dark={true} />
+
+      <div style={{ padding: '2px 20px 0', position: 'relative', zIndex: 5 }}>
+        <button onClick={onBack} style={{ width: 40, height: 40, borderRadius: 14, background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.6)' }}>
+          <i className="fa-solid fa-chevron-left" style={{ fontSize: 13 }} />
+        </button>
+      </div>
+
+      {/* Icon */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 0 24px', position: 'relative', zIndex: 5, animation: 'fadeUp 0.4s ease both' }}>
+        <div style={{ width: 80, height: 80, borderRadius: 26, marginBottom: 18, background: 'linear-gradient(135deg,rgba(129,140,248,0.22),rgba(67,56,202,0.12))', border: '1px solid rgba(129,140,248,0.28)', backdropFilter: 'blur(16px)', boxShadow: '0 20px 60px rgba(79,70,229,0.3), inset 0 1px 1px rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.1s both' }}>
+          <i className="fa-solid fa-hashtag" style={{ fontSize: 30, color: 'rgba(165,180,252,0.95)' }} />
+        </div>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: 'white', letterSpacing: '-0.5px', marginBottom: 6 }}>Create your PIN</h2>
+        <p style={{ fontSize: 12, color: 'rgba(148,163,184,0.8)', fontWeight: 600, textAlign: 'center', padding: '0 32px', lineHeight: 1.5 }}>Choose a 4-digit PIN to secure your Parent Space</p>
+      </div>
+
+      {/* Steps */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 28, position: 'relative', zIndex: 5 }}>
+        {['define', 'confirm'].map((s, i) =>
+        <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+            width: 28, height: 28, borderRadius: '50%',
+            background: step === s ? 'linear-gradient(135deg,#818cf8,#4338ca)' : step === 'confirm' && s === 'define' ? '#34d399' : 'rgba(255,255,255,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, fontWeight: 800, color: 'white', transition: 'all 0.3s'
+          }}>
+              {step === 'confirm' && s === 'define' ? <i className="fa-solid fa-check" style={{ fontSize: 10 }} /> : i + 1}
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: step === s ? 'rgba(165,180,252,0.9)' : 'rgba(148,163,184,0.4)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              {s === 'define' ? 'Set PIN' : 'Confirm'}
+            </span>
+            {i === 0 && <div style={{ width: 32, height: 1.5, background: 'rgba(255,255,255,0.1)', marginLeft: 4 }} />}
+          </div>
+        )}
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSave} style={{ padding: '0 28px', position: 'relative', zIndex: 5, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(129,140,248,0.8)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 8 }}>Define PIN</div>
+          <div style={{ position: 'relative' }}>
+            <input type="password" inputMode="numeric" value={newPin} onChange={handleDefine} placeholder="••••" maxLength={4}
+            style={{
+              width: '100%', height: 64, borderRadius: 20,
+              background: 'rgba(255,255,255,0.06)',
+              border: step === 'confirm' ? '2px solid #34d399' : '2px solid rgba(129,140,248,0.3)',
+              padding: '0 20px', fontSize: 28, fontWeight: 700, color: 'white',
+              textAlign: 'center', letterSpacing: '0.6em', outline: 'none',
+              transition: 'border-color 0.2s'
+            }} />
+            {step === 'confirm' &&
+            <div style={{ position: 'absolute', right: 18, top: '50%', transform: 'translateY(-50%)', width: 28, height: 28, borderRadius: '50%', background: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className="fa-solid fa-check" style={{ fontSize: 11, color: 'white' }} />
+              </div>
+            }
+          </div>
+        </div>
+
+        <div style={{ opacity: step === 'confirm' ? 1 : 0.35, transition: 'opacity 0.3s' }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(129,140,248,0.8)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 8 }}>Confirm PIN</div>
+          <input type="password" inputMode="numeric" value={confirmPin} onChange={handleConfirm} placeholder="••••" maxLength={4} disabled={step !== 'confirm'}
+          style={{
+            width: '100%', height: 64, borderRadius: 20,
+            background: step === 'confirm' ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+            border: '2px solid rgba(129,140,248,0.3)',
+            padding: '0 20px', fontSize: 28, fontWeight: 700, color: 'white',
+            textAlign: 'center', letterSpacing: '0.6em', outline: 'none',
+            cursor: step !== 'confirm' ? 'not-allowed' : 'text',
+            transition: 'all 0.2s'
+          }} />
+        </div>
+
+        {error &&
+        <div style={{ background: 'rgba(251,113,133,0.12)', border: '1px solid rgba(251,113,133,0.25)', borderRadius: 14, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <i className="fa-solid fa-circle-exclamation" style={{ fontSize: 13, color: '#fb7185' }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#fb7185' }}>{error}</span>
+          </div>
+        }
+
+        <button type="submit" disabled={newPin.length < 4 || confirmPin.length < 4}
+        style={{
+          width: '100%', height: 58, borderRadius: 20, border: 'none',
+          cursor: newPin.length === 4 && confirmPin.length === 4 ? 'pointer' : 'default',
+          background: newPin.length === 4 && confirmPin.length === 4 ? 'linear-gradient(135deg,#818cf8,#4338ca)' : 'rgba(255,255,255,0.08)',
+          color: newPin.length === 4 && confirmPin.length === 4 ? 'white' : 'rgba(255,255,255,0.3)',
+          fontSize: 13, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase',
+          boxShadow: newPin.length === 4 && confirmPin.length === 4 ? '0 10px 32px rgba(79,70,229,0.45)' : 'none',
+          transition: 'all 0.2s', marginTop: 4
+        }}>Save PIN</button>
+      </form>
+    </div>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Screen 4: SUCCESS flash
+// ═══════════════════════════════════════════════════════════════════════════
+function SuccessScreen({ onDone, message = 'PIN accepted!' }) {
+  useEffect(() => {const t = setTimeout(onDone, 1400);return () => clearTimeout(t);}, [onDone]);
+  return (
+    <div style={{ width: '100%', height: '100%', background: '#0f172a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+      <div style={{ width: 88, height: 88, borderRadius: 28, background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both' }}>
+        <i className="fa-solid fa-check" style={{ fontSize: 36, color: '#34d399' }} />
+      </div>
+      <div style={{ fontSize: 20, fontWeight: 800, color: 'white', animation: 'fadeUp 0.4s ease 0.1s both' }}>{message}</div>
+      <div style={{ fontSize: 12, color: 'rgba(148,163,184,0.6)', fontWeight: 600, animation: 'fadeUp 0.4s ease 0.2s both' }}>Opening Parent Dashboard…</div>
+    </div>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Screen navigator tabs (prototype helper)
+// ═══════════════════════════════════════════════════════════════════════════
+function ScreenSwitcher({ current, onChange }) {
+  const screens = [
+  { id: 'login', label: 'Login' },
+  { id: 'pin_entry', label: 'PIN' },
+  { id: 'pin_create', label: 'New PIN' }];
+
+  return (
+    <div style={{
+      position: 'absolute', bottom: -52, left: '50%', transform: 'translateX(-50%)',
+      display: 'flex', gap: 8, zIndex: 10
+    }}>
+      {screens.map((s) =>
+      <button key={s.id} onClick={() => onChange(s.id)} style={{
+        padding: '7px 16px', borderRadius: 100, border: 'none', cursor: 'pointer',
+        background: current === s.id ? 'rgba(129,140,248,0.9)' : 'rgba(255,255,255,0.1)',
+        color: current === s.id ? 'white' : 'rgba(255,255,255,0.45)',
+        fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', backdropFilter: 'blur(8px)',
+        transition: 'all 0.2s'
+      }}>{s.label}</button>
+      )}
+    </div>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// App root
+// ═══════════════════════════════════════════════════════════════════════════
+function App() {
+  const [screen, setScreen] = useState('login');
+
+  // Tweaks
+  const [showTweaks, setShowTweaks] = useState(false);
+  useEffect(() => {
+    const h = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setShowTweaks(true);
+      if (e.data?.type === '__deactivate_edit_mode') setShowTweaks(false);
+    };
+    window.addEventListener('message', h);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', h);
+  }, []);
+
+  function renderScreen() {
+    switch (screen) {
+      case 'login':
+        return <LoginScreen onSelectChild={() => {}} onParentAccess={() => setScreen('pin_entry')} />;
+      case 'pin_entry':
+        return <PINEntry onSuccess={() => setScreen('success_auth')} onBack={() => setScreen('login')} onForgot={() => setScreen('pin_create')} />;
+      case 'pin_create':
+        return <PINCreate onSave={() => setScreen('success_create')} onBack={() => setScreen('pin_entry')} />;
+      case 'success_auth':
+        return <SuccessScreen message="PIN accepted!" onDone={() => setScreen('login')} />;
+      case 'success_create':
+        return <SuccessScreen message="PIN saved!" onDone={() => setScreen('pin_entry')} />;
+      default:
+        return null;
+    }
+  }
+
+  const activeForSwitch = ['success_auth', 'success_create'].includes(screen) ? null : screen;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <div style={{ width: 390, height: 844, position: 'relative', overflow: 'hidden', borderRadius: 50 }}>
+        {renderScreen()}
+      </div>
+      <ScreenSwitcher current={activeForSwitch} onChange={setScreen} />
+    </div>);
+
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  React.createElement(React.StrictMode, null, React.createElement(App))
+);
+</script>
+</body>
+</html>

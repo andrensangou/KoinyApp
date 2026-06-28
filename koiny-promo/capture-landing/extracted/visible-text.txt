@@ -1,0 +1,187 @@
+[a] Fonctionnalités
+[a] Comment ça marche
+[a] Télécharger
+[span] Télécharger
+[span] Application famille · iOS & Android
+[span] L'argent de poche qui
+[span] éduque
+[span] vos enfants
+[p] Missions, épargne & responsabilité pour toute la famille. Une app premium pensée pour les parents exigeants.
+[span] Voir comment ça marche
+[div] Télécharger sur
+[div] App Store
+[div] Disponible sur
+[div] Google Play
+[span] PIN parental
+[span] Face ID
+[span] Zéro pub
+[span] FR · EN · NL
+[div] Mission validée
+[div] +2,00 €
+[div] Solde
+[div] 12,50 €
+[div] Objectif
+[div] 75% atteint
+[div] Aperçu
+[span] Une interface
+[span] pensée pour toute la famille
+[p] Simple pour les enfants, puissant pour les parents.
+[span] 9:41
+[div] Bilan des 7 derniers jours
+[div] Sept derniers jours
+[div] Gains
+[div] +4,00 €
+[div] Sorties
+[div] -0,00 €
+[div] Léo
+[div] Emma
+[div] Cagnotte de
+[span] ,50 €
+[div] Lego Star Wars
+[div] Mon rêve
+[div] 30 €
+[div] Espace parents
+[span] 9:41
+[div] Salut
+[div] Léo
+[div] Ma fortune
+[span] ,50 €
+[div] 🪙💰🪙
+[div] Lego Star Wars
+[div] Mon rêve
+[div] 30 €
+[span] Plus que 15,50 €
+[span] 48%
+[span] Mes missions
+[div] Ranger la chambre
+[div] Validation en cours…
+[div] +2 €
+[div] Sortir les poubelles
+[div] À faire
+[div] +1 €
+[div] Espace enfant
+[span] 9:41
+[span] Léo
+[h4] Missions
+[div] 3 à valider · 1 cette semaine
+[div] À valider
+[div] Ranger la chambre
+[div] il y a 5 min
+[div] +2 €
+[div] Débarrasser la table
+[div] Validée hier
+[div] +1 €
+[div] Nouvelle mission
+[div] Faire ses devoirs
+[span] Confier à Léo
+[div] Missions
+[div] Vous reconnaissez-vous ?
+[span] Les galères de
+[span] l'argent de poche
+[p] Chaque parent fait face aux mêmes questions. Koiny y répond simplement.
+[p] "Il n'a rien fait mais réclame de l'argent."
+[span] Chaque euro lié à une mission accomplie.
+[p] "Elle dépense tout sans jamais épargner."
+[span] Objectifs d'épargne visuels et motivants.
+[p] "Je ne sais pas combien je lui ai donné."
+[span] Historique complet et solde en temps réel.
+[div] Fonctionnalités
+[span] Tout ce qu'il faut pour
+[span] apprendre en s'amusant
+[p] Un outil pensé pour les parents exigeants qui veulent le contrôle, sans la complexité.
+[h3] Missions personnalisées
+[p] Ranger la chambre, faire les devoirs, aider en cuisine... Vous définissez les règles et les récompenses.
+[h3] Objectifs d'épargne
+[p] Vélo, console, jouet… votre enfant fixe un objectif et voit sa progression jour après jour.
+[h3] Contrôle parental total
+[p] PIN chiffré + Face ID pour accéder à l'espace parent. Vos enfants ne peuvent rien modifier.
+[h3] Suivi & statistiques
+[p] Historique détaillé, graphiques d'évolution et vue d'ensemble par enfant. Tout en un coup d'œil.
+[h3] Widget iOS natif
+[p] Le solde directement sur l'écran d'accueil. Pas besoin d'ouvrir l'app pour vérifier.
+[h3] 100% privé, zéro pub
+[p] Aucun tracking, aucune publicité, aucune donnée vendue. Stockage local sur votre téléphone.
+[div] Comment ça marche
+[span] Lancé en
+[span] 3 minutes
+[p] Une configuration éclair, une utilisation quotidienne fluide.
+[span] Léo · 8 ans
+[span] ●●●●
+[span] Emma · 11 ans
+[span] ●●●●
+[h3] Créez les profils
+[p] Avatar, couleur et PIN parental sécurisé. 2 minutes chrono.
+[span] 🛏 Ranger la chambre
+[span] 2 €
+[span] 🛒 Faire les courses
+[span] 5 €
+[span] 📚 Faire les devoirs
+[span] 3 €
+[h3] Définissez les missions
+[p] "Ranger la chambre → 2 €", "Faire les courses → 5 €". Vos règles.
+[span] Léo a terminé sa mission
+[span] Valider · +2,00 €
+[h3] Ils progressent, vous validez
+[p] Un tap pour valider. L'argent s'ajoute instantanément à leur cagnotte.
+[div] Pourquoi Koiny
+[span] Conçu pour les parents
+[span] qui ont des valeurs
+[p] Pas de compromis sur la sécurité, la vie privée ou la pédagogie.
+[h3] 100% argent virtuel
+[p] Aucune carte bancaire, aucun vrai argent engagé. Apprentissage sans risque financier réel.
+[h3] Données 100% privées
+[p] Vos données restent sur votre téléphone. Aucune donnée vendue, aucun tracking publicitaire.
+[h3] Toujours disponible
+[p] Sauvegardé localement en priorité. Même hors ligne, l'app continue de fonctionner.
+[h3] Zéro publicité
+[p] Aucune bannière, aucune notification marketing. Expérience pure pour toute la famille.
+[h3] Pédagogie prouvée
+[p] Effort-récompense et objectif différé : des méthodes reconnues pour développer la responsabilité.
+[h3] Simple à utiliser
+[p] Configuré en 3 minutes. Interface claire pour les enfants dès 6 ans, tableau de bord complet pour les parents.
+[div] Tarifs
+[span] Simple et
+[span] transparent
+[p] Commencez gratuitement. Passez Premium quand votre famille grandit.
+[div] Koiny Standard
+[div] Gratuit
+[div] Pour toujours
+[span] 1 enfant
+[span] Max 2 missions actives
+[span] Max 1 objectif d'épargne
+[span] Historique (5 dernières entrées)
+[span] Widget iOS & Face ID
+[button] Commencer gratuitement
+[div] ★ Recommandé
+[div] Koiny Premium
+[span] 1,99 €
+[span] / mois
+[span] ou 16,99 €/an
+[span] Économisez 30%
+[span] Enfants illimités
+[span] Missions & objectifs illimités
+[span] Historique complet
+[span] Statistiques & graphiques
+[span] 14 jours d'essai gratuit
+[button] Essayer 14 jours gratuits
+[div] Annulable à tout moment via les Réglages de votre appareil.
+[span] Lancez-vous dès
+[span] aujourd'hui
+[p] Rejoignez les familles qui utilisent Koiny pour motiver leurs enfants au quotidien.
+[div] Télécharger sur
+[div] App Store
+[div] Disponible sur
+[div] Google Play
+[span] iOS 15+ requis
+[span] Android 8+ requis
+[p] L'argent de poche virtuel qui motive vos enfants. Un simulateur éducatif sûr et amusant pour toute la famille.
+[a] Fonctionnalités
+[a] Comment ça marche
+[a] Télécharger
+[a] Politique de confidentialité
+[a] Conditions d'utilisation (CGU)
+[h4] Application
+[span] App Store (iOS)
+[span] Google Play (Android)
+[div] © 2026 Koiny — Andre Nsangou. Tous droits réservés.
+[div] Fait avec ❤️ pour les familles · FR · EN · NL

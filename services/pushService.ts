@@ -10,7 +10,7 @@
  *   device_tokens (id, user_id, token, platform, mode, child_id, updated_at)
  */
 
-import { PushNotifications } from '@capacitor/push-notifications';
+import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 import { Capacitor } from '@capacitor/core';
 import { getSupabase } from './supabase';
 import { logger } from './logger';
@@ -25,33 +25,53 @@ interface RegisterOptions {
   childId?: string; // required when mode = 'child'
 }
 
+// Contexte courant (user/mode/childId) — partagé avec le listener de refresh de token.
+let currentOpts: RegisterOptions | null = null;
+// Le listener tokenReceived ne doit être attaché QU'UNE fois (sinon fuite → accumulation).
+let tokenListenerAttached = false;
+
 export async function registerPushToken(opts: RegisterOptions): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
+  currentOpts = opts;
 
   try {
-    const permission = await PushNotifications.requestPermissions();
+    const permission = await FirebaseMessaging.requestPermissions();
     if (permission.receive !== 'granted') {
       logger.warn('[Push] Permission refusée');
       return;
     }
 
-    await PushNotifications.register();
-
-    PushNotifications.addListener('registration', async (token) => {
-      logger.debug('[Push] Token reçu:', logger.anonymize(token.value));
-      await saveToken({
-        userId: opts.userId,
-        token: token.value,
-        platform: Capacitor.getPlatform() as 'android' | 'ios',
-        mode: opts.mode,
-        childId: opts.childId,
+    // Listener de rafraîchissement de token FCM — attaché une seule fois (anti-fuite).
+    // FCM peut faire tourner le token ; on resauvegarde avec le contexte courant.
+    if (!tokenListenerAttached) {
+      tokenListenerAttached = true;
+      await FirebaseMessaging.addListener('tokenReceived', async (event) => {
+        if (!currentOpts || !event?.token) return;
+        logger.debug('[Push] Token FCM rafraîchi:', logger.anonymize(event.token));
+        await saveToken({
+          userId: currentOpts.userId,
+          token: event.token,
+          platform: Capacitor.getPlatform() as 'android' | 'ios',
+          mode: currentOpts.mode,
+          childId: currentOpts.childId,
+        });
       });
-    });
+    }
 
-    PushNotifications.addListener('registrationError', (err) => {
-      logger.error('[Push] Erreur registration:', err);
+    // getToken() renvoie le token FCM sur Android ET iOS (bridge APNs→FCM côté natif).
+    const { token } = await FirebaseMessaging.getToken();
+    if (!token) {
+      logger.warn('[Push] Aucun token FCM retourné');
+      return;
+    }
+    logger.debug('[Push] Token FCM reçu:', logger.anonymize(token));
+    await saveToken({
+      userId: opts.userId,
+      token,
+      platform: Capacitor.getPlatform() as 'android' | 'ios',
+      mode: opts.mode,
+      childId: opts.childId,
     });
-
   } catch (e) {
     logger.error('[Push] registerPushToken error:', e);
   }

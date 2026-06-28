@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Koiny — Promo 20s</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: #0f0a2e;
+    font-family: 'Inter', sans-serif;
+    color: #fff;
+  }
+
+  .composition {
+    position: relative;
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+  }
+
+  .bg {
+    position: absolute;
+    inset: 0;
+    background: #0f0a2e;
+    z-index: 0;
+  }
+
+  .glow-indigo {
+    position: absolute;
+    width: 900px;
+    height: 900px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(91,95,232,0.18) 0%, transparent 70%);
+    top: 200px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .glow-orange {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,122,48,0.12) 0%, transparent 70%);
+    top: 1200px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    z-index: 1;
+  }
+
+  .eyebrow {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #FF7A30;
+    margin-bottom: 24px;
+  }
+
+  /* Scene 1 */
+  #scene1 { padding: 0 80px; }
+
+  .logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .logo-img {
+    width: 280px;
+    height: auto;
+    filter: drop-shadow(0 0 60px rgba(91,95,232,0.5));
+  }
+
+  .tagline {
+    font-size: 36px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.75);
+    text-align: center;
+    opacity: 0;
+  }
+
+  /* Scene 2A */
+  #scene2a {
+    padding: 0 80px;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .pain-headline {
+    font-size: 64px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 40px;
+  }
+
+  .pain-card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px;
+    padding: 32px 36px;
+    margin-bottom: 20px;
+    font-size: 30px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.80);
+    width: 100%;
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+
+  /* Scene 2B */
+  #scene2b {
+    padding: 0 60px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .feature-headline {
+    font-size: 80px;
+    font-weight: 900;
+    color: #fff;
+    text-align: center;
+    line-height: 1.05;
+    margin-bottom: 48px;
+  }
+
+  .phone-frame {
+    width: 340px;
+    border-radius: 48px;
+    border: 4px solid rgba(255,255,255,0.15);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    overflow: hidden;
+    background: #000;
+    opacity: 0;
+    transform: translateX(80px);
+    margin-bottom: 48px;
+  }
+
+  .phone-frame img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .pills-row {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    padding: 24px 32px;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .pill-icon { font-size: 36px; }
+
+  /* Scene 2C */
+  #scene2c {
+    padding: 0 50px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .screenshots-headline {
+    font-size: 60px;
+    font-weight: 900;
+    color: #fff;
+    text-align: center;
+    line-height: 1.1;
+    margin-bottom: 12px;
+    opacity: 0;
+  }
+
+  .screenshots-sub {
+    font-size: 30px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.55);
+    text-align: center;
+    margin-bottom: 48px;
+    opacity: 0;
+  }
+
+  .phones-row {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+  }
+
+  .phone-sm {
+    width: 280px;
+    border-radius: 40px;
+    border: 3px solid rgba(255,255,255,0.15);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    overflow: hidden;
+    background: #000;
+    opacity: 0;
+    transform: translateY(80px);
+  }
+
+  .phone-sm img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* Scene 3 */
+  #scene3 {
+    padding: 0 80px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-sm {
+    width: 160px;
+    height: auto;
+    opacity: 0;
+    margin-bottom: 48px;
+    filter: drop-shadow(0 0 40px rgba(91,95,232,0.4));
+  }
+
+  .cta-headline {
+    font-size: 88px;
+    font-weight: 900;
+    color: #fff;
+    text-align: center;
+    line-height: 1.0;
+    margin-bottom: 48px;
+    opacity: 0;
+  }
+
+  .badge-img {
+    height: 90px;
+    width: auto;
+    opacity: 0;
+    transform: scale(0.85);
+    margin-bottom: 32px;
+  }
+
+  .url-text {
+    font-size: 30px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.50);
+    letter-spacing: 1px;
+    opacity: 0;
+  }
+
+  .transition-overlay {
+    position: absolute;
+    inset: 0;
+    background: #0f0a2e;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div
+  class="composition"
+  id="root"
+  data-composition-id="root"
+  data-start="0"
+  data-duration="20"
+  data-track-index="0"
+  data-width="1080"
+  data-height="1920"
+>
+
+  <div class="bg">
+    <div class="glow-indigo"></div>
+    <div class="glow-orange"></div>
+  </div>
+
+  <!-- Scene 1: Logo Reveal (0→2s) -->
+  <div class="scene clip" id="scene1" data-start="0" data-duration="2" data-track-index="1">
+    <div class="logo-wrap" id="logo-wrap">
+      <img class="logo-img" id="logo-img" src="capture/assets/logo.png" alt="Koiny" />
+      <p class="tagline" id="tagline">L'argent de poche qui éduque vraiment</p>
+    </div>
+  </div>
+
+  <!-- Scene 2A: Pain Points (2→6s) -->
+  <div class="scene clip" id="scene2a" data-start="2" data-duration="4" data-track-index="2">
+    <p class="eyebrow" id="eyebrow2a">Les parents se reconnaissent</p>
+    <h2 class="pain-headline" id="pain-headline">"Il réclame de l'argent…<br>sans avoir rien fait."</h2>
+    <div class="pain-card" id="card1">"Elle dépense tout sans jamais épargner."</div>
+    <div class="pain-card" id="card2">"Je ne sais pas combien je lui ai donné."</div>
+  </div>
+
+  <!-- Scene 2B: Features (6→13s) -->
+  <div class="scene clip" id="scene2b" data-start="6" data-duration="7" data-track-index="3">
+    <p class="eyebrow" id="eyebrow2b">La solution</p>
+    <h2 class="feature-headline" id="feature-headline">Missions.<br>Épargne.<br>Contrôle.</h2>
+    <div class="phone-frame" id="phone-main">
+      <img src="capture/assets/dashboard-enfant.png" alt="Espace Enfant" />
+    </div>
+    <div class="pills-row">
+      <div class="pill" id="pill1"><span class="pill-icon">🎯</span> Missions personnalisées</div>
+      <div class="pill" id="pill2"><span class="pill-icon">🏦</span> Objectifs d'épargne</div>
+      <div class="pill" id="pill3"><span class="pill-icon">🔒</span> Contrôle parental total</div>
+    </div>
+  </div>
+
+  <!-- Scene 2C: Screenshots (13→16s) -->
+  <div class="scene clip" id="scene2c" data-start="13" data-duration="3" data-track-index="4">
+    <h2 class="screenshots-headline" id="sc-headline">Simple pour les enfants.</h2>
+    <p class="screenshots-sub" id="sc-sub">Puissant pour les parents.</p>
+    <div class="phones-row">
+      <div class="phone-sm" id="phone-left">
+        <img src="capture/assets/dashboard-parent.png" alt="Espace Parents" />
+      </div>
+      <div class="phone-sm" id="phone-right">
+        <img src="capture/assets/mission.png" alt="Missions" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 3: CTA (16→20s) -->
+  <div class="scene clip" id="scene3" data-start="16" data-duration="4" data-track-index="5">
+    <img class="logo-sm" id="logo-sm" src="capture/assets/logo-cta.png" alt="Koiny" onerror="this.src='capture/assets/logo.png'" />
+    <p class="eyebrow" id="eyebrow3">Gratuit à télécharger</p>
+    <h2 class="cta-headline" id="cta-headline">Lancez-vous<br>dès aujourd'hui</h2>
+    <img class="badge-img" id="badge" src="capture/assets/fr-fr.svg" alt="Télécharger sur l'App Store" />
+    <p class="url-text" id="url">koiny.app</p>
+  </div>
+
+  <div class="transition-overlay" id="overlay"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(function () {
+  const tl = gsap.timeline({ paused: true });
+
+  // Scene 1: Logo Reveal (0–2s)
+  tl.set('#scene1', { opacity: 1 }, 0)
+    .fromTo('#logo-img',
+      { opacity: 0, scale: 0.6 },
+      { opacity: 1, scale: 1, duration: 1, ease: 'power3.out' }, 0)
+    .fromTo('#tagline',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 0.8)
+
+  // 1→2 transition
+    .to('#overlay', { opacity: 1, duration: 0.25, ease: 'none' }, 1.75)
+    .set('#scene1', { opacity: 0, visibility: 'hidden' }, 2)
+    .to('#overlay', { opacity: 0, duration: 0.25, ease: 'none' }, 2)
+
+  // Scene 2A: Pain Points (2–6s)
+    .set('#scene2a', { opacity: 1 }, 2)
+    .fromTo('#eyebrow2a',
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 2)
+    .fromTo('#pain-headline',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 2.3)
+    .fromTo('#card1',
+      { opacity: 0, x: -40 },
+      { opacity: 1, x: 0, duration: 0.5, ease: 'power2.out' }, 3)
+    .fromTo('#card2',
+      { opacity: 0, x: -40 },
+      { opacity: 1, x: 0, duration: 0.5, ease: 'power2.out' }, 3.5)
+
+  // 2A→2B transition
+    .to('#overlay', { opacity: 1, duration: 0.25, ease: 'none' }, 5.75)
+    .set('#scene2a', { opacity: 0, visibility: 'hidden' }, 6)
+    .to('#overlay', { opacity: 0, duration: 0.25, ease: 'none' }, 6)
+
+  // Scene 2B: Features (6–13s)
+    .set('#scene2b', { opacity: 1 }, 6)
+    .fromTo('#eyebrow2b',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 6)
+    .fromTo('#feature-headline',
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 6.3)
+    .fromTo('#phone-main',
+      { opacity: 0, x: 80 },
+      { opacity: 1, x: 0, duration: 0.7, ease: 'power3.out' }, 7.5)
+    .fromTo('#pill1',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 8.5)
+    .fromTo('#pill2',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 9)
+    .fromTo('#pill3',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 9.5)
+
+  // 2B→2C transition
+    .to('#overlay', { opacity: 1, duration: 0.25, ease: 'none' }, 12.75)
+    .set('#scene2b', { opacity: 0, visibility: 'hidden' }, 13)
+    .to('#overlay', { opacity: 0, duration: 0.25, ease: 'none' }, 13)
+
+  // Scene 2C: Screenshots (13–16s)
+    .set('#scene2c', { opacity: 1 }, 13)
+    .fromTo('#sc-headline',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 13)
+    .fromTo('#sc-sub',
+      { opacity: 0, y: 10 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 13.3)
+    .fromTo('#phone-left',
+      { opacity: 0, y: 80 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 13.5)
+    .fromTo('#phone-right',
+      { opacity: 0, y: 80 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 13.7)
+
+  // 2C→3 transition
+    .to('#overlay', { opacity: 1, duration: 0.25, ease: 'none' }, 15.75)
+    .set('#scene2c', { opacity: 0, visibility: 'hidden' }, 16)
+    .to('#overlay', { opacity: 0, duration: 0.25, ease: 'none' }, 16)
+
+  // Scene 3: CTA (16–20s)
+    .set('#scene3', { opacity: 1 }, 16)
+    .fromTo('#logo-sm',
+      { opacity: 0 },
+      { opacity: 1, duration: 0.6, ease: 'power2.out' }, 16)
+    .fromTo('#eyebrow3',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 16.3)
+    .fromTo('#cta-headline',
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 16.6)
+    .fromTo('#badge',
+      { opacity: 0, scale: 0.85 },
+      { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.5)' }, 17.2)
+    .fromTo('#url',
+      { opacity: 0 },
+      { opacity: 1, duration: 0.5, ease: 'power2.out' }, 17.8)
+
+  // Hold at 20s
+    .set({}, {}, 20);
+
+  window.__timelines = window.__timelines || {};
+  window.__timelines['root'] = tl;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Koiny — Promo Landing 20s</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: #1E1B4B;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    color: #fff;
+  }
+
+  .composition {
+    position: relative;
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+  }
+
+  /* BG gradient — matches the hero */
+  .bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(1400px 900px at 80% -5%, #5046C7 0%, transparent 55%),
+      radial-gradient(1000px 700px at -10% 40%, #2A2580 0%, transparent 55%),
+      linear-gradient(180deg, #1E1B4B 0%, #2A2580 55%, #3730A3 100%);
+    z-index: 0;
+  }
+
+  /* Amber blur blob bottom-left */
+  .blob-amber {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,158,11,0.22) 0%, transparent 65%);
+    bottom: -200px;
+    left: -100px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Purple blob top-right */
+  .blob-purple {
+    position: absolute;
+    width: 700px;
+    height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,119,233,0.35) 0%, transparent 60%);
+    top: -200px;
+    right: -150px;
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    z-index: 1;
+  }
+
+  /* ── EYEBROW ── */
+  .eyebrow {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #FCD34D;
+    margin-bottom: 20px;
+  }
+
+  /* ── SCENE 1: Logo + Hero ── */
+  #scene1 { padding: 0 80px; }
+
+  .hero-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.18);
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-size: 22px;
+    font-weight: 600;
+    color: #E0E7FF;
+    margin-bottom: 36px;
+    opacity: 0;
+  }
+
+  .hero-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #F59E0B;
+    box-shadow: 0 0 0 5px rgba(245,158,11,0.25);
+    flex-shrink: 0;
+  }
+
+  .hero-logo {
+    width: 360px;
+    height: auto;
+    margin-bottom: 40px;
+    opacity: 0;
+    filter: drop-shadow(0 0 50px rgba(124,119,233,0.5));
+  }
+
+  .hero-h1 {
+    font-size: 84px;
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 24px;
+    opacity: 0;
+  }
+
+  .hero-h1 .grad {
+    background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 60%, #FBBF24 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero-lead {
+    font-size: 30px;
+    font-weight: 400;
+    color: #C7CBEE;
+    line-height: 1.5;
+    text-align: center;
+    max-width: 860px;
+    opacity: 0;
+  }
+
+  /* ── SCENE 2A: Pain Points ── */
+  #scene2a {
+    padding: 0 80px;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .pain-h2 {
+    font-size: 68px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    margin-bottom: 40px;
+  }
+
+  .pain-h2 span {
+    background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .pain-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px;
+    padding: 32px 36px;
+    margin-bottom: 20px;
+    font-size: 28px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.85);
+    width: 100%;
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+
+  .pain-icon {
+    font-size: 36px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* ── SCENE 2B: App screenshots ── */
+  #scene2b {
+    padding: 0 60px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .feat-h2 {
+    font-size: 72px;
+    font-weight: 800;
+    color: #fff;
+    text-align: center;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    margin-bottom: 50px;
+  }
+
+  .feat-h2 span {
+    background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .phone-frame {
+    width: 360px;
+    border-radius: 52px;
+    border: 3px solid rgba(255,255,255,0.15);
+    box-shadow: 0 40px 100px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
+    overflow: hidden;
+    background: #000;
+    opacity: 0;
+    transform: translateY(60px);
+    margin-bottom: 48px;
+  }
+
+  .phone-frame img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .pills-row {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
+  }
+
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    padding: 22px 30px;
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .pill-icon { font-size: 32px; }
+
+  /* ── SCENE 2C: Deux phones ── */
+  #scene2c {
+    padding: 0 50px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sc-h2 {
+    font-size: 58px;
+    font-weight: 800;
+    color: #fff;
+    text-align: center;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    margin-bottom: 14px;
+    opacity: 0;
+  }
+
+  .sc-sub {
+    font-size: 28px;
+    font-weight: 400;
+    color: #C7CBEE;
+    text-align: center;
+    margin-bottom: 50px;
+    opacity: 0;
+  }
+
+  .phones-row {
+    display: flex;
+    gap: 28px;
+    justify-content: center;
+  }
+
+  .phone-sm {
+    width: 275px;
+    border-radius: 44px;
+    border: 3px solid rgba(255,255,255,0.15);
+    box-shadow: 0 28px 70px rgba(0,0,0,0.55);
+    overflow: hidden;
+    background: #000;
+    opacity: 0;
+    transform: translateY(80px);
+  }
+
+  .phone-sm img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ── SCENE 3: CTA ── */
+  #scene3 {
+    padding: 0 80px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cta-logo {
+    width: 240px;
+    height: auto;
+    opacity: 0;
+    margin-bottom: 40px;
+    filter: drop-shadow(0 0 40px rgba(124,119,233,0.5));
+  }
+
+  .cta-h1 {
+    font-size: 86px;
+    font-weight: 800;
+    color: #fff;
+    text-align: center;
+    line-height: 1.0;
+    letter-spacing: -0.025em;
+    margin-bottom: 16px;
+    opacity: 0;
+  }
+
+  .cta-sub {
+    font-size: 28px;
+    font-weight: 400;
+    color: #C7CBEE;
+    text-align: center;
+    margin-bottom: 50px;
+    opacity: 0;
+  }
+
+  .cta-badge {
+    height: 88px;
+    width: auto;
+    opacity: 0;
+    transform: scale(0.85);
+    margin-bottom: 32px;
+    border-radius: 16px;
+  }
+
+  .cta-trust {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    opacity: 0;
+    margin-top: 8px;
+  }
+
+  .trust-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 22px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.60);
+  }
+
+  .trust-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #F59E0B;
+    flex-shrink: 0;
+  }
+
+  /* Transition overlay */
+  .transition-overlay {
+    position: absolute;
+    inset: 0;
+    background: #1E1B4B;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div
+  class="composition"
+  id="root"
+  data-composition-id="root"
+  data-start="0"
+  data-duration="20"
+  data-track-index="0"
+  data-width="1080"
+  data-height="1920"
+>
+
+  <div class="bg">
+    <div class="blob-purple"></div>
+    <div class="blob-amber"></div>
+  </div>
+
+  <!-- Scene 1: Hero Logo (0→4s) -->
+  <div class="scene clip" id="scene1" data-start="0" data-duration="4" data-track-index="1">
+    <img class="hero-logo" id="hero-logo" src="capture-landing/assets/logo.png" alt="Koiny" />
+    <div class="hero-pill" id="hero-pill">
+      <span class="hero-dot"></span>
+      Application famille · iOS &amp; Android (soon)
+    </div>
+    <h1 class="hero-h1" id="hero-h1">
+      L'argent de poche<br>qui <span class="grad">éduque vraiment</span>
+    </h1>
+    <p class="hero-lead" id="hero-lead">
+      Missions, épargne &amp; responsabilité<br>pour toute la famille.
+    </p>
+  </div>
+
+  <!-- Scene 2A: Pain Points (4→8s) -->
+  <div class="scene clip" id="scene2a" data-start="4" data-duration="4" data-track-index="2">
+    <p class="eyebrow" id="eyebrow2a">Vous reconnaissez-vous ?</p>
+    <h2 class="pain-h2" id="pain-h2">Les <span>galères</span> de<br>l'argent de poche</h2>
+    <div class="pain-card" id="card1">
+      <span class="pain-icon">😤</span>
+      <span>"Il réclame de l'argent sans avoir rien fait."</span>
+    </div>
+    <div class="pain-card" id="card2">
+      <span class="pain-icon">💸</span>
+      <span>"Elle dépense tout sans jamais épargner."</span>
+    </div>
+    <div class="pain-card" id="card3">
+      <span class="pain-icon">🤷</span>
+      <span>"Je ne sais pas combien je lui ai donné."</span>
+    </div>
+  </div>
+
+  <!-- Scene 2B: Features + Phone (8→14s) -->
+  <div class="scene clip" id="scene2b" data-start="8" data-duration="6" data-track-index="3">
+    <p class="eyebrow" id="eyebrow2b">La solution</p>
+    <h2 class="feat-h2" id="feat-h2">Simple pour les enfants.<br><span>Puissant</span> pour les parents.</h2>
+    <div class="phone-frame" id="phone-main">
+      <img src="capture-landing/assets/dashboard-enfant.png" alt="Espace Enfant" />
+    </div>
+    <div class="pills-row">
+      <div class="pill" id="pill1"><span class="pill-icon">🎯</span> Missions personnalisées</div>
+      <div class="pill" id="pill2"><span class="pill-icon">🏦</span> Objectifs d'épargne</div>
+      <div class="pill" id="pill3"><span class="pill-icon">🔒</span> Contrôle parental total</div>
+    </div>
+  </div>
+
+  <!-- Scene 2C: Two Screenshots (14→17s) -->
+  <div class="scene clip" id="scene2c" data-start="14" data-duration="3" data-track-index="4">
+    <h2 class="sc-h2" id="sc-h2">Une interface pensée<br>pour toute la famille</h2>
+    <p class="sc-sub" id="sc-sub">Espace parents · Espace enfant · Missions</p>
+    <div class="phones-row">
+      <div class="phone-sm" id="phone-left">
+        <img src="capture-landing/assets/dashboard-parent.png" alt="Espace Parents" />
+      </div>
+      <div class="phone-sm" id="phone-right">
+        <img src="capture-landing/assets/mission.png" alt="Missions" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 3: CTA (17→20s) -->
+  <div class="scene clip" id="scene3" data-start="17" data-duration="3" data-track-index="5">
+    <img class="cta-logo" id="cta-logo" src="capture-landing/assets/logo-cta.png" alt="Koiny" onerror="this.src='capture-landing/assets/logo.png'" />
+    <p class="eyebrow" id="eyebrow3">Gratuit à télécharger</p>
+    <h2 class="cta-h1" id="cta-h1">Lancez-vous<br>dès aujourd'hui</h2>
+    <p class="cta-sub" id="cta-sub">Rejoignez les familles qui utilisent Koiny.</p>
+    <img class="cta-badge" id="cta-badge" src="capture-landing/assets/fr-fr.svg" alt="Télécharger sur l'App Store" />
+    <div class="cta-trust" id="cta-trust">
+      <div class="trust-item"><span class="trust-dot"></span>Zéro publicité</div>
+      <div class="trust-item"><span class="trust-dot"></span>100% privé</div>
+      <div class="trust-item"><span class="trust-dot"></span>Android (soon)</div>
+    </div>
+  </div>
+
+  <div class="transition-overlay" id="overlay"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(function () {
+  const tl = gsap.timeline({ paused: true });
+
+  // ── Scene 1: Hero (0–4s) ──
+  tl.set('#scene1', { opacity: 1 }, 0)
+    .fromTo('#hero-logo',
+      { opacity: 0, scale: 0.7 },
+      { opacity: 1, scale: 1, duration: 0.8, ease: 'back.out(1.4)' }, 0)
+    .fromTo('#hero-pill',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0.7)
+    .fromTo('#hero-h1',
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, 1.1)
+    .fromTo('#hero-lead',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 1.7)
+
+  // 1→2A
+    .to('#overlay', { opacity: 1, duration: 0.3, ease: 'none' }, 3.7)
+    .set('#scene1', { opacity: 0, visibility: 'hidden' }, 4)
+    .to('#overlay', { opacity: 0, duration: 0.3, ease: 'none' }, 4)
+
+  // ── Scene 2A: Pain Points (4–8s) ──
+    .set('#scene2a', { opacity: 1 }, 4)
+    .fromTo('#eyebrow2a',
+      { opacity: 0, y: 24 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 4)
+    .fromTo('#pain-h2',
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.55, ease: 'power3.out' }, 4.3)
+    .fromTo('#card1',
+      { opacity: 0, x: -50 },
+      { opacity: 1, x: 0, duration: 0.5, ease: 'power2.out' }, 4.9)
+    .fromTo('#card2',
+      { opacity: 0, x: -50 },
+      { opacity: 1, x: 0, duration: 0.5, ease: 'power2.out' }, 5.4)
+    .fromTo('#card3',
+      { opacity: 0, x: -50 },
+      { opacity: 1, x: 0, duration: 0.5, ease: 'power2.out' }, 5.9)
+
+  // 2A→2B
+    .to('#overlay', { opacity: 1, duration: 0.3, ease: 'none' }, 7.7)
+    .set('#scene2a', { opacity: 0, visibility: 'hidden' }, 8)
+    .to('#overlay', { opacity: 0, duration: 0.3, ease: 'none' }, 8)
+
+  // ── Scene 2B: Features (8–14s) ──
+    .set('#scene2b', { opacity: 1 }, 8)
+    .fromTo('#eyebrow2b',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 8)
+    .fromTo('#feat-h2',
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 8.3)
+    .fromTo('#phone-main',
+      { opacity: 0, y: 60 },
+      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, 9)
+    .fromTo('#pill1',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 10.2)
+    .fromTo('#pill2',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 10.7)
+    .fromTo('#pill3',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 11.2)
+
+  // 2B→2C
+    .to('#overlay', { opacity: 1, duration: 0.3, ease: 'none' }, 13.7)
+    .set('#scene2b', { opacity: 0, visibility: 'hidden' }, 14)
+    .to('#overlay', { opacity: 0, duration: 0.3, ease: 'none' }, 14)
+
+  // ── Scene 2C: Screenshots (14–17s) ──
+    .set('#scene2c', { opacity: 1 }, 14)
+    .fromTo('#sc-h2',
+      { opacity: 0, y: 24 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 14)
+    .fromTo('#sc-sub',
+      { opacity: 0 },
+      { opacity: 1, duration: 0.5, ease: 'power2.out' }, 14.3)
+    .fromTo('#phone-left',
+      { opacity: 0, y: 80 },
+      { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out' }, 14.5)
+    .fromTo('#phone-right',
+      { opacity: 0, y: 80 },
+      { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out' }, 14.75)
+
+  // 2C→3
+    .to('#overlay', { opacity: 1, duration: 0.3, ease: 'none' }, 16.7)
+    .set('#scene2c', { opacity: 0, visibility: 'hidden' }, 17)
+    .to('#overlay', { opacity: 0, duration: 0.3, ease: 'none' }, 17)
+
+  // ── Scene 3: CTA (17–20s) ──
+    .set('#scene3', { opacity: 1 }, 17)
+    .fromTo('#cta-logo',
+      { opacity: 0, scale: 0.8 },
+      { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.4)' }, 17)
+    .fromTo('#eyebrow3',
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 17.4)
+    .fromTo('#cta-h1',
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 17.7)
+    .fromTo('#cta-sub',
+      { opacity: 0 },
+      { opacity: 1, duration: 0.5, ease: 'power2.out' }, 18.2)
+    .fromTo('#cta-badge',
+      { opacity: 0, scale: 0.85 },
+      { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.5)' }, 18.6)
+    .fromTo('#cta-trust',
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 19.1)
+
+  // Hold at 20s
+    .set({}, {}, 20);
+
+  window.__timelines = window.__timelines || {};
+  window.__timelines['root'] = tl;
+})();
+</script>
+</body>
+</html>

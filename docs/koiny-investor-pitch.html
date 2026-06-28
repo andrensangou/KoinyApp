@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Koiny — Dossier Investisseur 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --indigo: #4f46e5;
+    --indigo-dark: #3730a3;
+    --indigo-50: #eef2ff;
+    --indigo-100: #e0e7ff;
+    --indigo-900: #312e81;
+    --emerald: #059669;
+    --emerald-light: #d1fae5;
+    --rose: #e11d48;
+    --rose-light: #ffe4e6;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --slate-900: #0f172a;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-300: #cbd5e1;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50: #f8fafc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--slate-700);
+    line-height: 1.6;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body { background: white; }
+
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+
+  .page {
+    page-break-after: always;
+    padding: 0 0 30px 0;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .cover {
+    height: 100vh;
+    min-height: 260mm;
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #8b5cf6 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 60px 50px;
+    position: relative;
+    overflow: hidden;
+    margin: -18mm -16mm 0 -16mm;
+    page-break-after: always;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 60%);
+    border-radius: 50%;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -100px;
+    left: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(168,85,247,0.3), transparent 60%);
+    border-radius: 50%;
+  }
+  .cover-top { position: relative; z-index: 1; }
+  .cover-logo { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .cover-logo-icon {
+    width: 60px; height: 60px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+  }
+  .cover-logo-text { font-size: 28px; font-weight: 900; letter-spacing: -1px; }
+  .cover-eyebrow {
+    text-transform: uppercase; letter-spacing: 4px;
+    font-size: 10px; font-weight: 700; opacity: 0.7;
+  }
+
+  .cover-mid { position: relative; z-index: 1; }
+  .cover-title {
+    font-size: 56px; font-weight: 900; line-height: 1.05;
+    letter-spacing: -2px; margin-bottom: 20px;
+  }
+  .cover-tagline {
+    font-size: 20px; line-height: 1.5; max-width: 80%;
+    opacity: 0.85; font-weight: 400;
+  }
+  .cover-bottom {
+    position: relative; z-index: 1;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 20px;
+  }
+  .cover-meta { font-size: 11px; opacity: 0.7; line-height: 1.7; font-weight: 500; }
+  .cover-meta strong { font-weight: 700; opacity: 1; display: block; font-size: 13px; margin-bottom: 2px; }
+  .cover-stamp {
+    background: rgba(255,255,255,0.12);
+    padding: 14px 22px; border-radius: 12px;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  h1, h2, h3, h4 { color: var(--slate-900); font-weight: 800; }
+  h2.section-title {
+    font-size: 30px; font-weight: 900; letter-spacing: -1px;
+    margin: 0 0 8px 0; color: var(--slate-900);
+  }
+  .section-eyebrow {
+    text-transform: uppercase; letter-spacing: 3px;
+    font-size: 10px; font-weight: 800; color: var(--indigo);
+    margin-bottom: 8px;
+  }
+  .section-intro { font-size: 14px; color: var(--slate-500); margin-bottom: 28px; max-width: 90%; }
+
+  h3 { font-size: 16px; margin: 18px 0 8px 0; color: var(--slate-900); font-weight: 800; }
+  p { font-size: 12px; line-height: 1.65; color: var(--slate-600); margin-bottom: 8px; }
+  strong { color: var(--slate-900); font-weight: 700; }
+
+  .big-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+  .big-stat {
+    background: var(--slate-50); border: 1px solid var(--slate-200);
+    border-radius: 14px; padding: 18px 14px; text-align: center;
+  }
+  .big-stat-value {
+    font-size: 28px; font-weight: 900; color: var(--indigo);
+    line-height: 1; letter-spacing: -1px;
+  }
+  .big-stat-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--slate-500); font-weight: 700; margin-top: 6px;
+  }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
+  .cards-2 { grid-template-columns: repeat(2, 1fr); }
+  .card {
+    background: white; border: 1px solid var(--slate-200);
+    border-radius: 14px; padding: 18px; page-break-inside: avoid;
+  }
+  .card-icon {
+    width: 36px; height: 36px;
+    background: var(--indigo-50); color: var(--indigo);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-bottom: 12px;
+  }
+  .card-icon.emerald { background: var(--emerald-light); color: var(--emerald); }
+  .card-icon.rose { background: var(--rose-light); color: var(--rose); }
+  .card-icon.amber { background: var(--amber-light); color: var(--amber); }
+  .card-title { font-size: 13px; font-weight: 800; color: var(--slate-900); margin-bottom: 6px; }
+  .card-text { font-size: 11px; line-height: 1.5; color: var(--slate-500); }
+
+  .chart {
+    background: white; border: 1px solid var(--slate-200);
+    border-radius: 14px; padding: 22px; margin: 16px 0;
+  }
+  .chart-title { font-size: 14px; font-weight: 800; color: var(--slate-900); margin-bottom: 4px; }
+  .chart-subtitle { font-size: 10px; color: var(--slate-500); margin-bottom: 16px; font-weight: 500; }
+
+  .bar-row {
+    display: grid; grid-template-columns: 130px 1fr 70px;
+    align-items: center; gap: 12px; margin-bottom: 10px;
+  }
+  .bar-label { font-size: 11px; font-weight: 700; color: var(--slate-700); }
+  .bar-track { background: var(--slate-100); height: 22px; border-radius: 8px; overflow: hidden; }
+  .bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--indigo) 0%, #8b5cf6 100%);
+    border-radius: 8px;
+    display: flex; align-items: center; padding-right: 8px; justify-content: flex-end;
+    color: white; font-size: 10px; font-weight: 700;
+  }
+  .bar-fill.emerald { background: linear-gradient(90deg, var(--emerald) 0%, #10b981 100%); }
+  .bar-fill.amber { background: linear-gradient(90deg, var(--amber) 0%, #f59e0b 100%); }
+  .bar-fill.rose { background: linear-gradient(90deg, var(--rose) 0%, #f43f5e 100%); }
+  .bar-fill.slate { background: linear-gradient(90deg, #64748b 0%, #94a3b8 100%); }
+  .bar-value { font-size: 11px; font-weight: 800; color: var(--slate-900); text-align: right; }
+
+  .funnel { margin: 20px 0; }
+  .funnel-step {
+    margin-bottom: 6px; color: white;
+    padding: 14px 18px; border-radius: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .funnel-step-1 { width: 100%; background: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%); }
+  .funnel-step-2 { width: 88%; background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%); }
+  .funnel-step-3 { width: 60%; background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%); }
+  .funnel-step-4 { width: 35%; background: linear-gradient(90deg, #7c3aed 0%, #a855f7 100%); }
+  .funnel-step-5 { width: 18%; background: linear-gradient(90deg, #8b5cf6 0%, #c084fc 100%); }
+  .funnel-step-6 { width: 8%; background: linear-gradient(90deg, #a855f7 0%, #d946ef 100%); }
+  .funnel-label { font-size: 12px; font-weight: 700; }
+  .funnel-value { font-size: 11px; font-weight: 800; opacity: 0.95; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 14px 0; }
+  thead { background: var(--slate-900); color: white; }
+  th {
+    padding: 10px 12px; text-align: left; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 1px; font-weight: 800;
+  }
+  td {
+    padding: 10px 12px; border-bottom: 1px solid var(--slate-200);
+    font-size: 11px; color: var(--slate-700);
+  }
+  td.num { font-weight: 800; color: var(--slate-900); text-align: right; }
+  tr:last-child td { border-bottom: none; }
+  tr.featured { background: var(--indigo-50); }
+  tr.featured td { color: var(--indigo-900); font-weight: 700; }
+  .check { color: var(--emerald); font-weight: 800; }
+  .cross { color: var(--rose); font-weight: 800; }
+
+  .timeline { border-left: 3px solid var(--indigo); padding-left: 24px; margin: 16px 0 16px 12px; }
+  .timeline-item { position: relative; margin-bottom: 18px; page-break-inside: avoid; }
+  .timeline-item::before {
+    content: '';
+    position: absolute; left: -32px; top: 4px;
+    width: 14px; height: 14px;
+    background: var(--indigo); border-radius: 50%;
+    border: 3px solid white; box-shadow: 0 0 0 2px var(--indigo);
+  }
+  .timeline-period {
+    text-transform: uppercase; font-size: 9px; letter-spacing: 2px;
+    font-weight: 800; color: var(--indigo);
+  }
+  .timeline-title { font-size: 14px; font-weight: 800; color: var(--slate-900); margin: 2px 0 4px 0; }
+  .timeline-desc { font-size: 11px; color: var(--slate-500); }
+
+  .highlight {
+    background: linear-gradient(135deg, var(--indigo-50) 0%, #f5f3ff 100%);
+    border: 1px solid var(--indigo-100);
+    border-radius: 14px; padding: 18px 22px; margin: 16px 0;
+  }
+  .highlight-label {
+    text-transform: uppercase; letter-spacing: 2px;
+    font-size: 9px; font-weight: 800; color: var(--indigo);
+    margin-bottom: 8px;
+  }
+  .highlight-text { font-size: 14px; line-height: 1.5; color: var(--slate-900); font-weight: 600; }
+
+  .donut-wrap { display: flex; gap: 30px; align-items: center; margin: 16px 0; }
+  .donut { width: 140px; height: 140px; flex-shrink: 0; }
+  .donut-legend { flex: 1; }
+  .donut-legend-item {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 8px; font-size: 11px;
+  }
+  .donut-legend-color { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+  .donut-legend-label { font-weight: 700; color: var(--slate-700); flex: 1; }
+  .donut-legend-value { font-weight: 800; color: var(--slate-900); }
+
+  ul.clean { list-style: none; padding: 0; }
+  ul.clean li {
+    position: relative; padding-left: 22px;
+    margin-bottom: 8px; font-size: 12px; line-height: 1.5;
+    color: var(--slate-600);
+  }
+  ul.clean li::before {
+    content: '✓'; position: absolute; left: 0; top: 0;
+    color: var(--emerald); font-weight: 800;
+  }
+  ul.clean.cross li::before { content: '✗'; color: var(--rose); }
+
+  .quote {
+    background: var(--slate-900); color: white;
+    padding: 30px; border-radius: 18px;
+    margin: 20px 0; page-break-inside: avoid;
+  }
+  .quote-mark { font-size: 50px; line-height: 0.5; color: var(--indigo); margin-bottom: 8px; }
+  .quote-text { font-size: 16px; font-weight: 600; line-height: 1.5; margin-bottom: 12px; }
+  .quote-author { font-size: 11px; opacity: 0.7; font-weight: 600; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 14px 0; }
+
+  .ask-box {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white; padding: 30px; border-radius: 18px; margin: 20px 0;
+  }
+  .ask-amount {
+    font-size: 56px; font-weight: 900; letter-spacing: -2px;
+    line-height: 1; margin-bottom: 6px;
+  }
+  .ask-label {
+    text-transform: uppercase; letter-spacing: 3px;
+    font-size: 10px; opacity: 0.85; font-weight: 800;
+  }
+  .ask-text { font-size: 13px; line-height: 1.5; opacity: 0.9; margin-top: 14px; }
+
+  .progress-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .progress-item { background: var(--slate-50); border-radius: 12px; padding: 16px; }
+  .progress-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;
+    font-weight: 800; color: var(--slate-500); margin-bottom: 6px;
+  }
+  .progress-bar {
+    height: 6px; background: var(--slate-200);
+    border-radius: 3px; overflow: hidden; margin-top: 10px;
+  }
+  .progress-fill { height: 100%; background: var(--indigo); border-radius: 3px; }
+  .progress-text { font-size: 14px; font-weight: 800; color: var(--slate-900); }
+  .progress-sub { font-size: 10px; color: var(--slate-500); margin-top: 4px; }
+
+  .footnote {
+    font-size: 9px; color: var(--slate-400);
+    margin-top: 24px; padding-top: 12px;
+    border-top: 1px solid var(--slate-200);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-top">
+    <div class="cover-logo">
+      <div class="cover-logo-icon">💰</div>
+      <div class="cover-logo-text">Koiny</div>
+    </div>
+    <div class="cover-eyebrow">Dossier d'investissement · Confidentiel</div>
+  </div>
+
+  <div class="cover-mid">
+    <h1 class="cover-title">L'argent de poche<br>qui éduque vraiment.</h1>
+    <p class="cover-tagline">Koiny transforme l'argent de poche en un système familial complet — missions récompensées, objectifs d'épargne, amendes comportementales — et remplace les cris, les négociations sans fin et les punitions arbitraires par des conséquences calmes, prévisibles et acceptées par l'enfant.</p>
+  </div>
+
+  <div class="cover-bottom">
+    <div class="cover-meta">
+      <strong>Andre Nsangou</strong>
+      Fondateur · hello@koiny.app · koiny.app<br>
+      App Store: id 6760566260 · Bruxelles, Belgique
+    </div>
+    <div class="cover-stamp">Avril 2026 · v1.0.6</div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">01 · Synthèse exécutive</div>
+  <h2 class="section-title">L'éducation financière des enfants, repensée pour 2026</h2>
+  <p class="section-intro">Koiny est une application mobile native iOS (et bientôt Android &amp; Web) qui permet aux parents de transformer chaque euro d'argent de poche en mission éducative, sans risque financier réel.</p>
+
+  <div class="big-stats">
+    <div class="big-stat"><div class="big-stat-value">6-14</div><div class="big-stat-label">Tranche d'âge cible</div></div>
+    <div class="big-stat"><div class="big-stat-value">3</div><div class="big-stat-label">Langues (FR · NL · EN)</div></div>
+    <div class="big-stat"><div class="big-stat-value">1,99€</div><div class="big-stat-label">Premium / mois</div></div>
+    <div class="big-stat"><div class="big-stat-value">14j</div><div class="big-stat-label">Essai gratuit</div></div>
+  </div>
+
+  <h3>Ce qui rend Koiny unique</h3>
+  <ul class="clean">
+    <li><strong>100% argent virtuel</strong> — aucune carte bancaire, aucun risque, ouvert dès 6 ans là où la concurrence exige 12+.</li>
+    <li><strong>Privacy-first</strong> — aucune donnée vendue, aucune publicité, aucun tracking publicitaire (RGPD natif).</li>
+    <li><strong>Widget iOS natif</strong> — le solde de l'enfant directement sur l'écran d'accueil, sans ouvrir l'app.</li>
+    <li><strong>Multi-langue</strong> — Français, Néerlandais, Anglais dès le lancement (avantage Belgique/Pays-Bas/Suisse).</li>
+    <li><strong>Modèle freemium clair</strong> — gratuit pour 1 enfant, premium illimité à 1,99 €/mois (vs 4,99-9,99 € chez les concurrents avec carte bancaire).</li>
+    <li><strong>Discipline bienveillante</strong> — l'amende comportementale remplace la punition arbitraire. L'enfant comprend la conséquence immédiate, le parent garde son calme. Aucun concurrent ne propose cet angle.</li>
+  </ul>
+
+  <h3>Stade actuel</h3>
+  <p>Application <strong>publiée sur l'App Store en avril 2026</strong> (version 1.0.5), version 1.0.6 prête avec analytics complet et logique anniversaire automatique. Architecture cloud Supabase + RevenueCat opérationnelle. Premiers utilisateurs onboarded, instrumentation de funnel install→activation déployée.</p>
+
+  <h3>Le marché</h3>
+  <p>L'éducation financière des enfants est un <strong>angle mort</strong> du système éducatif européen. 70% des parents européens admettent ne pas avoir reçu de formation financière à l'école et veulent éviter cet échec à leurs enfants. La transition vers une économie sans cash rend l'apprentissage de la valeur de l'argent encore plus difficile pour les enfants nés après 2015.</p>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">02 · Le problème</div>
+  <h2 class="section-title">Pourquoi l'argent de poche tel qu'on le connaît ne fonctionne plus</h2>
+  <p class="section-intro">Trois constats que tout parent reconnaît instantanément. Trois échecs structurels que Koiny résout.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon rose">😩</div>
+      <div class="card-title">« Donne-moi de l'argent »</div>
+      <div class="card-text">L'argent de poche traditionnel n'est lié à aucun effort. L'enfant l'attend comme un dû, sans comprendre la valeur du travail.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon amber">💸</div>
+      <div class="card-title">Tout dépensé, jamais épargné</div>
+      <div class="card-text">Sans objectif visualisé, l'enfant dépense impulsivement. La notion d'épargne reste abstraite et donc inappliquée.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon rose">😤</div>
+      <div class="card-title">Punitions, cris, conflits sans fin</div>
+      <div class="card-text">Face à un mauvais comportement, le parent a un choix binaire : crier ou céder. Aucun outil ne propose une troisième voie — calme, juste et comprise par l'enfant.</div>
+    </div>
+  </div>
+
+  <h3>Et la transition cashless ne fait qu'aggraver le problème</h3>
+  <p>Les enfants nés après 2015 n'ont quasiment jamais vu de pièces ni de billets dans le quotidien de leurs parents. L'argent est devenu invisible — un chiffre sur un écran. Les neurosciences éducatives sont claires : <strong>sans manipulation concrète et sans lien effort↔récompense, le concept de valeur monétaire ne s'ancre pas avant 12 ans.</strong></p>
+
+  <div class="quote">
+    <div class="quote-mark">"</div>
+    <div class="quote-text">76% des Européens estiment que l'éducation financière devrait être enseignée à l'école dès le primaire. Seuls 12% des programmes scolaires en font une matière.</div>
+    <div class="quote-author">— Allianz Global Wealth Report, 2024</div>
+  </div>
+
+  <h3>Les solutions existantes échouent à servir les 6-14 ans</h3>
+  <ul class="clean cross">
+    <li><strong>Cartes bancaires enfants</strong> (GoHenry, Pixpay, Revolut Junior) — réservées aux 12+ ans, à 4-9 € par mois, exigent un compte bancaire parent et exposent l'enfant à un vrai risque financier.</li>
+    <li><strong>Tableaux Excel maison</strong> — abandonnés en moins de 3 semaines par 90% des parents qui essaient.</li>
+    <li><strong>Apps gratuites avec pubs</strong> — exposent l'enfant à des notifications marketing, à la collecte de données, et n'ont aucune dimension pédagogique structurée.</li>
+  </ul>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">03 · La solution</div>
+  <h2 class="section-title">Koiny : un simulateur financier familial pédagogique</h2>
+  <p class="section-intro">Pas une banque. Pas de carte. Pas de risque. Juste un écosystème éducatif complet où chaque euro a un sens.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">📋</div>
+      <div class="card-title">Missions personnalisées</div>
+      <div class="card-text">Le parent crée des défis avec un montant libre : « Ranger sa chambre → 2 € », « Aider en cuisine → 5 € ». Validation en un tap.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon emerald">🎯</div>
+      <div class="card-title">Objectifs d'épargne</div>
+      <div class="card-text">L'enfant fixe son rêve (vélo, console, jeu) et voit sa progression chaque jour. La barre de progression rend l'épargne tangible.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon rose">⚖️</div>
+      <div class="card-title">Amendes &amp; conséquences calmes</div>
+      <div class="card-text">Mauvais comportement ? Le parent applique une amende (1-5 €) en deux taps. Conséquence prévisible et calme — la sanction remplace les cris.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔒</div>
+      <div class="card-title">Contrôle parental total</div>
+      <div class="card-text">PIN chiffré PBKDF2 + Face ID pour l'espace parent. L'enfant ne peut rien modifier sans validation.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon amber">📊</div>
+      <div class="card-title">Statistiques détaillées</div>
+      <div class="card-text">Historique complet, graphiques d'évolution, vue d'ensemble par enfant. Le parent garde toujours le pilotage.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📱</div>
+      <div class="card-title">Widget iOS natif</div>
+      <div class="card-text">Le solde de l'enfant directement sur l'écran d'accueil de l'iPhone — pas besoin d'ouvrir l'app pour vérifier.</div>
+    </div>
+  </div>
+
+  <div class="highlight">
+    <div class="highlight-label">L'idée force</div>
+    <div class="highlight-text">Koiny n'est pas qu'une app d'argent de poche : c'est un <strong>outil de régulation familiale</strong>. Il remplace les cris, les négociations sans fin et les punitions arbitraires par un système calme, prévisible et accepté — où chaque comportement (positif ou négatif) a sa traduction immédiate, mesurée et juste.</div>
+  </div>
+
+  <div class="quote">
+    <div class="quote-mark">"</div>
+    <div class="quote-text">Avant Koiny, chaque chambre mal rangée finissait en dispute. Maintenant je dis juste : « tu perds 2 € ». Il comprend, il accepte, et moi je n'ai plus à hausser la voix. C'est aussi simple que ça.</div>
+    <div class="quote-author">— Parent utilisateur, Belgique · 2 enfants, 8 et 11 ans</div>
+  </div>
+
+  <h3>L'expérience produit en 3 minutes</h3>
+  <ol style="padding-left: 22px; font-size: 12px; color: var(--slate-600); line-height: 1.7;">
+    <li><strong>Le parent crée le profil enfant</strong> (avatar, couleur, PIN parental sécurisé) — 2 minutes.</li>
+    <li><strong>Le parent définit ses missions sur mesure</strong> avec des montants choisis librement.</li>
+    <li><strong>L'enfant accomplit, le parent valide</strong> en un tap → le solde grandit.</li>
+    <li><strong>L'enfant épargne pour son objectif</strong> et observe sa progression visuelle au quotidien.</li>
+  </ol>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">04 · Marché</div>
+  <h2 class="section-title">Une fenêtre ouverte sur un marché €1,2 Mds en Europe</h2>
+  <p class="section-intro">Le segment fintech-enfants est en pleine structuration. Koiny vise le sous-segment éducatif (sans carte) — le plus large et le moins concurrentiel.</p>
+
+  <div class="chart">
+    <div class="chart-title">Taille du marché européen — Segmentation TAM / SAM / SOM</div>
+    <div class="chart-subtitle">Foyers avec enfant 6-14 ans · revenu pour Koiny en abonnement annuel</div>
+
+    <div class="bar-row">
+      <div class="bar-label">TAM Europe</div>
+      <div class="bar-track"><div class="bar-fill" style="width: 100%;">50M foyers</div></div>
+      <div class="bar-value">€1,2 Mds</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">SAM (FR/NL/EN)</div>
+      <div class="bar-track"><div class="bar-fill emerald" style="width: 28%;">14M</div></div>
+      <div class="bar-value">€336 M</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">SAM hors France*</div>
+      <div class="bar-track"><div class="bar-fill amber" style="width: 10%;">5M</div></div>
+      <div class="bar-value">€120 M</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">SOM 3 ans</div>
+      <div class="bar-track"><div class="bar-fill rose" style="width: 2.5%;">100K</div></div>
+      <div class="bar-value">€2,4 M ARR</div>
+    </div>
+  </div>
+
+  <p style="font-size: 10px; color: var(--slate-400); margin-top: -8px;">* La France est exclue temporairement pour des raisons fiscales (à débloquer en 2027). Le SAM atteignable immédiatement reste BE/LU/CH/NL/UK/IE + Québec francophone.</p>
+
+  <h3>Pourquoi maintenant ?</h3>
+
+  <div class="cards-2 cards">
+    <div class="card">
+      <div class="card-icon">📈</div>
+      <div class="card-title">L'EdTech-finance accélère</div>
+      <div class="card-text">Le marché global EdFintech enfants devrait passer de $2,8 Mds (2024) à $9,2 Mds (2030) — CAGR de 22% (rapport Allied Market Research).</div>
+    </div>
+    <div class="card">
+      <div class="card-icon emerald">💳</div>
+      <div class="card-title">Fin du cash visible</div>
+      <div class="card-text">76% des transactions en Belgique sont sans contact en 2026. Les enfants ne voient plus l'argent. Le besoin de simulation pédagogique explose.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon rose">🛡</div>
+      <div class="card-title">Conscience privacy</div>
+      <div class="card-text">Le DSA + DMA européens et le Kids Online Safety Act (US) durcissent les règles. Une app sans pubs ni tracking devient un argument différenciant majeur.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon amber">🎓</div>
+      <div class="card-title">Programmes scolaires</div>
+      <div class="card-text">7 pays européens (dont la Belgique) intègrent l'éducation financière au primaire dès 2025-2027. Koiny est positionné pour devenir l'outil compagnon naturel.</div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">05 · Concurrence</div>
+  <h2 class="section-title">Un positionnement unique dans le paysage</h2>
+  <p class="section-intro">Toute la concurrence joue le jeu de la carte bancaire enfant. Koiny choisit délibérément l'autre voie : l'éducation pure, sans risque, dès 6 ans.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Solution</th>
+        <th>Âge min</th>
+        <th>Prix/mois</th>
+        <th>Vraie carte</th>
+        <th>Sans pub</th>
+        <th>Multi-langue</th>
+        <th>Widget iOS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="featured">
+        <td><strong>Koiny</strong></td>
+        <td>6 ans</td>
+        <td class="num">1,99 €</td>
+        <td><span class="cross">✗</span> Virtuel</td>
+        <td><span class="check">✓</span></td>
+        <td><span class="check">✓</span> 3 langues</td>
+        <td><span class="check">✓</span></td>
+      </tr>
+      <tr>
+        <td>GoHenry</td>
+        <td>6 ans</td>
+        <td class="num">4,99 €</td>
+        <td><span class="check">✓</span></td>
+        <td><span class="check">✓</span></td>
+        <td><span class="cross">✗</span> EN only</td>
+        <td><span class="cross">✗</span></td>
+      </tr>
+      <tr>
+        <td>Pixpay</td>
+        <td>10 ans</td>
+        <td class="num">2,99 €</td>
+        <td><span class="check">✓</span></td>
+        <td><span class="check">✓</span></td>
+        <td><span class="cross">✗</span> FR only</td>
+        <td><span class="cross">✗</span></td>
+      </tr>
+      <tr>
+        <td>Revolut Junior</td>
+        <td>7 ans</td>
+        <td class="num">2,99 €</td>
+        <td><span class="check">✓</span></td>
+        <td><span class="cross">✗</span> Cross-sell</td>
+        <td><span class="check">✓</span></td>
+        <td><span class="cross">✗</span></td>
+      </tr>
+      <tr>
+        <td>Greenlight (US)</td>
+        <td>8 ans</td>
+        <td class="num">$4,99</td>
+        <td><span class="check">✓</span></td>
+        <td><span class="check">✓</span></td>
+        <td><span class="cross">✗</span> EN only</td>
+        <td><span class="cross">✗</span></td>
+      </tr>
+      <tr>
+        <td>RoosterMoney</td>
+        <td>4 ans</td>
+        <td class="num">£3,99</td>
+        <td><span class="cross">✗</span></td>
+        <td><span class="cross">✗</span> Pubs</td>
+        <td><span class="cross">✗</span></td>
+        <td><span class="cross">✗</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Notre tactique de différenciation</h3>
+  <ul class="clean">
+    <li><strong>Prix de pénétration</strong> — 1,99 €/mois (60% moins cher que GoHenry).</li>
+    <li><strong>Aucune dépendance bancaire</strong> — pas d'IBAN, pas de KYC enfant, pas de risque réglementaire DSP2.</li>
+    <li><strong>Couverture multilingue native</strong> — un single app pour BE/NL/LU/Suisse romande/UK/Québec, là où chaque concurrent reste mono-langue.</li>
+    <li><strong>UX premium</strong> — design iOS-native (refonte 2026), widget Live Activity, Face ID — qualité de finition supérieure aux concurrents fintech.</li>
+    <li><strong>Régulation comportementale</strong> — amendes parentales (1-5 €) en deux taps. Aucun concurrent ne le propose, car leur modèle dépend des dépenses enfant. Chez Koiny, c'est une feature centrale, pas une friction.</li>
+  </ul>
+
+  <div class="highlight">
+    <div class="highlight-label">Pourquoi Koiny ne sera pas copié facilement</div>
+    <div class="highlight-text">Les fintech enfants existantes ont besoin de la marge sur les transactions de carte pour rentabiliser. Elles ne peuvent pas baisser à 1,99 € sans casser leur modèle. Koiny construit dès le départ un modèle 100% software, sans coût marginal — barrière structurelle.</div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">06 · Business model</div>
+  <h2 class="section-title">Freemium SaaS B2C avec marge logicielle &gt; 70%</h2>
+  <p class="section-intro">Modèle simple, prouvé, scalable. Aucune dépendance bancaire, aucun coût variable significatif au-delà des frais Apple/Google.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Plan Standard — Gratuit</h3>
+      <p>Mode d'acquisition. Permet à toute famille de tester pendant des semaines sans engagement.</p>
+      <ul class="clean">
+        <li>1 enfant</li>
+        <li>2 missions actives max</li>
+        <li>1 objectif d'épargne</li>
+        <li>Historique 5 dernières opérations</li>
+        <li>Widget iOS &amp; Face ID</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Plan Premium — 1,99 €/mois</h3>
+      <p>14 jours d'essai gratuit. Annulable à tout moment depuis l'App Store.</p>
+      <ul class="clean">
+        <li>Enfants illimités</li>
+        <li>Missions &amp; objectifs illimités</li>
+        <li>Historique complet</li>
+        <li>Statistiques &amp; graphiques</li>
+        <li>Bonus anniversaire automatique</li>
+        <li>Annual: <strong>16,99 €</strong> (économie 30%)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="chart">
+    <div class="chart-title">Économie unitaire par utilisateur premium</div>
+    <div class="chart-subtitle">Hypothèse: plan annuel 16,99 € · revenu net après commission Apple 30% (15% à partir de l'année 2)</div>
+
+    <div class="bar-row">
+      <div class="bar-label">Revenu brut/an</div>
+      <div class="bar-track"><div class="bar-fill" style="width: 100%;">€16,99</div></div>
+      <div class="bar-value">€16,99</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Commission Apple</div>
+      <div class="bar-track"><div class="bar-fill rose" style="width: 30%;">−30%</div></div>
+      <div class="bar-value">−€5,10</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Coût Supabase</div>
+      <div class="bar-track"><div class="bar-fill slate" style="width: 1.5%;">€0,25</div></div>
+      <div class="bar-value">−€0,25</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Marge brute</div>
+      <div class="bar-track"><div class="bar-fill emerald" style="width: 68%;">€11,64</div></div>
+      <div class="bar-value">€11,64</div>
+    </div>
+  </div>
+
+  <h3>Ratios cibles</h3>
+  <div class="big-stats">
+    <div class="big-stat"><div class="big-stat-value">~€18</div><div class="big-stat-label">LTV (18 mois)</div></div>
+    <div class="big-stat"><div class="big-stat-value">&lt; €6</div><div class="big-stat-label">CAC cible</div></div>
+    <div class="big-stat"><div class="big-stat-value">3:1</div><div class="big-stat-label">Ratio LTV/CAC</div></div>
+    <div class="big-stat"><div class="big-stat-value">68%</div><div class="big-stat-label">Marge brute</div></div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">07 · Traction</div>
+  <h2 class="section-title">Stade pré-seed — l'app vit, le funnel se mesure</h2>
+  <p class="section-intro">Nous mesurons aujourd'hui chaque étape du parcours d'activation pour optimiser le passage install → utilisateur premium.</p>
+
+  <h3>Funnel d'acquisition (premières semaines)</h3>
+  <div class="funnel">
+    <div class="funnel-step funnel-step-1">
+      <div class="funnel-label">Impression Apple Search Ads</div>
+      <div class="funnel-value">100%</div>
+    </div>
+    <div class="funnel-step funnel-step-2">
+      <div class="funnel-label">Vue page App Store</div>
+      <div class="funnel-value">~88%</div>
+    </div>
+    <div class="funnel-step funnel-step-3">
+      <div class="funnel-label">Téléchargement</div>
+      <div class="funnel-value">~7%</div>
+    </div>
+    <div class="funnel-step funnel-step-4">
+      <div class="funnel-label">Onboarding terminé</div>
+      <div class="funnel-value">~63% des installs</div>
+    </div>
+    <div class="funnel-step funnel-step-5">
+      <div class="funnel-label">Compte créé + 1er enfant</div>
+      <div class="funnel-value">~42% des installs</div>
+    </div>
+    <div class="funnel-step funnel-step-6">
+      <div class="funnel-label">Conversion premium (cible 14j)</div>
+      <div class="funnel-value">8% cible</div>
+    </div>
+  </div>
+
+  <h3>Ce qui est déjà en place</h3>
+  <ul class="clean">
+    <li><strong>App publiée</strong> sur l'App Store iOS depuis avril 2026 (versions 1.0.0 → 1.0.5).</li>
+    <li><strong>Pipeline analytics complet</strong> sur Supabase : événements AUTH_SCREEN_VIEWED, AUTH_PROVIDER_TAPPED, AUTH_SUCCESS, ONBOARDING_COMPLETED, CHILD_CREATED, MISSION_APPROVED.</li>
+    <li><strong>Apple Search Ads opérationnel</strong> avec 100 € de crédit Apple, campagnes EN (UK/US) + FR (BE/LU/CH).</li>
+    <li><strong>Re-engagement automatisé</strong> — emails J+2, J+7, J+30, J+90 via Supabase Edge Functions + Resend, en 3 langues.</li>
+    <li><strong>RevenueCat</strong> intégré pour gestion abonnements + restauration achats.</li>
+    <li><strong>Site marketing</strong> live sur koiny.app avec contenu SEO 3 langues.</li>
+  </ul>
+
+  <h3>Apprentissages clés mesurés</h3>
+  <div class="cards-2 cards">
+    <div class="card">
+      <div class="card-icon">🔄</div>
+      <div class="card-title">Drop-off détecté à l'onboarding</div>
+      <div class="card-text">42% des comptes créés ne créent jamais d'enfant. Solution v1.0.6 : 4ᵉ slide « Prêt en 3 étapes » + crédit anniversaire auto qui force l'engagement.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon emerald">📊</div>
+      <div class="card-title">Apple Sign-in convertit moins</div>
+      <div class="card-text">50% pour Apple Sign-in vs 83% pour Google. Action: simplifier le parcours post-Apple-Login.</div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">08 · Go-to-market</div>
+  <h2 class="section-title">3 leviers d'acquisition complémentaires</h2>
+  <p class="section-intro">Une stratégie sobre construite autour de canaux à coût maîtrisé et d'un cycle d'apprentissage rapide.</p>
+
+  <h3>1. Apple Search Ads (court terme)</h3>
+  <p>Le canal le plus mesurable et le plus qualifié pour l'App Store. Mots-clés ciblés : argent de poche, pocket money, kids savings, chores app, zakgeld kinderen.</p>
+  <div class="progress-grid">
+    <div class="progress-item">
+      <div class="progress-label">Budget pré-seed mensuel</div>
+      <div class="progress-text">300-500 €</div>
+      <div class="progress-bar"><div class="progress-fill" style="width: 30%;"></div></div>
+      <div class="progress-sub">À monter à 2000 €/mois post-financement</div>
+    </div>
+    <div class="progress-item">
+      <div class="progress-label">CPI cible (UK + BE)</div>
+      <div class="progress-text">2-4 €</div>
+      <div class="progress-bar"><div class="progress-fill" style="width: 60%;"></div></div>
+      <div class="progress-sub">Selon benchmarks fintech kids 2025</div>
+    </div>
+  </div>
+
+  <h3>2. SEO contenu &amp; relations presse parents</h3>
+  <p>Le mot-clé « argent de poche enfant » génère 12 000 recherches/mois en France et 3 200 en Belgique. <strong>koiny.app/blog</strong> publie des articles éducatifs en 3 langues (« combien donner d'argent de poche à 8 ans », « 10 missions à proposer »). Cible : être en top-3 Google dans 18 mois sur 30 mots-clés ciblés.</p>
+
+  <h3>3. Partenariats écoles &amp; assos parentales</h3>
+  <p>Distribution gratuite de codes Premium à des écoles primaires belges/néerlandaises pilotes. Un parent éducateur convaincu = 5-10 parents convaincus dans son réseau (effet de bord viral mesuré). Cible 24 mois : 50 écoles partenaires.</p>
+
+  <div class="highlight">
+    <div class="highlight-label">Effet d'expansion organique</div>
+    <div class="highlight-text">Chaque parent abonné est un point de référence pour 4-6 autres parents dans son entourage. Le segment 6-14 ans étant un cercle social très <em>maillé</em> (école, sport, fêtes d'anniversaire), le coefficient viral attendu est supérieur à celui d'apps adultes.</div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">09 · Roadmap</div>
+  <h2 class="section-title">Plan produit 24 mois</h2>
+  <p class="section-intro">Une exécution séquencée pour augmenter le LTV (multi-parent, gamification) avant d'élargir la SAM (Android, B2B écoles).</p>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-period">Q2 2026 — Réalisé</div>
+      <div class="timeline-title">Lancement App Store iOS · v1.0.0 → 1.0.5</div>
+      <div class="timeline-desc">Application publique, multi-langue, RevenueCat, widget iOS, design iOS natif refondu, analytics Supabase complet.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-period">Q3 2026 — En cours</div>
+      <div class="timeline-title">v1.1 · Multi-parent &amp; partage familial</div>
+      <div class="timeline-desc">Co-parentalité (2 adultes pilotent un même profil enfant), invitation par lien, synchronisation Realtime. Augmente LTV sur les couples séparés et familles recomposées.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-period">Q4 2026</div>
+      <div class="timeline-title">v1.2 · Lancement Android (Play Store)</div>
+      <div class="timeline-desc">Build Capacitor déjà fonctionnel, restent: design Material 3 finalisé, RevenueCat Google Billing, Play Console submission. Double immédiatement la SAM accessible.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-period">Q1 2027</div>
+      <div class="timeline-title">v1.3 · Gamification &amp; défis familiaux</div>
+      <div class="timeline-desc">Streaks de missions, badges, défis hebdomadaires, leaderboard fratrie. Cible : augmenter rétention M3 de 20% à 35%.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-period">Q2 2027</div>
+      <div class="timeline-title">v2.0 · Web app full feature parity</div>
+      <div class="timeline-desc">Dashboard parent web complet (le code Vite/React s'y prête déjà). Permet l'usage en famille recomposée + écoles + tablettes Android sous-équipées.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-period">Q3 2027</div>
+      <div class="timeline-title">Koiny School Edition (B2B)</div>
+      <div class="timeline-desc">Licence par école, dashboard enseignant, programme structuré aligné socle commun belge. Modèle SaaS B2B €5/élève/an.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-period">Q4 2027</div>
+      <div class="timeline-title">Ouverture marché France &amp; expansion Sud-Europe</div>
+      <div class="timeline-desc">Une fois le frein fiscal levé (structure migrée), ouverture FR + ES + IT (langues à ajouter en 4 mois grâce à l'architecture i18n existante).</div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">10 · Équipe</div>
+  <h2 class="section-title">Solo founder, équipe agrandie post-financement</h2>
+  <p class="section-intro">Le projet est porté aujourd'hui par Andre Nsangou. L'investissement permettra de structurer une équipe de 3-4 personnes en 12 mois.</p>
+
+  <div class="cards-2 cards">
+    <div class="card">
+      <div class="card-icon">👤</div>
+      <div class="card-title">Andre Nsangou — Fondateur &amp; CEO/CTO</div>
+      <div class="card-text">Concepteur et développeur unique de Koiny. Architecte logiciel full-stack, expérience en TypeScript/React/iOS natif. Domicilié à Bruxelles, parent lui-même — testeur quotidien du produit.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon emerald">🎨</div>
+      <div class="card-title">À recruter — Product Designer (mi-2026)</div>
+      <div class="card-text">Mission : design system iOS/Android cohérent, illustrations enfants, marketing visuel. Profil expérimenté freelance en CDD 6 mois renouvelable.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon rose">📣</div>
+      <div class="card-title">À recruter — Growth Manager (Q4 2026)</div>
+      <div class="card-text">Pilotage Apple Search Ads, SEO, partenariats écoles, contenus blog, emailing. Cible junior expérimenté en growth fintech.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon amber">⚙️</div>
+      <div class="card-title">À recruter — Dev mobile renfort (Q1 2027)</div>
+      <div class="card-text">Pour accélérer la roadmap Android, multi-parent, B2B écoles. Profil React Native / Capacitor / Swift.</div>
+    </div>
+  </div>
+
+  <h3>Conseillers actuels</h3>
+  <p>L'équipe est entourée de retours informels d'experts en éducation primaire (BE), en pédagogie financière (UE), et en croissance d'apps mobiles. La première levée permettra de formaliser un advisory board (1-2 cap-table seats à 0,5%).</p>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">11 · Projections financières</div>
+  <h2 class="section-title">Trajectoire 36 mois — scénario base</h2>
+  <p class="section-intro">Hypothèses prudentes : 8% de conversion install→premium, churn mensuel 5%, ARPU annuel net 12 €. Scénarios bear/bull en annexe.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Métrique</th>
+        <th class="num">Année 1 (2026)</th>
+        <th class="num">Année 2 (2027)</th>
+        <th class="num">Année 3 (2028)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Installations cumulées</td>
+        <td class="num">15 000</td>
+        <td class="num">85 000</td>
+        <td class="num">280 000</td>
+      </tr>
+      <tr>
+        <td>Comptes activés (parents)</td>
+        <td class="num">6 300</td>
+        <td class="num">36 000</td>
+        <td class="num">120 000</td>
+      </tr>
+      <tr class="featured">
+        <td>Abonnés premium actifs (fin année)</td>
+        <td class="num">800</td>
+        <td class="num">5 200</td>
+        <td class="num">22 000</td>
+      </tr>
+      <tr>
+        <td>ARR fin année (€)</td>
+        <td class="num">€13 600</td>
+        <td class="num">€88 400</td>
+        <td class="num">€374 000</td>
+      </tr>
+      <tr>
+        <td>Marge brute (€, 68%)</td>
+        <td class="num">€9 250</td>
+        <td class="num">€60 100</td>
+        <td class="num">€254 300</td>
+      </tr>
+      <tr>
+        <td>Charges opérationnelles (€)</td>
+        <td class="num">€68 000</td>
+        <td class="num">€155 000</td>
+        <td class="num">€220 000</td>
+      </tr>
+      <tr class="featured">
+        <td><strong>EBITDA (€)</strong></td>
+        <td class="num">€−58 750</td>
+        <td class="num">€−95 000</td>
+        <td class="num">€+34 300</td>
+      </tr>
+      <tr>
+        <td>Cash burn moyen mensuel</td>
+        <td class="num">€7 800</td>
+        <td class="num">€8 000</td>
+        <td class="num">break-even</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="chart">
+    <div class="chart-title">Évolution ARR projeté (€)</div>
+    <div class="chart-subtitle">Scénario base — atteinte break-even à fin année 3</div>
+
+    <div class="bar-row">
+      <div class="bar-label">Année 1</div>
+      <div class="bar-track"><div class="bar-fill" style="width: 4%;">€13,6K</div></div>
+      <div class="bar-value">€13,6 K</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Année 2</div>
+      <div class="bar-track"><div class="bar-fill emerald" style="width: 24%;">€88,4K</div></div>
+      <div class="bar-value">€88,4 K</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Année 3</div>
+      <div class="bar-track"><div class="bar-fill amber" style="width: 100%;">€374K</div></div>
+      <div class="bar-value">€374 K</div>
+    </div>
+  </div>
+
+  <h3>Hypothèses-clés</h3>
+  <ul class="clean">
+    <li>CAC moyen : 5 € en année 1, optimisé à 4 € en année 3 grâce au SEO + viralité.</li>
+    <li>Conversion install → activation : 42% (mesurée), cible 50% post-optimisation.</li>
+    <li>Conversion essai 14j → payant : 8% an 1 → 12% an 3 (benchmarks SaaS B2C standard).</li>
+    <li>Churn mensuel : 6% an 1 → 4% an 3 (rétention améliorée par gamification + multi-parent).</li>
+    <li>Mix annuel : 60% mensuel / 40% annuel (annuel monte avec la confiance dans le produit).</li>
+  </ul>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">12 · L'investissement</div>
+  <h2 class="section-title">Une levée pré-seed pour atteindre le product-market fit</h2>
+  <p class="section-intro">L'objectif de ce tour : atteindre 5 000 abonnés premium actifs en 18 mois et démontrer la mécanique de croissance.</p>
+
+  <div class="ask-box">
+    <div class="ask-label">Levée pré-seed</div>
+    <div class="ask-amount">250 000 €</div>
+    <div class="ask-text">en SAFE ou equity, valorisation pre-money 1,2-1,5 M€ — runway 18 mois jusqu'au prochain tour seed.</div>
+  </div>
+
+  <h3>Allocation des fonds</h3>
+  <div class="donut-wrap">
+    <svg class="donut" viewBox="0 0 42 42">
+      <circle cx="21" cy="21" r="15.91" fill="transparent" stroke="#4f46e5" stroke-width="9" stroke-dasharray="50 50" stroke-dashoffset="0"/>
+      <circle cx="21" cy="21" r="15.91" fill="transparent" stroke="#10b981" stroke-width="9" stroke-dasharray="25 75" stroke-dashoffset="-50"/>
+      <circle cx="21" cy="21" r="15.91" fill="transparent" stroke="#f59e0b" stroke-width="9" stroke-dasharray="15 85" stroke-dashoffset="-75"/>
+      <circle cx="21" cy="21" r="15.91" fill="transparent" stroke="#e11d48" stroke-width="9" stroke-dasharray="10 90" stroke-dashoffset="-90"/>
+    </svg>
+    <div class="donut-legend">
+      <div class="donut-legend-item">
+        <div class="donut-legend-color" style="background: #4f46e5;"></div>
+        <div class="donut-legend-label">Marketing &amp; user acquisition</div>
+        <div class="donut-legend-value">125 000 € · 50%</div>
+      </div>
+      <div class="donut-legend-item">
+        <div class="donut-legend-color" style="background: #10b981;"></div>
+        <div class="donut-legend-label">Produit (Android, multi-parent, web)</div>
+        <div class="donut-legend-value">62 500 € · 25%</div>
+      </div>
+      <div class="donut-legend-item">
+        <div class="donut-legend-color" style="background: #f59e0b;"></div>
+        <div class="donut-legend-label">Équipe (designer + growth)</div>
+        <div class="donut-legend-value">37 500 € · 15%</div>
+      </div>
+      <div class="donut-legend-item">
+        <div class="donut-legend-color" style="background: #e11d48;"></div>
+        <div class="donut-legend-label">Opérations &amp; juridique</div>
+        <div class="donut-legend-value">25 000 € · 10%</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Jalons à atteindre dans les 18 mois</h3>
+  <ul class="clean">
+    <li><strong>5 000 abonnés premium actifs</strong> à fin du runway (vs. ~50 actuellement).</li>
+    <li><strong>Lancement Android</strong> Play Store avec parité fonctionnelle iOS.</li>
+    <li><strong>20% de pénétration</strong> sur le marché belge francophone 6-14 ans (~30 000 foyers atteints).</li>
+    <li><strong>2-3 partenariats écoles pilotes</strong> en Belgique pour l'édition B2B (validation marché).</li>
+    <li><strong>Préparation tour seed €1-1,5 M</strong> avec traction validée pour expansion européenne.</li>
+  </ul>
+
+  <div class="highlight">
+    <div class="highlight-label">Pourquoi maintenant pour vous</div>
+    <div class="highlight-text">Vous entrez dans Koiny au moment où le produit est livré, monétisé, instrumenté — mais avant que la machine d'acquisition ne soit allumée. C'est le ratio risque/potentiel le plus favorable d'un cycle de financement.</div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">13 · Impact</div>
+  <h2 class="section-title">Au-delà du SaaS : la paix familiale retrouvée</h2>
+  <p class="section-intro">Investir dans Koiny, c'est financer un outil qui résout deux problèmes à la fois : l'échec systémique de l'éducation financière — et les conflits du quotidien que tout parent de 6-14 ans connaît.</p>
+
+  <h3>Impact mesurable au quotidien</h3>
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon emerald">🧠</div>
+      <div class="card-title">Formation cognitive durable</div>
+      <div class="card-text">Les enfants formés à effort↔récompense entre 6 et 14 ans ont un comportement d'épargne adulte 28% supérieur (étude OCDE 2023).</div>
+    </div>
+    <div class="card">
+      <div class="card-icon amber">🤝</div>
+      <div class="card-title">La paix familiale retrouvée</div>
+      <div class="card-text">L'amende comportementale donne au parent une troisième voie entre crier et céder. La sanction est immédiate, calme et comprise par l'enfant — sans arbitraire, sans ressentiment.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon rose">🛡</div>
+      <div class="card-title">Protection sans risque</div>
+      <div class="card-text">Aucun enfant ne peut perdre d'argent réel sur Koiny. Aucune publicité ciblée, aucune donnée vendue. Une zone numérique 100% saine pour la famille.</div>
+    </div>
+  </div>
+
+  <h3>Alignement avec les ODD &amp; politiques publiques européennes</h3>
+  <ul class="clean">
+    <li><strong>ODD 4 — Éducation de qualité</strong> : Koiny complète l'éducation primaire dans le domaine de la littératie financière, en accès libre dans sa version gratuite.</li>
+    <li><strong>OCDE Financial Literacy Framework</strong> : aligné sur les compétences-clés 6-14 (gérer un budget, fixer un objectif, différer une gratification).</li>
+    <li><strong>EU DSA / DMA</strong> : Koiny est conçu privacy-by-design — aucun risque réglementaire.</li>
+    <li><strong>Plan belge éducation financière 2025-2030</strong> : Koiny peut servir d'outil compagnon officiel des programmes scolaires fédéraux.</li>
+  </ul>
+
+  <div class="highlight" style="background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%); border-color: #fed7aa;">
+    <div class="highlight-label" style="color: #d97706;">Impact différenciant — ce que les concurrents ne peuvent pas copier</div>
+    <div class="highlight-text">GoHenry, Pixpay et Revolut Junior sont des apps de <strong>dépense</strong> — elles n'ont aucun intérêt à introduire des amendes (l'enfant qui perd de l'argent ne dépense pas). Koiny est une app d'<strong>éducation et de régulation</strong> — son modèle économique s'aligne parfaitement avec la discipline parentale. C'est une barrière structurelle invisible que les concurrents ne franchiront pas sans casser leur propre produit.</div>
+  </div>
+
+  <div class="quote">
+    <div class="quote-mark">"</div>
+    <div class="quote-text">Koiny a changé notre quotidien. Mes enfants comprennent que leurs efforts sont récompensés — et que leurs mauvais comportements ont des conséquences mesurées. Plus de cris, plus de négociations. Juste un système que tout le monde comprend et accepte.</div>
+    <div class="quote-author">— Parent utilisateur · Bruxelles, Belgique · 3 enfants, 7, 9 et 12 ans</div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="section-eyebrow">14 · Contact</div>
+  <h2 class="section-title">Continuons la conversation</h2>
+  <p class="section-intro">Je suis disponible pour répondre à toutes vos questions, partager les KPI détaillés en temps réel et organiser une démo live.</p>
+
+  <div class="cards-2 cards" style="margin-top: 30px;">
+    <div class="card" style="padding: 30px;">
+      <div class="card-icon">✉️</div>
+      <div class="card-title">Email</div>
+      <div class="card-text">hello@koiny.app</div>
+    </div>
+    <div class="card" style="padding: 30px;">
+      <div class="card-icon emerald">🌐</div>
+      <div class="card-title">Site &amp; App</div>
+      <div class="card-text">koiny.app · App Store id 6760566260</div>
+    </div>
+    <div class="card" style="padding: 30px;">
+      <div class="card-icon rose">📍</div>
+      <div class="card-title">Localisation</div>
+      <div class="card-text">Bruxelles, Belgique<br>(Société à constituer SRL)</div>
+    </div>
+    <div class="card" style="padding: 30px;">
+      <div class="card-icon amber">📊</div>
+      <div class="card-title">Data room</div>
+      <div class="card-text">Disponible sur demande après NDA :<br>analytics live, contrats, pitch deck animé</div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <strong>Document confidentiel</strong> — Ce dossier est destiné exclusivement à un usage d'analyse d'investissement. Toute diffusion, reproduction ou utilisation à des fins autres requiert l'autorisation écrite préalable d'Andre Nsangou. Les projections financières reposent sur des hypothèses transparentes et n'ont pas valeur d'engagement. Koiny est un simulateur pédagogique — aucune transaction financière réelle n'est traitée par l'application.<br><br>
+    © 2026 Koiny — Andre Nsangou. Tous droits réservés.
+  </div>
+</div>
+
+</body>
+</html>

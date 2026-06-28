@@ -1,0 +1,78 @@
+[
+  {
+    "url": "https://koiny.app/logo.png",
+    "type": "Image",
+    "contexts": [
+      "img[src]"
+    ],
+    "notes": "Koiny",
+    "description": "Koiny",
+    "aboveFold": true,
+    "nearestHeading": "Liens utiles",
+    "sectionClasses": "footer"
+  },
+  {
+    "url": "https://koiny.app/screenshots/fr/dashboard-parent.png",
+    "type": "Image",
+    "contexts": [
+      "img[src]"
+    ],
+    "notes": "Koiny Dashboard",
+    "description": "Koiny Dashboard",
+    "sectionClasses": "hero-visual",
+    "aboveFold": true,
+    "nearestHeading": "Une interface pensée pour toute la famille"
+  },
+  {
+    "url": "https://koiny.app/screenshots/fr/dashboard-enfant.png",
+    "type": "Image",
+    "contexts": [
+      "img[src]"
+    ],
+    "notes": "Espace Enfant",
+    "description": "Espace Enfant",
+    "sectionClasses": "shot-wrap featured visible",
+    "aboveFold": true
+  },
+  {
+    "url": "https://koiny.app/screenshots/fr/mission.png",
+    "type": "Image",
+    "contexts": [
+      "img[src]"
+    ],
+    "notes": "Missions",
+    "description": "Missions",
+    "nearestHeading": "Une interface pensée pour toute la famille",
+    "sectionClasses": "section",
+    "aboveFold": true
+  },
+  {
+    "url": "https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/fr-fr?size=250x83",
+    "type": "Image",
+    "contexts": [
+      "img[src]"
+    ],
+    "notes": "Télécharger sur l'App Store",
+    "description": "Télécharger sur l'App Store",
+    "nearestHeading": "Lancez-vous dès aujourd'hui",
+    "sectionClasses": "cta-section",
+    "aboveFold": true
+  },
+  {
+    "url": "https://koiny.app/favicon.png",
+    "type": "Icon",
+    "contexts": [
+      "link[rel=\"icon\"]",
+      "link[rel=\"apple-touch-icon\"]"
+    ],
+    "notes": null
+  },
+  {
+    "url": "https://koiny.app/og-image.png",
+    "type": "Image",
+    "contexts": [
+      "meta[og:image]"
+    ],
+    "notes": null
+  }
+]
