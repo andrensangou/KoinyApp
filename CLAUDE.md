@@ -37,7 +37,13 @@
 - Suppression de compte : OK après le fix `restRpc`.
 - ⚠️ **UX login Huawei** : l'utilisateur voit un "flash" du navigateur avec l'URL Supabase puis le dashboard (rapide car Google a mémorisé le compte → pas de sélecteur). **Normal et spécifique à ce Huawei** (pas de Play Services → fallback navigateur). Les vrais users Android avec Play Services ont le **sélecteur Google natif** sans flash. Acceptable pour la prod.
 
-**Reste à tester** : flux complet sur **iOS** (simulateur iPhone 17, build debug via Xcode) pour confirmer non-régression du REST-bypass + onboarding. iOS lisait déjà en REST (branche `fix/ios-google-data-load`), donc faible risque, mais à valider.
+**✅ Validé sur iOS (28/06, simulateur iPhone 17 / iOS 26.2, build debug Xcode)** : flux COMPLET testé et OK.
+- Login Google : `⚠️ [GOOGLE iOS] "GoogleAuth" plugin is not implemented on ios` → fallback navigateur → `[SceneDelegate] 🔗 Deep link received` → `✅ [DEEP LINK] Session implicite établie` → dashboard. REST-bypass actif (`⚡ [LOAD] Token lu depuis localStorage`, `[LOAD-REST] profiles 465ms / children 222ms`). Aucun `TIMEOUT_DATABASE`, aucun hang.
+- **Suppression de compte** (akians237 / `58f7630d`) : OK, base bien vidée (profil + enfant supprimés) → `deleteAccount` REST marche aussi sur iOS.
+- **Re-login → OnboardingModal nouveau user** : OK, nouveau compte `015d31c1` créé, profil créé via `ensureUserProfile` REST, PIN créé (`pin_hash` présent).
+- ⚠️ Le build iOS testé était compilé AVANT le fix email (`cd1e11e`) → le nouveau profil avait `email: null` (backfillé manuellement). Le prochain build inclura le passage de `session.user.email`.
+
+**⚠️ Build Xcode iOS — XCFrameworks manquants** : si Xcode affiche "There is no XCFramework found at .../DerivedData..." (×N), c'est que le DerivedData a été purgé. Fix : `cd ios/App && xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App` (re-télécharge les XCFrameworks SPM : RevenueCat, Firebase, gRPC…), puis dans Xcode Product → Clean Build Folder → Run. **NE JAMAIS** `rm -rf ~/Library/Developer/Xcode/DerivedData/*` sans prévoir cette re-résolution.
 
 **À faire avant prod** : build Android release (AAB versionCode 18) + iOS 1.1.7 build 20 une fois iOS validé. Pousser les commits `feature/onboarding-forced`.
 
