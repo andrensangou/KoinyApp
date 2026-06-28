@@ -16,6 +16,9 @@ export default defineConfig({
       // Stub firebase/analytics so @capacitor-firebase/analytics web.js doesn't
       // break at runtime — on native Android the native SDK handles everything.
       'firebase/analytics': resolve(__dirname, 'src/firebase-analytics-stub.ts'),
+      // Idem pour firebase/messaging (utilisé par @capacitor-firebase/messaging web.js).
+      // Sur natif iOS/Android, le SDK Firebase natif gère le push — le web n'est jamais exécuté.
+      'firebase/messaging': resolve(__dirname, 'src/firebase-messaging-stub.ts'),
     }
   },
   build: {
@@ -43,6 +46,6 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    exclude: ['screenshots', '@capacitor-firebase/analytics']
+    exclude: ['screenshots', '@capacitor-firebase/analytics', '@capacitor-firebase/messaging']
   }
 })
