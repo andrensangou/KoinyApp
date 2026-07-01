@@ -586,6 +586,7 @@ const ParentView: React.FC<ParentViewProps> = ({
 
   const isConfirmingRef = React.useRef(false);
   const isSubmittingTransactionRef = React.useRef(false);
+  const [isSubmittingTransaction, setIsSubmittingTransaction] = useState(false);
 
   const handleResetPin = async () => {
     // Demo Mode — skip security
@@ -692,10 +693,11 @@ const ParentView: React.FC<ParentViewProps> = ({
     const finalTitle = transReason ? `${categoryPrefix} : ${transReason}` : categoryPrefix;
 
     isSubmittingTransactionRef.current = true;
+    setIsSubmittingTransaction(true);
     onManualTransaction(selectedChildId, finalAmount, finalTitle);
     setTransactionType(null);
     setTransAmount('');
-    setTimeout(() => { isSubmittingTransactionRef.current = false; }, 500);
+    setTimeout(() => { isSubmittingTransactionRef.current = false; setIsSubmittingTransaction(false); }, 500);
     setTransReason('');
     setWithdrawSubtype('PURCHASE');
   };
@@ -3390,8 +3392,8 @@ const ParentView: React.FC<ParentViewProps> = ({
                   {/* Action buttons MD3 side-by-side */}
                   <div className="flex gap-3 mt-6 mb-2">
                     <button type="button" onClick={() => setTransactionType(null)} className="flex-1 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm font-medium active:bg-slate-50 dark:active:bg-slate-800 transition-colors">{t.common.cancel}</button>
-                    <button type="submit" className="flex-1 py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold active:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
-                      <i className="fa-solid fa-check text-xs"></i>
+                    <button type="submit" disabled={isSubmittingTransaction} className="flex-1 py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                      {isSubmittingTransaction ? <i className="fa-solid fa-spinner fa-spin text-xs"></i> : <i className="fa-solid fa-check text-xs"></i>}
                       {t.common.confirm}
                     </button>
                   </div>
@@ -3469,9 +3471,10 @@ const ParentView: React.FC<ParentViewProps> = ({
                   <div className="flex flex-col gap-3 pt-4">
                     <button
                       type="submit"
-                      className={`w-full py-5 text-white font-black uppercase tracking-[0.2em] text-sm rounded-[1.5rem] transition-all active:scale-95 flex items-center justify-center gap-3 ${transactionType === 'DEPOSIT' ? 'bg-emerald-500 shadow-md shadow-emerald-500/30' : (withdrawSubtype === 'PURCHASE' ? 'bg-slate-900 shadow-md shadow-slate-900/30 dark:shadow-black/40' : 'bg-red-500 shadow-md shadow-red-500/30')}`}
+                      disabled={isSubmittingTransaction}
+                      className={`w-full py-5 text-white font-black uppercase tracking-[0.2em] text-sm rounded-[1.5rem] transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 ${transactionType === 'DEPOSIT' ? 'bg-emerald-500 shadow-md shadow-emerald-500/30' : (withdrawSubtype === 'PURCHASE' ? 'bg-slate-900 shadow-md shadow-slate-900/30 dark:shadow-black/40' : 'bg-red-500 shadow-md shadow-red-500/30')}`}
                     >
-                      <i className="fa-solid fa-circle-check"></i>
+                      {isSubmittingTransaction ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-circle-check"></i>}
                       {t.common.confirm}
                     </button>
                     <button type="button" onClick={() => setTransactionType(null)} className="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors">{t.common.cancel}</button>
